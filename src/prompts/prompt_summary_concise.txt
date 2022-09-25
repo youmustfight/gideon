@@ -1,0 +1,5 @@
+Write a concise summary of the following:
+
+<<SOURCE_TEXT>>
+
+CONCISE SUMMARY:

@@ -1,0 +1,1 @@
+Delete any line that does not have a date.

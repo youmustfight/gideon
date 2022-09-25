@@ -1,0 +1,5 @@
+Write a bulleted list of organization names mentioned in the following:
+
+<<SOURCE_TEXT>>
+
+LIST OF NAMES:

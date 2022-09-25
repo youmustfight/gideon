@@ -1,0 +1,1 @@
+Delete any line that is not a person's name. De-duplicate names.
