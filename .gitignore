@@ -1,3 +1,14 @@
 .env
 .env.json
+
+# src (ml)
 __pycache__
+
+# www
+node_modules
+dist
+public
+.parcel-cache
+
+# big files
+indexed/
