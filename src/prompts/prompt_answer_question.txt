@@ -1,4 +1,4 @@
-Use the following passage to give a detailed answer to the question:
+Use only the following passage to give a detailed answer to the question:
 
 
 QUESTION: <<QUESTION>>
