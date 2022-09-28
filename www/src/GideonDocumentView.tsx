@@ -27,7 +27,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         if (element) element.scrollIntoView();
       }
     });
-  }, []);
+  }, [hash]);
   // RENDER
   return (
     <StyledDocumentViewTranscript>
