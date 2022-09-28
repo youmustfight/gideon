@@ -193,6 +193,7 @@ def index_pdf(filename, index_type):
             "document_type": document_type,
             "event_timeline": event_timeline,
             "filename": filename,
+            "format": "pdf",
             "index_type": "discovery" if is_discovery_document == True else "case_law",
             "mentions_cases_laws": mentions_cases_laws,
             "mentions_organizations": mentions_organizations,

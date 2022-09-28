@@ -6,6 +6,7 @@ export type TDocument = {
   document_text: string;
   // document_text_vectors: any;
   document_text_by_page: string[];
+  document_text_by_minute: string[];
   // document_text_vectors_by_page: any;
   // document_text_vectors_by_paragraph: any;
   // document_text_vectors_by_sentence: any;

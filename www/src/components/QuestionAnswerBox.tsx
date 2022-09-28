@@ -4,7 +4,9 @@ import styled from "styled-components";
 
 type TAnswerLocation = {
   filename: string;
+  format?: "pdf" | "audio";
   page_number: number;
+  minute_number: number;
   score: number;
   text: string;
 };
@@ -86,7 +88,7 @@ export const QuestionAnswerBox = () => {
                   {answer?.locations?.map((l) => (
                     <li>
                       <b>
-                        {l.filename}, page {l.page_number}:
+                        {l.filename}, {l.format === "pdf" ? "page" : "minute"} {l.page_number || l.minute_number}:
                       </b>
                       <br />
                       <span>{l.text}</span>

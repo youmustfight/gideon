@@ -9,7 +9,13 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
   return (
     <div className="discovery-box__document">
       <small>
-        {document.filename ?? "n/a"} ({document?.document_text_by_page?.length} pages)
+        {document.filename ?? "n/a"} (
+        {document?.format === "audio" ? (
+          <>{document?.document_text_by_minute?.length} minutes</>
+        ) : (
+          <>{document?.document_text_by_page?.length} pages</>
+        )}
+        )
       </small>
       <p>{document.document_type}</p>
       {viewMore ? (
@@ -42,6 +48,20 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
 export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments();
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
+  const onSubmitFile = (type) => (e) => {
+    e.preventDefault();
+    if (e.target.file?.files?.[0]) {
+      // --- setup form data/submit
+      const formData = new FormData();
+      formData.append("file", e.target.file.files[0]);
+      axios.post(`http://localhost:3000/documents/index/${type}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      // --- clear file in input if successful
+      e.target.file.value = "";
+      setLastUploadedFileAt(new Date());
+    }
+  };
 
   // RENDER
   return (
@@ -61,25 +81,16 @@ export const DiscoveryBox = () => {
         ) : null}
       </ul>
 
-      <form
-        className="discovery-box__file-uploader"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (e.target.file?.files?.[0]) {
-            // --- setup form data/submit
-            const formData = new FormData();
-            formData.append("file", e.target.file.files[0]);
-            axios.post("http://localhost:3000/documents/index", formData, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
-            // --- clear file in input if successful
-            e.target.file.value = "";
-            setLastUploadedFileAt(new Date());
-          }
-        }}
-      >
+      {/* PDF */}
+      <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
         <input type="file" name="file" accept=".pdf" />
         <button type="submit">Upload PDF</button>
+      </form>
+
+      {/* AUDIO */}
+      <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
+        <input type="file" name="file" accept=".m4a,.mp3" />
+        <button type="submit">Upload Audio</button>
       </form>
     </StyledDiscoveryBox>
   );
