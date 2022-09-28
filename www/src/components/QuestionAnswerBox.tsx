@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 
 type TAnswerLocation = {
@@ -88,7 +89,14 @@ export const QuestionAnswerBox = () => {
                   {answer?.locations?.map((l) => (
                     <li>
                       <b>
-                        {l.filename}, {l.format === "pdf" ? "page" : "minute"} {l.page_number || l.minute_number}:
+                        <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
+                        {l.format === "pdf" ? (
+                          <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>page {l.page_number}</Link>
+                        ) : (
+                          <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
+                            minute {l.minute_number}
+                          </Link>
+                        )}{" "}
                       </b>
                       <br />
                       <span>{l.text}</span>

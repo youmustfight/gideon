@@ -1,6 +1,7 @@
 import axios from "axios";
-import { isAfter, isBefore, subSeconds } from "date-fns";
+import { isBefore, subSeconds } from "date-fns";
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
 
@@ -9,7 +10,7 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
   return (
     <div className="discovery-box__document">
       <small>
-        {document.filename ?? "n/a"} (
+        <Link to={`/document/${document.filename}`}>{document.filename ?? "n/a"}</Link> (
         {document?.format === "audio" ? (
           <>{document?.document_text_by_minute?.length} minutes</>
         ) : (

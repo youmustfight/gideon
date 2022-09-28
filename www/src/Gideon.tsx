@@ -1,55 +1,30 @@
-import { flatten } from "lodash";
-import React, { useState } from "react";
+import React from "react";
+import { Route, Routes } from "react-router";
 import styled from "styled-components";
-import { DiscoveryBox } from "./components/DiscoveryBox";
 import { QuestionAnswerBox } from "./components/QuestionAnswerBox";
-import { useDocuments } from "./data/useDocuments";
+import { GideonCaseView } from "./GideonCaseView";
+import { GideonDocumentView } from "./GideonDocumentView";
 
 export const Gideon: React.FC = () => {
-  const { data: documents = [] } = useDocuments();
-  const [selectedPerson, setSelectedPerson] = useState();
-  const [selectedDoc, setSelectedDoc] = useState<string>();
-
   // RENDER
   return (
     <StyledGideon>
+      <div style={{ width: "100%", background: "gray", textAlign: "center", padding: "4px" }}>
+        TODO: multi-player case bar
+      </div>
+
       <section>
         <QuestionAnswerBox />
       </section>
 
-      {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-      <div className="section-lead">
-        <h4>Discovery, Evidence, Exhibits</h4>
-      </div>
-      <section>
-        <DiscoveryBox documents={documents} />
-      </section>
+      <hr />
 
-      {/* PEOPLE */}
-      <div className="section-lead">
-        <h4>People</h4>
-      </div>
-      <section className="section-people">
-        {flatten(documents.map((f) => Object.keys(f.people ?? {}))).map((p) => (
-          <span key={p} className="person-pill" onClick={() => setSelectedPerson(selectedPerson === p ? null : p)}>
-            {p}
-          </span>
-        ))}
-      </section>
-
-      {/* TIMELINE */}
-      <div className="section-lead">
-        <h4>Events, Timelines</h4>
-      </div>
-      <section>
-        <div>
-          <ul>
-            {flatten(documents.map((f) => f.event_timeline ?? [])).map((str) => (
-              <li key={str}>{str}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <Routes>
+        {/* Case View */}
+        <Route path="/" element={<GideonCaseView />} />
+        {/* Document View */}
+        <Route path="/document/:filename" element={<GideonDocumentView />} />
+      </Routes>
     </StyledGideon>
   );
 };
