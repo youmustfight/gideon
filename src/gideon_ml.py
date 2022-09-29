@@ -16,6 +16,14 @@ engine_edit = 'text-davinci-edit-001' # free atm because its in beta
 engine_embedding = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
 temperature_default = 0
 
+def gpt_vars():
+    return {
+        "engine_completion": engine_completion,
+        "engine_edit": engine_edit,
+        "engine_embedding": engine_embedding,
+        "temperature_default": temperature_default
+    }
+
 # FUNCTIONS
 def gpt_completion(prompt, engine=engine_completion, temperature=temperature_default, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 2

@@ -1,46 +1,35 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { useHighlights } from "../data/useHighlights";
+import { TDocumentHighlight, useHighlights } from "../data/useHighlights";
 
-export const HighlightsBox: React.FC = ({ filename }: { filename?: string }) => {
-  const { data } = useHighlights();
-  const highlights = data?.filter((hl) => {
-    if (filename) return hl.filename === filename;
-    return true;
-  });
-
-  // RENDER
+export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight }) => {
+  const hl = props.highlight;
   return (
-    <StyledHighlightsBox>
-      {highlights?.map((hl) => (
-        <div className="highlight">
-          <div className="highlight__header">
-            <small>
-              <Link to={`/document/${hl.filename}#sentence-index-${hl.document_text_vectors_by_sentence_start_index}`}>
-                {hl.filename}
-              </Link>
-            </small>
-            <small>by: {hl.user}</small>
-          </div>
-          <div className="highlight__note">
-            <p>{hl.note_text}</p>
-          </div>
-          <div className="highlight__highlight">
-            <p>"...{hl.highlight_text}..."</p>
-          </div>
-        </div>
-      ))}
-    </StyledHighlightsBox>
+    <StyledHighlightBox>
+      <div className="highlight__header">
+        <small>
+          <Link to={`/document/${hl.filename}#sentence-index-${hl.document_text_vectors_by_sentence_start_index}`}>
+            {hl.filename}
+          </Link>
+        </small>
+        <small>by: {hl.user}</small>
+      </div>
+      <div className="highlight__note">
+        <p>{hl.note_text}</p>
+      </div>
+      <div className="highlight__highlight">
+        <p>"...{hl.highlight_text}..."</p>
+        <button>Search for Text/Testimony/Evidence Like This</button>
+      </div>
+    </StyledHighlightBox>
   );
 };
 
-const StyledHighlightsBox = styled.div`
-  .highlight {
-    background: #ffffcf;
-    border-radius: 4px;
-    margin-bottom: 12px;
-  }
+const StyledHighlightBox = styled.div`
+  background: #ffffcf;
+  border-radius: 4px;
+  margin-bottom: 12px;
   .highlight__header {
     display: flex;
     justify-content: space-between;
@@ -56,5 +45,28 @@ const StyledHighlightsBox = styled.div`
     padding: 12px;
     font-size: 10px;
     font-style: italic;
+    button {
+      font-size: 10px;
+      width: 100%;
+      margin-top: 4px;
+    }
   }
 `;
+
+export const HighlightsBox: React.FC = ({ filename }: { filename?: string }) => {
+  const { data } = useHighlights();
+  const highlights = data?.filter((hl) => {
+    if (filename) return hl.filename === filename;
+    return true;
+  });
+  // RENDER
+  return (
+    <StyledHighlightsBox>
+      {highlights?.map((hl) => (
+        <HighlightBox highlight={hl} />
+      ))}
+    </StyledHighlightsBox>
+  );
+};
+
+const StyledHighlightsBox = styled.div``;

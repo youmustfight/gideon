@@ -10,6 +10,10 @@ export type TDocumentHighlight = {
   highlight_text_vector?: number[];
   note_text: string;
   note_text_vector?: number[];
+  // --- appended when searching/similaritiy
+  highlight_score?: number;
+  note_score?: number;
+  score?: number;
 };
 
 // Filters for user via forUser
@@ -18,6 +22,6 @@ const reqHighlightsGet = async (): Promise<TDocumentHighlight[]> =>
 
 export const useHighlights = () => {
   return useQuery<TDocumentHighlight[]>(["highlights"], async () => reqHighlightsGet(), {
-    refetchInterval: 1000 * 4,
+    refetchInterval: 1000 * 10,
   });
 };

@@ -1,7 +1,11 @@
 import axios from "axios";
+import { intersection } from "lodash";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+import { useTeamStore } from "../data/TeamStore";
+import { useHighlights } from "../data/useHighlights";
+import { HighlightBox } from "./HighlightsBox";
 
 type TAnswerLocation = {
   filename: string;
@@ -13,31 +17,84 @@ type TAnswerLocation = {
 };
 
 export const QuestionAnswerBox = () => {
-  // SETUP
-  const [answerQuestion, setAnswerQuestion] = useState("");
-  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
+  const { data: highlights = [] } = useHighlights();
+  const { users } = useTeamStore();
+  // --- extras
+  const [isShowingExtras, setIsShowingExtras] = useState(false);
+  // --- answers state
   const [answer, setAnswer] = useState<{ answer?: string; locations?: TAnswerLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
-  // --- helpers
+  // --- q1 : Ask Question
+  const [answerQuestion, setAnswerQuestion] = useState("");
   const handleQuestion = (e) => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/question-answer", { question: answerQuestion, index_type: "discovery" })
+      .post("http://localhost:3000/queries/question-answer", { question: answerQuestion, index_type: "discovery" })
       .then((res) => {
         setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
       });
   };
+  // --- q2 : Search for Detail
+  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
   const handleSearchForPage = (e) => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/question-info-location", { question: infoLocationQuestion, index_type: "discovery" })
+      .post("http://localhost:3000/queries/question-info-location", {
+        question: infoLocationQuestion,
+        index_type: "discovery",
+      })
       .then((res) => {
         setAnswer({ locations: res.data.locations });
+        setIsAnswerPending(false);
+      });
+  };
+  // --- q3 : Search Highlights
+  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
+  const handleHighlightSearch = (e) => {
+    e.preventDefault();
+    setAnswer(null);
+    setIsAnswerPending(true);
+    return axios
+      .post("http://localhost:3000/queries/highlights-query", {
+        query: highlightSearchQuery,
+      })
+      .then((res) => {
+        setAnswer({ highlights: res.data.highlights });
+        setIsAnswerPending(false);
+      });
+  };
+  // --- q4 : Summarize Laywer
+  const [userToSummarize, setUserToSummarize] = useState("");
+  const handleUserSummarizing = () => {
+    setAnswer(null);
+    setIsAnswerPending(true);
+    return axios
+      .post("http://localhost:3000/queries/summarize-user", {
+        user: userToSummarize,
+      })
+      .then((res) => {
+        setAnswer({ answer: res.data.answer });
+        setIsAnswerPending(false);
+      });
+  };
+  // --- q5 : Contrast Laywers
+  const [userOneToContrast, setUserOneToContrast] = useState("");
+  const [userTwoToContrast, setUserTwoToContrast] = useState("");
+  const handleUserContrasting = () => {
+    setAnswer(null);
+    setIsAnswerPending(true);
+    return axios
+      .post("http://localhost:3000/queries/contrast-users", {
+        user_one: userOneToContrast,
+        user_two: userTwoToContrast,
+      })
+      .then((res) => {
+        setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
       });
   };
@@ -56,7 +113,7 @@ export const QuestionAnswerBox = () => {
       </form>
       <form className="question-box" onSubmit={handleSearchForPage}>
         <label>
-          <span>Get Detail Location</span>
+          <span>Search for Detail</span>
           <input
             value={infoLocationQuestion}
             onChange={(e) => setInfoLocationQuestion(e.target.value)}
@@ -67,45 +124,117 @@ export const QuestionAnswerBox = () => {
           Ask
         </button>
       </form>
+      {highlights?.length > 0 ? (
+        <>
+          <form className="question-box" onSubmit={handleHighlightSearch}>
+            <label>
+              <span>Search Highlights</span>
+              <input value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
+            </label>
+            <button type="submit" disabled={isAnswerPending || !(highlightSearchQuery?.length > 0)}>
+              Ask
+            </button>
+          </form>
+          {isShowingExtras ? (
+            <>
+              <div className="question-box">
+                <label>
+                  <span>Summarize Laywer</span>
+                  <select value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
+                    <option value="">----</option>
+                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+                      <option key={user}>{user}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  disabled={isAnswerPending || !(userToSummarize?.length > 0)}
+                  onClick={handleUserSummarizing}
+                >
+                  Summarize
+                </button>
+              </div>
+              <div className="question-box">
+                <label>
+                  <span>Contrast Laywers</span>
+                  <select value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
+                    <option value="">----</option>
+                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+                      <option key={user}>{user}</option>
+                    ))}
+                  </select>
+                  <select value={userTwoToContrast} onChange={(e) => setUserTwoToContrast(e.target.value)}>
+                    <option value="">----</option>
+                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+                      <option key={user}>{user}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}
+                  onClick={handleUserContrasting}
+                >
+                  Contrast
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: "8px", marginTop: "6px", textAlign: "center", width: "100%" }}>
+              <u onClick={() => setIsShowingExtras(true)}>
+                <small>+ Extras</small>
+              </u>
+            </div>
+          )}
+        </>
+      ) : null}
+
       {(isAnswerPending || answer != null) && (
         <div className="answer">
           {!!answer ? (
             <>
+              {/* TEXT ANSWER */}
               {answer?.answer ? (
                 <p>
                   <u>ANSWER:</u> {answer.answer}
                 </p>
               ) : null}
+              {/* LOCATIONS */}
               {answer?.locations ? (
-                <>
-                  <p>
-                    <u>FOUND IN:</u>
-                  </p>
-                  <ul>
-                    {answer?.locations?.map((l) => (
-                      <li>
-                        <b>
-                          <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
-                          {l.format === "pdf" ? (
-                            <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>
-                              page {l.page_number}
-                            </Link>
-                          ) : (
-                            <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
-                              minute {l.minute_number}
-                            </Link>
-                          )}{" "}
-                        </b>
-                        <br />
-                        <span>"...{l.text}..."</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                <ul>
+                  {answer?.locations?.map((l) => (
+                    <li>
+                      <b>
+                        <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
+                        {l.format === "pdf" ? (
+                          <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>page {l.page_number}</Link>
+                        ) : (
+                          <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
+                            minute {l.minute_number}
+                          </Link>
+                        )}{" "}
+                      </b>
+                      <br />
+                      <span>"...{l.text}..."</span>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
+              {/* HIGHLIGHTS */}
+              {answer?.highlights ? (
+                <ul>
+                  {answer?.highlights?.map((highlight) => (
+                    <HighlightBox highlight={highlight} />
+                  ))}
+                </ul>
+              ) : null}
+              {/* CLEAR RESULTS */}
+              <button className="reset-answer" onClick={() => setAnswer(null)}>
+                Clear Results
+              </button>
             </>
           ) : null}
-          {isAnswerPending ? <p className="searching"></p> : null}
         </div>
       )}
     </StyledQuestionAnswerBox>
@@ -119,7 +248,8 @@ const StyledQuestionAnswerBox = styled.div`
     display: flex;
     width: 100%;
     label,
-    input {
+    input,
+    select {
       width: 100%;
       display: flex;
       flex-grow: 1;
@@ -146,5 +276,10 @@ const StyledQuestionAnswerBox = styled.div`
     b {
       font-weight: 700;
     }
+  }
+  .reset-answer {
+    width: 100%;
+    font-size: 11px;
+    margin-top: 6px;
   }
 `;

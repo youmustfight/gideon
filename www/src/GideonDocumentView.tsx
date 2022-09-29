@@ -242,26 +242,24 @@ export const GideonDocumentView = () => {
       {/* SUMMARY */}
       <div className="section-lead">
         <h4>
-          <Link to="/">🔙</Link> <span style={{ opacity: "0.3" }}>{document?.filename}</span>
+          <Link to="/">
+            <button>←</button>
+          </Link>{" "}
+          <span>{document?.filename}</span>
         </h4>
+        <br />
+        <h2>{document?.document_type}</h2>
         {document.format === "audio" ? (
           <div>
             <audio src={temporaryStaticFileUrls[document.filename] ?? ""} controls type="audio/mpeg"></audio>
           </div>
         ) : null}
-        <h2>{document?.document_type}</h2>
       </div>
       <section>
         <DocumentViewSummary document={document} />
-      </section>
-
-      {/* PEOPLE */}
-      {document.mentions_people?.length > 0 ? (
-        <>
-          <div className="section-lead">
-            <h4>People</h4>
-          </div>
-          <section className="section-people">
+        {document.mentions_people?.length > 0 ? (
+          <>
+            <small style={{ fontSize: "12px", fontWeight: "900" }}>Mentioned People</small>
             <ul>
               {document.mentions_people?.map((p) => (
                 <li key={p} className="person-pill">
@@ -269,27 +267,19 @@ export const GideonDocumentView = () => {
                 </li>
               ))}
             </ul>
-          </section>
-        </>
-      ) : null}
-
-      {/* TIMELINE */}
-      {document.event_timeline?.length > 0 ? (
-        <>
-          <div className="section-lead">
-            <h4>Events, Timelines</h4>
-          </div>
-          <section>
-            <div>
-              <ul>
-                {document.event_timeline.map((str) => (
-                  <li key={str}>{str}</li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        </>
-      ) : null}
+          </>
+        ) : null}
+        {document.event_timeline?.length > 0 ? (
+          <>
+            <small style={{ fontSize: "12px", fontWeight: "900" }}>Mentioned Timeline/Events</small>
+            <ul>
+              {document.event_timeline.map((str) => (
+                <li key={str}>{str}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </section>
 
       {/* HIGHLIGHTS */}
       {hasHighlights ? (

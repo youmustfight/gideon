@@ -1,6 +1,6 @@
 import axios from "axios";
 import { isBefore, subSeconds } from "date-fns";
-import React, { useState } from "react";
+import React, { useState, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
@@ -49,6 +49,7 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
 export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments();
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
+  const [isAddingFile, setIsAddingFile] = useState(false);
   const onSubmitFile = (type) => (e) => {
     e.preventDefault();
     if (e.target.file?.files?.[0]) {
@@ -82,17 +83,25 @@ export const DiscoveryBox = () => {
         ) : null}
       </ul>
 
-      {/* PDF */}
-      <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
-        <input type="file" name="file" accept=".pdf" />
-        <button type="submit">Upload PDF</button>
-      </form>
+      {isAddingFile ? (
+        <>
+          {/* PDF */}
+          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
+            <input type="file" name="file" accept=".pdf" />
+            <button type="submit">Upload PDF</button>
+          </form>
 
-      {/* AUDIO */}
-      <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
-        <input type="file" name="file" accept=".m4a,.mp3" />
-        <button type="submit">Upload Audio</button>
-      </form>
+          {/* AUDIO */}
+          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
+            <input type="file" name="file" accept=".m4a,.mp3" />
+            <button type="submit">Upload Audio</button>
+          </form>
+        </>
+      ) : (
+        <button className="add-files-btn" onClick={() => setIsAddingFile(true)}>
+          + PDF, Audio, Video
+        </button>
+      )}
     </StyledDiscoveryBox>
   );
 };
@@ -145,5 +154,10 @@ const StyledDiscoveryBox = styled.div`
     display: flex;
     justify-content: space-between;
     margin-top: 16px;
+  }
+  .add-files-btn {
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
   }
 `;

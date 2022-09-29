@@ -5,8 +5,11 @@ from gideon_utils import get_file_path, get_documents_json, get_highlights_json,
 from index_audio import index_audio
 from index_highlight import index_highlight
 from index_pdf import index_pdf
-from question_answer import question_answer
-from search_for_location import search_for_location
+from queries.contrast_two_user_statements import contrast_two_user_statements
+from queries.question_answer import question_answer
+from queries.search_for_location import search_for_location
+from queries.search_highlights import search_highlights
+from queries.summarize_user import summarize_user
 
 app = Flask(__name__)
 CORS(app)
@@ -79,18 +82,40 @@ def endpoint_highlight_create():
 
 # QUERIES
 
-@app.route('/question-answer', methods = ['POST'])
+@app.route('/queries/question-answer', methods = ['POST'])
 def endpoint_question_answer():
     json = request.get_json()
     answer = question_answer(json['question'], json['index_type'])
     return jsonify({ "success": True, "answer": answer })
 
-@app.route('/question-info-location', methods = ['POST'])
+@app.route('/queries/question-info-location', methods = ['POST'])
 def endpoint_question_info_location():
     json = request.get_json()
     locations = search_for_location(json['question'])
     return jsonify({ "success": True, "locations": locations })
 
+@app.route('/queries/highlights-query', methods = ['POST'])
+def endpoint_highlights_location():
+    json = request.get_json()
+    highlights = search_highlights(json['query'])
+    return jsonify({ "success": True, "highlights": highlights })
+
+@app.route('/queries/summarize-user', methods = ['POST'])
+def endpoint_summarize_user():
+    json = request.get_json()
+    user = json['user']
+    answer = summarize_user(user)
+    return jsonify({ "success": True, "answer": answer })
+
+@app.route('/queries/contrast-users', methods = ['POST'])
+def endpoint_contrast_users():
+    json = request.get_json()
+    user_one = json['user_one']
+    statement_one = summarize_user(user_one)
+    user_two = json['user_two']
+    statement_two = summarize_user(user_two)
+    answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
+    return jsonify({ "success": True, "answer": answer })
 
 # RUN
 app.run(host='0.0.0.0', port=3000)

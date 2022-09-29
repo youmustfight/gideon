@@ -63,8 +63,9 @@ def search_similar_file_text_vectors(text, index_type, count=5):
     # --- score vectors
     for tv in text_vectors:
         score = similarity(vector, tv['vector'])
-        # --- skip low scores
-        if score > 0.2:
+        # --- skip low scores (testing higher lower bound so we don't answer questions about pie)
+        # if score > 0.2:
+        if score > 0.5:
             text_vectors_scored.append({ 'score': score , 'text': tv['text'] })
     # --- bad scores/query
     if len(text_vectors_scored) == 0:

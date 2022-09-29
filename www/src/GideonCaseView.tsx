@@ -40,4 +40,7 @@ const StyledGideonCaseView = styled.div`
     font-size: 11px;
     opacity: 0.5;
   }
+  h4 {
+    opacity: 0.8;
+  }
 `;
