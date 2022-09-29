@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useMatch } from "react-router-dom";
 import styled from "styled-components";
-import { TDocument, useDocuments } from "./data/useDocuments";
+import { HighlightsBox } from "./components/HighlightsBox";
+import { useHighlightStore } from "./data/HighlightStore";
+import { useTeamStore } from "./data/TeamStore";
+import { TDocument, TDocumentSentenceTextVector, useDocuments } from "./data/useDocuments";
+import { useHighlights } from "./data/useHighlights";
 
 // HACK: Urls for files I chucked in notion if we want to simulate files
 const temporaryStaticFileUrls = {
@@ -11,7 +15,6 @@ const temporaryStaticFileUrls = {
 
 const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   const [isFullyVisible, setIsFullyVisible] = useState(false);
-
   return (
     <StyledDocumentViewSummary>
       <p>
@@ -31,10 +34,121 @@ const StyledDocumentViewSummary = styled.div`
   }
 `;
 
+const SentenceTextVector = ({
+  document,
+  textVector,
+  textVectorIndex,
+}: {
+  document: TDocument;
+  textVector: TDocumentSentenceTextVector;
+  textVectorIndex: number;
+}) => {
+  const { currentUser } = useTeamStore();
+  const { data: highlights } = useHighlights();
+  // SETUP
+  const [isHovering, setIsHovering] = useState(false);
+  const {
+    sentenceEndIndex,
+    sentenceStartIndex,
+    setSentenceStartIndex,
+    setSentenceEndIndex,
+    hightlightNoteText,
+    setHightlightNoteText,
+    saveHighlightAndOpinion,
+  } = useHighlightStore();
+  const isHighlighted = sentenceEndIndex === textVectorIndex || sentenceStartIndex === textVectorIndex;
+  const isBetweenHighlighted =
+    sentenceEndIndex != null &&
+    sentenceStartIndex != null &&
+    textVectorIndex < sentenceEndIndex &&
+    textVectorIndex > sentenceStartIndex;
+  const wasHighlighted = highlights?.some(
+    (hl) =>
+      hl.filename === document.filename &&
+      textVectorIndex >= hl.document_text_vectors_by_sentence_start_index &&
+      textVectorIndex <= hl.document_text_vectors_by_sentence_end_index
+  );
+  // RENDER
+  return (
+    <>
+      <StyledSentenceTextVector
+        id={`sentence-index-${textVectorIndex}`}
+        className={`${isHovering ? "hovering" : ""} ${wasHighlighted ? "was-highlighted" : ""} ${
+          isHighlighted || isBetweenHighlighted ? "highlighted" : ""
+        }`}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        {textVector.text}
+        {"."}
+        {isHovering ? (
+          <>
+            <button onClick={() => setSentenceStartIndex(textVectorIndex)}>🖊→</button>
+            <button onClick={() => setSentenceEndIndex(textVectorIndex)}>←🖊</button>
+          </>
+        ) : null}
+      </StyledSentenceTextVector>
+      {sentenceEndIndex === textVectorIndex ? (
+        <StyledSentenceTextVectorHighlightForm
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (sentenceStartIndex != null && sentenceEndIndex != null) {
+              saveHighlightAndOpinion({
+                filename: document.filename,
+                user: currentUser,
+                document_text_vectors_by_sentence_start_index: sentenceStartIndex,
+                document_text_vectors_by_sentence_end_index: sentenceEndIndex,
+                highlight_text: document.document_text_vectors_by_sentence
+                  .slice(sentenceStartIndex, sentenceEndIndex)
+                  .map((tv) => tv.text)
+                  .join("."),
+                note_text: hightlightNoteText,
+              });
+            }
+          }}
+        >
+          <textarea value={hightlightNoteText} onChange={(e) => setHightlightNoteText(e.target.value)}></textarea>
+          <button type="submit" disabled={hightlightNoteText?.length === 0}>
+            Save Highlight & Opinion
+          </button>
+        </StyledSentenceTextVectorHighlightForm>
+      ) : null}
+    </>
+  );
+};
+
+const StyledSentenceTextVectorHighlightForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  button {
+    font-size: 12px;
+  }
+`;
+
+const StyledSentenceTextVector = styled.span`
+  button {
+    font-size: 6px;
+  }
+  &.hovering {
+    text-decoration: underline;
+  }
+  &.was-highlighted {
+    background: #ffffcf;
+  }
+  &.highlighted {
+    background: yellow;
+  }
+`;
+
 const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
-  console.log(doc);
   const { hash } = useLocation();
+  const { setSentenceStartIndex, setSentenceEndIndex } = useHighlightStore();
   // ON MOUNT
+  useEffect(() => {
+    // --- reset sentence highlight selections
+    setSentenceStartIndex(null);
+    setSentenceEndIndex(null);
+  }, []);
   useEffect(() => {
     // --- scroll if we had an #anchor link param
     setTimeout(() => {
@@ -44,19 +158,30 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
     });
   }, [hash]);
+
   // RENDER
   return (
     <StyledDocumentViewTranscript>
-      {doc.document_text_by_page?.map((pageText, index) => (
+      {doc.document_text_by_page?.map((pageText, pageIndex) => (
         <div
-          id={`source-text-${index + 1}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === index + 1 ? "active" : ""}
+          id={`source-text-${pageIndex + 1}`}
+          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === pageIndex + 1 ? "active" : ""}
         >
           <div className="document-transcript__header">
-            <h6>Page #{index + 1}:</h6>
+            <h6>Page #{pageIndex + 1}:</h6>
             <hr />
           </div>
-          <p>{pageText}</p>
+          {/* <p>{doc.document_text_by_minute}</p> */}
+          <p>
+            {doc.document_text_vectors_by_sentence.map((tv, tvIndex) => (
+              <>
+                {/* DONT FILTER BC WE NEED TO PRESERVE TV ARR INDEX FOR SELECTING ACROSS PAGES */}
+                {tv.page_number === pageIndex + 1 ? (
+                  <SentenceTextVector document={doc} textVector={tv} textVectorIndex={tvIndex} />
+                ) : null}
+              </>
+            ))}
+          </p>
         </div>
       ))}
       {doc.document_text_by_minute?.map((minuteText, index) => (
@@ -92,6 +217,7 @@ const StyledDocumentViewTranscript = styled.div`
     }
     p {
       font-size: 13px;
+      line-height: 115%;
     }
     .document-transcript__header {
       display: flex;
@@ -104,10 +230,11 @@ const StyledDocumentViewTranscript = styled.div`
 `;
 
 export const GideonDocumentView = () => {
-  // SETUP
   const paramFilename = useMatch("/document/:filename")?.params?.["filename"];
+  const { data: highlights = [] } = useHighlights();
   const { data: documents = [] } = useDocuments();
   const document = documents.find((d) => d.filename === paramFilename);
+  const hasHighlights = highlights.some((hl) => hl.filename === paramFilename);
 
   // RENDER
   return !document ? null : (
@@ -117,13 +244,11 @@ export const GideonDocumentView = () => {
         <h4>
           <Link to="/">🔙</Link> <span style={{ opacity: "0.3" }}>{document?.filename}</span>
         </h4>
-        {document.format === "pdf" ? (
-          <a href={temporaryStaticFileUrls[document.filename] ?? ""}>Download</a>
-        ) : (
+        {document.format === "audio" ? (
           <div>
             <audio src={temporaryStaticFileUrls[document.filename] ?? ""} controls type="audio/mpeg"></audio>
           </div>
-        )}
+        ) : null}
         <h2>{document?.document_type}</h2>
       </div>
       <section>
@@ -162,6 +287,18 @@ export const GideonDocumentView = () => {
                 ))}
               </ul>
             </div>
+          </section>
+        </>
+      ) : null}
+
+      {/* HIGHLIGHTS */}
+      {hasHighlights ? (
+        <>
+          <div className="section-lead">
+            <h4>Highlights</h4>
+          </div>
+          <section>
+            <HighlightsBox filename={document.filename} />
           </section>
         </>
       ) : null}

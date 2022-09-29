@@ -26,7 +26,6 @@ export const QuestionAnswerBox = () => {
     return axios
       .post("http://localhost:3000/question-answer", { question: answerQuestion, index_type: "discovery" })
       .then((res) => {
-        console.log(res);
         setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
       });
@@ -68,43 +67,47 @@ export const QuestionAnswerBox = () => {
           Ask
         </button>
       </form>
-      <div className="answer">
-        {!!answer ? (
-          <>
-            {answer?.answer ? (
-              <p>
-                <u>ANSWER:</u> {answer.answer}
-              </p>
-            ) : null}
-            {answer?.locations ? (
-              <>
+      {(isAnswerPending || answer != null) && (
+        <div className="answer">
+          {!!answer ? (
+            <>
+              {answer?.answer ? (
                 <p>
-                  <u>FOUND IN:</u>
+                  <u>ANSWER:</u> {answer.answer}
                 </p>
-                <ul>
-                  {answer?.locations?.map((l) => (
-                    <li>
-                      <b>
-                        <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
-                        {l.format === "pdf" ? (
-                          <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>page {l.page_number}</Link>
-                        ) : (
-                          <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
-                            minute {l.minute_number}
-                          </Link>
-                        )}{" "}
-                      </b>
-                      <br />
-                      <span>"...{l.text}..."</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </>
-        ) : null}
-        {isAnswerPending ? <p className="searching"></p> : null}
-      </div>
+              ) : null}
+              {answer?.locations ? (
+                <>
+                  <p>
+                    <u>FOUND IN:</u>
+                  </p>
+                  <ul>
+                    {answer?.locations?.map((l) => (
+                      <li>
+                        <b>
+                          <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
+                          {l.format === "pdf" ? (
+                            <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>
+                              page {l.page_number}
+                            </Link>
+                          ) : (
+                            <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
+                              minute {l.minute_number}
+                            </Link>
+                          )}{" "}
+                        </b>
+                        <br />
+                        <span>"...{l.text}..."</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </>
+          ) : null}
+          {isAnswerPending ? <p className="searching"></p> : null}
+        </div>
+      )}
     </StyledQuestionAnswerBox>
   );
 };
@@ -133,6 +136,10 @@ const StyledQuestionAnswerBox = styled.div`
     margin-top: 8px;
     padding-top: 8px;
     font-size: 13px;
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
     li {
       margin-top: 4px;
     }

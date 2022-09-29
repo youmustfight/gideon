@@ -34,10 +34,20 @@ export const Gideon: React.FC = () => {
 const StyledGideon = styled.div`
   min-height: 100vh;
   background: #f1f4f8;
+  a,
+  a:active a:visited,
+  a:hover {
+    color: blue !important;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
   .section-lead {
     width: 100%;
-    text-align: center;
-    margin: 4px 0;
+    text-align: left;
+    padding: 0 16px;
+    margin: 4px 20px;
     margin-top: 32px;
     h2 {
       font-size: 20px;

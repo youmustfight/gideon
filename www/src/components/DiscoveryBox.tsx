@@ -105,7 +105,6 @@ const StyledDiscoveryBox = styled.div`
   }
   small {
     margin: 4px 0;
-    opacity: 0.5;
     font-size: 12px;
   }
   & > ul {
@@ -121,7 +120,8 @@ const StyledDiscoveryBox = styled.div`
   .discovery-box__document {
     background: white;
     border-radius: 4px;
-    padding: 4px 12px 6px;
+    padding: 8px 12px 8px;
+    margin: 4px 0;
     &.processing {
       opacity: 0.5;
       text-align: center;

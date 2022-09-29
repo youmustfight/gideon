@@ -1,13 +1,13 @@
 import createVanilla from "zustand/vanilla";
 import create from "zustand";
 
-type TOutlineStore = {
+type TTeamStore = {
   users: string[];
   currentUser: string;
   setCurrentUser: (currentUser: string) => void;
 };
 
-export const teamStore = createVanilla<TOutlineStore>((set, get) => ({
+export const teamStore = createVanilla<TTeamStore>((set, get) => ({
   users: ["anna", "jaquelin", "eugene", "mark"],
   currentUser: "mark",
   setCurrentUser: (currentUser) => set({ currentUser }),

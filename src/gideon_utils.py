@@ -22,6 +22,13 @@ def get_documents_json():
         return json.load(open(get_file_path('../indexed/{json_filename}'.format(json_filename=json_filename))))
     return list(map(json_mapper, json_files_paths))
 
+def get_highlights_json():
+    path_to_json = get_file_path("../indexed/highlights")
+    json_files_paths = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]
+    def json_mapper(json_filename):
+        return json.load(open(get_file_path('../indexed/highlights/{json_filename}'.format(json_filename=json_filename))))
+    return list(map(json_mapper, json_files_paths))
+
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as infile:
         return infile.read()

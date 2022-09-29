@@ -1,6 +1,8 @@
 import axios from "axios";
 import { useQuery } from "react-query";
 
+export type TDocumentSentenceTextVector = { page_number: number; text: string; vector: number[] };
+
 export type TDocument = {
   document_summary: string;
   document_text: string;
@@ -9,7 +11,7 @@ export type TDocument = {
   document_text_by_minute: string[];
   // document_text_vectors_by_page: any;
   // document_text_vectors_by_paragraph: any;
-  // document_text_vectors_by_sentence: any;
+  document_text_vectors_by_sentence: TDocumentSentenceTextVector[];
   document_type: string;
   event_timeline: string[];
   filename: string;
@@ -28,6 +30,6 @@ const reqDocumentsGet = async (): Promise<TDocument[]> =>
 
 export const useDocuments = () => {
   return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(), {
-    refetchInterval: 1000 * 10,
+    refetchInterval: 1000 * 15,
   });
 };

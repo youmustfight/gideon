@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from gideon_utils import get_file_path, get_documents_json, without_keys
+from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys
 from index_audio import index_audio
+from index_highlight import index_highlight
 from index_pdf import index_pdf
 from question_answer import question_answer
 from search_for_location import search_for_location
@@ -10,7 +11,9 @@ from search_for_location import search_for_location
 app = Flask(__name__)
 CORS(app)
 
-# ENDPOINTS
+
+# DOCUMENTS
+
 @app.route('/documents/indexed', methods = ['GET'])
 def endpoint_documents():
     def reduced_json(j):
@@ -25,6 +28,9 @@ def endpoint_documents():
     documents = get_documents_json()
     documents = list(map(reduced_json, documents)) # clear doc vectors
     return jsonify({ "success": True, "documents": documents })
+
+
+# DOCUMENT INDEXING
 
 @app.route('/documents/index/pdf', methods = ['POST'])
 def endpoint_documents_intake_pdf():
@@ -45,6 +51,33 @@ def endpoint_documents_intake_audio():
     index_audio(file.filename)
     # --- respond saying we got the file, but continue on w/ processing
     return jsonify({ "success": True })
+
+
+# HIGHLIGHTS
+
+@app.route('/highlights', methods = ['GET'])
+def endpoint_highlights():
+    highlights = get_highlights_json()
+    return jsonify({ "success": True, "highlights": highlights })
+
+@app.route('/highlights', methods = ['POST'])
+def endpoint_highlight_create():
+    json = request.get_json()
+    highlight = json['highlight']
+    # --- process highlight embedding + save
+    highlight = index_highlight(
+        filename=highlight['filename'],
+        user=highlight['user'],
+        document_text_vectors_by_sentence_start_index=highlight['document_text_vectors_by_sentence_start_index'],
+        document_text_vectors_by_sentence_end_index=highlight['document_text_vectors_by_sentence_end_index'],
+        highlight_text=highlight['highlight_text'],
+        note_text=highlight['note_text']
+    )
+    # --- respond
+    return jsonify({ "success": True })
+
+
+# QUERIES
 
 @app.route('/question-answer', methods = ['POST'])
 def endpoint_question_answer():

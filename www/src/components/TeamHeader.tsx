@@ -18,8 +18,7 @@ export const TeamHeader = () => {
 };
 
 const StyledTeamHeader = styled.div`
-  width: 100%;
-  background: blue;
+  background: black;
   text-align: center;
   padding: 6px 4px;
   .team-header__case-team {
@@ -37,7 +36,7 @@ const StyledTeamHeader = styled.div`
     color: white;
     &.active {
       background: white;
-      color: blue;
+      color: black;
     }
   }
 `;
