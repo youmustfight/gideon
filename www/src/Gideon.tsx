@@ -2,6 +2,7 @@ import React from "react";
 import { Route, Routes } from "react-router";
 import styled from "styled-components";
 import { QuestionAnswerBox } from "./components/QuestionAnswerBox";
+import { TeamHeader } from "./components/TeamHEader";
 import { GideonCaseView } from "./GideonCaseView";
 import { GideonDocumentView } from "./GideonDocumentView";
 
@@ -9,16 +10,17 @@ export const Gideon: React.FC = () => {
   // RENDER
   return (
     <StyledGideon>
-      <div style={{ width: "100%", background: "gray", textAlign: "center", padding: "4px" }}>
-        TODO: multi-player case bar
-      </div>
+      {/* USERS */}
+      <TeamHeader />
 
+      {/* QUESTION BOX */}
       <section>
         <QuestionAnswerBox />
       </section>
 
       <hr />
 
+      {/* CASE/DOCUMENT VIEWS */}
       <Routes>
         {/* Case View */}
         <Route path="/" element={<GideonCaseView />} />
@@ -37,9 +39,15 @@ const StyledGideon = styled.div`
     text-align: center;
     margin: 4px 0;
     margin-top: 32px;
+    h2 {
+      font-size: 20px;
+      font-weight: 900;
+      margin: 6px 0;
+    }
     h3,
     h4 {
       font-weight: 900;
+      margin: 6px 0;
     }
   }
   section {
@@ -53,6 +61,14 @@ const StyledGideon = styled.div`
     }
     &:last-of-type {
       margin-bottom: 0;
+    }
+    ul {
+      list-style-type: disc;
+      padding-left: 12px;
+      li {
+        font-size: 13px;
+        margin: 3px 0;
+      }
     }
   }
   .section-people {

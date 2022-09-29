@@ -19,7 +19,9 @@ def endpoint_documents():
             'document_text_vectors_by_minute',
             'document_text_vectors_by_paragraph',
             'document_text_vectors_by_page',
+            # 'document_text_vectors_by_sentence',
         ])
+        # Keep sentence vectors for frontend note tagging
     documents = get_documents_json()
     documents = list(map(reduced_json, documents)) # clear doc vectors
     return jsonify({ "success": True, "documents": documents })

@@ -2,7 +2,7 @@
   "name": "www",
   "version": "1.0.0",
   "scripts": {
-    "dev": "parcel serve src/index.html",
+    "dev": "parcel serve ./src/index.html",
     "build": "NODE_ENV=production parcel build src/index.html --public-url .",
     "watch": "parcel watch src/index.html"
   },

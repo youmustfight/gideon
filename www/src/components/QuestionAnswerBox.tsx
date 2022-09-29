@@ -49,13 +49,9 @@ export const QuestionAnswerBox = () => {
       <form className="question-box" onSubmit={handleQuestion}>
         <label>
           <span>Ask Question</span>
-          <input
-            value={answerQuestion}
-            onChange={(e) => setAnswerQuestion(e.target.value)}
-            disabled={isAnswerPending}
-          />
+          <input value={answerQuestion} onChange={(e) => setAnswerQuestion(e.target.value)} />
         </label>
-        <button type="submit" disabled={isAnswerPending}>
+        <button type="submit" disabled={isAnswerPending || !(answerQuestion?.length > 0)}>
           Ask
         </button>
       </form>
@@ -68,7 +64,7 @@ export const QuestionAnswerBox = () => {
             disabled={isAnswerPending}
           />
         </label>
-        <button type="submit" disabled={isAnswerPending}>
+        <button type="submit" disabled={isAnswerPending || !(infoLocationQuestion?.length > 0)}>
           Ask
         </button>
       </form>
@@ -99,7 +95,7 @@ export const QuestionAnswerBox = () => {
                         )}{" "}
                       </b>
                       <br />
-                      <span>{l.text}</span>
+                      <span>"...{l.text}..."</span>
                     </li>
                   ))}
                 </ul>

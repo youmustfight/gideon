@@ -108,6 +108,10 @@ const StyledDiscoveryBox = styled.div`
     opacity: 0.5;
     font-size: 12px;
   }
+  & > ul {
+    padding-left: 0 !important;
+    list-style-type: none !important;
+  }
   li {
     margin: 4px 0;
     & > div {

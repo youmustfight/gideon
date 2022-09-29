@@ -13,6 +13,7 @@ export type TDocument = {
   document_type: string;
   event_timeline: string[];
   filename: string;
+  format: "audio" | "pdf";
   index_type: string;
   mentions_cases_laws: string[];
   mentions_organizations: string[];
