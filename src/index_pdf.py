@@ -43,10 +43,16 @@ def index_pdf(filename, index_type):
         existing_data = json.load(open(output_filepath))
         document_text = existing_data['document_text']
         document_text_by_page = existing_data['document_text_by_page']
-        if len(existing_data['document_type']) > 0:
-            document_type = existing_data['document_type']
-        if len(existing_data['document_summary']) > 0:
-            document_summary = existing_data['document_summary']
+        try:
+            if existing_data['document_type'] != None and len(existing_data['document_type']) > 0:
+                document_type = existing_data['document_type']
+        except:
+            print('INFO (index_pdf.py): no existing document type')
+        try:
+            if existing_data['document_summary'] != None and len(existing_data['document_summary']) > 0:
+                document_summary = existing_data['document_summary']
+        except:
+            print('INFO (index_pdf.py): no existing document summary')
     else:
         # CONVERT (PDF -> Image[] for OCR)
         print('INFO (index_pdf.py): converting {convert_file_path}'.format(convert_file_path=input_filepath))
@@ -106,7 +112,6 @@ def index_pdf(filename, index_type):
             page_sentence_embedding = gpt_embedding(safe_page_sentence_text)
             document_text_vectors_by_sentence.append({ "text": page_sentence_text, "vector": page_sentence_embedding, "page_number": idx + 1 })
             
-
 
     # --- summary
     print('INFO (index_pdf.py): document_summary')
