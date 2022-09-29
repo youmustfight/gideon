@@ -7,7 +7,7 @@ import { useTeamStore } from "../data/TeamStore";
 import { useHighlights } from "../data/useHighlights";
 import { HighlightBox } from "./HighlightsBox";
 
-type TAnswerLocation = {
+export type TAnswerLocation = {
   filename: string;
   format?: "pdf" | "audio";
   page_number: number;
@@ -15,6 +15,34 @@ type TAnswerLocation = {
   score: number;
   text: string;
 };
+
+export const AnswerLocationBox = ({ location }: { location: TAnswerLocation }) => {
+  return (
+    <StyledAnswerLocationBox>
+      <b>
+        <Link to={`/document/${location.filename}`}>{location.filename}</Link>,{" "}
+        {location.format === "pdf" ? (
+          <Link to={`/document/${location.filename}#source-text-${location.page_number}`}>
+            page {location.page_number}
+          </Link>
+        ) : (
+          <Link to={`/document/${location.filename}#source-text-${location.minute_number}`}>
+            minute {location.minute_number}
+          </Link>
+        )}{" "}
+      </b>
+      <br />
+      <div>"...{location.text}..."</div>
+    </StyledAnswerLocationBox>
+  );
+};
+
+const StyledAnswerLocationBox = styled.div`
+  font-size: 12px;
+  div {
+    margin-top: 4px;
+  }
+`;
 
 export const QuestionAnswerBox = () => {
   const { data: highlights = [] } = useHighlights();
@@ -44,8 +72,8 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/question-info-location", {
-        question: infoLocationQuestion,
+      .post("http://localhost:3000/queries/query-info-locations", {
+        query: infoLocationQuestion,
         index_type: "discovery",
       })
       .then((res) => {
@@ -205,18 +233,7 @@ export const QuestionAnswerBox = () => {
                 <ul>
                   {answer?.locations?.map((l) => (
                     <li>
-                      <b>
-                        <Link to={`/document/${l.filename}`}>{l.filename}</Link>,{" "}
-                        {l.format === "pdf" ? (
-                          <Link to={`/document/${l.filename}#source-text-${l.page_number}`}>page {l.page_number}</Link>
-                        ) : (
-                          <Link to={`/document/${l.filename}#source-text-${l.minute_number}`}>
-                            minute {l.minute_number}
-                          </Link>
-                        )}{" "}
-                      </b>
-                      <br />
-                      <span>"...{l.text}..."</span>
+                      <AnswerLocationBox location={l} />
                     </li>
                   ))}
                 </ul>

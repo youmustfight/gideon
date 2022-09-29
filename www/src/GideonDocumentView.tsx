@@ -164,6 +164,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
     <StyledDocumentViewTranscript>
       {doc.document_text_by_page?.map((pageText, pageIndex) => (
         <div
+          key={`source-text-${pageIndex + 1}`}
           id={`source-text-${pageIndex + 1}`}
           className={hash && Number(hash?.replace(/[^0-9]/g, "")) === pageIndex + 1 ? "active" : ""}
         >
@@ -186,6 +187,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       ))}
       {doc.document_text_by_minute?.map((minuteText, index) => (
         <div
+          key={`source-text-${index}`}
           id={`source-text-${index}`}
           className={hash && Number(hash?.replace(/[^0-9]/g, "")) === index ? "active" : ""}
         >

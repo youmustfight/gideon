@@ -1,10 +1,29 @@
-import React from "react";
+import axios from "axios";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TDocumentHighlight, useHighlights } from "../data/useHighlights";
+import { AnswerLocationBox, TAnswerLocation } from "./QuestionAnswerBox";
 
 export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight }) => {
+  // SETUP
   const hl = props.highlight;
+  // --- request like this
+  const [locations, setLocations] = useState<TAnswerLocation[]>([]);
+  const [isSearchPending, setIsSearchPending] = useState(false);
+  const handleSearchLocationsLikeThis = () => {
+    setIsSearchPending(true);
+    return axios
+      .post("http://localhost:3000/queries/vector-info-locations", {
+        vector: props.highlight.highlight_text_vector,
+      })
+      .then((res) => {
+        setLocations(res.data.locations);
+        setIsSearchPending(false);
+      });
+  };
+
+  // RENDER
   return (
     <StyledHighlightBox>
       <div className="highlight__header">
@@ -20,7 +39,22 @@ export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight })
       </div>
       <div className="highlight__highlight">
         <p>"...{hl.highlight_text}..."</p>
-        <button>Search for Text/Testimony/Evidence Like This</button>
+        {locations?.length > 0 ? (
+          <>
+            <hr />
+            <ul>
+              {locations.map((l, locationIndex) => (
+                <li key={locationIndex} className="highlight__location">
+                  <AnswerLocationBox location={l} />
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <button disabled={isSearchPending} onClick={handleSearchLocationsLikeThis}>
+            Search for Text/Testimony/Evidence Like This
+          </button>
+        )}
       </div>
     </StyledHighlightBox>
   );
@@ -43,12 +77,24 @@ const StyledHighlightBox = styled.div`
   }
   .highlight__highlight {
     padding: 12px;
-    font-size: 10px;
-    font-style: italic;
+    & > p {
+      font-size: 10px;
+      font-style: italic;
+    }
     button {
       font-size: 10px;
       width: 100%;
       margin-top: 4px;
+    }
+    & > ul {
+      padding-left: 0 !important;
+      list-style-type: none !important;
+      .highlight__location {
+        background: white;
+        border-radius: 2px;
+        margin: 6px;
+        padding: 8px 12px;
+      }
     }
   }
 `;

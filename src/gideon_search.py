@@ -4,13 +4,13 @@ from gideon_utils import get_documents_json, similarity
 def sort_scored_text_vectors(text_vectors):
     return sorted(text_vectors, key=lambda d: d['score'], reverse=True)
 
-def get_top_score_of_text_vectors(text_vectors):
+def get_top_score_of_text_vectors(text_vectors,position_to_use=0):
     sorted = sort_scored_text_vectors(text_vectors)
-    return sorted[0]['score']
+    return sorted[position_to_use]['score']
 
-def filter_text_vectors_within_top_score_diff(text_vectors, percentage_diff=0.2):
+def filter_text_vectors_within_top_score_diff(text_vectors, percentage_diff=0.2,top_score_position_to_use=0):
     sorted = sort_scored_text_vectors(text_vectors)
-    top_score = get_top_score_of_text_vectors(text_vectors)
+    top_score = get_top_score_of_text_vectors(text_vectors,top_score_position_to_use)
     top_text_vectors = []
     print('INFO (gideon_search.py) filter_text_vectors_within_top_score_diff score: {top_score}'.format(top_score=top_score))
     for tv in sorted:

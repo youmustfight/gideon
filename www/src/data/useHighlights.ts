@@ -22,6 +22,6 @@ const reqHighlightsGet = async (): Promise<TDocumentHighlight[]> =>
 
 export const useHighlights = () => {
   return useQuery<TDocumentHighlight[]>(["highlights"], async () => reqHighlightsGet(), {
-    refetchInterval: 1000 * 10,
+    refetchInterval: 1000 * 4,
   });
 };

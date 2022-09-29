@@ -8,7 +8,7 @@ type TTeamStore = {
 };
 
 export const teamStore = createVanilla<TTeamStore>((set, get) => ({
-  users: ["anna", "jaquelin", "eugene", "mark"],
+  users: ["anna", "jaquelin", "eugene", "mark", "nick"],
   currentUser: "mark",
   setCurrentUser: (currentUser) => set({ currentUser }),
 }));

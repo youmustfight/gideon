@@ -7,7 +7,7 @@ from index_highlight import index_highlight
 from index_pdf import index_pdf
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
-from queries.search_for_location import search_for_location
+from queries.search_for_locations import search_for_locations, search_for_locations_by_vector
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
@@ -88,10 +88,16 @@ def endpoint_question_answer():
     answer = question_answer(json['question'], json['index_type'])
     return jsonify({ "success": True, "answer": answer })
 
-@app.route('/queries/question-info-location', methods = ['POST'])
-def endpoint_question_info_location():
+@app.route('/queries/query-info-locations', methods = ['POST'])
+def endpoint_query_info_locations():
     json = request.get_json()
-    locations = search_for_location(json['question'])
+    locations = search_for_locations(json['query'])
+    return jsonify({ "success": True, "locations": locations })
+
+@app.route('/queries/vector-info-locations', methods = ['POST'])
+def endpoint_vector_info_locations():
+    json = request.get_json()
+    locations = search_for_locations_by_vector(json['vector'])
     return jsonify({ "success": True, "locations": locations })
 
 @app.route('/queries/highlights-query', methods = ['POST'])
