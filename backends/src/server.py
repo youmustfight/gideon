@@ -13,7 +13,7 @@ from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
 # INIT
-app = Sanic("API")
+app = Sanic("api")
 CORS(app)
 
 

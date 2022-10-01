@@ -1,10 +1,13 @@
 .env
 .env.json
 
-# src (ml)
+# misc
+.log
+
+# backends
 __pycache__
 
-# www
+# frontends
 node_modules
 dist
 public
