@@ -1,6 +1,6 @@
 import axios from "axios";
 import { isBefore, subSeconds } from "date-fns";
-import React, { useState, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
