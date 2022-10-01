@@ -5,7 +5,7 @@ import json
 import openai
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
 openai.api_key = env['OPEN_AI_API_KEY']
 

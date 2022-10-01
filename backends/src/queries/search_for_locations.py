@@ -5,9 +5,10 @@ import json
 import openai
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
 openai.api_key = env['OPEN_AI_API_KEY']
+
 
 # SEARCH QUERY
 def search_for_locations(query):
@@ -79,6 +80,7 @@ def search_for_locations_by_vector(query_vector):
   # RESPONSE
   print('INFO (search_for_locations_by_vector.py): locations', locations)
   return locations
+  
 
 # RUN
 if __name__ == '__main__':

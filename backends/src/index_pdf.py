@@ -10,7 +10,7 @@ from pdf2image import convert_from_path # FYI, on Mac -> brew install poppler
 import textwrap
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
 openai.api_key = env['OPEN_AI_API_KEY']
 # --- OCR

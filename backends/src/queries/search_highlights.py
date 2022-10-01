@@ -5,9 +5,10 @@ import json
 import openai
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
 openai.api_key = env['OPEN_AI_API_KEY']
+
 
 # SEARCH QUERY
 def search_highlights(query):
@@ -37,6 +38,7 @@ def search_highlights(query):
     # RESPONSE
     print('INFO (search_highlights.py): highlights', highlights)
     return highlights
+
 
 # RUN
 if __name__ == '__main__':

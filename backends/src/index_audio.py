@@ -7,7 +7,7 @@ import textwrap
 from time import sleep
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 
 # provided by https://www.assemblyai.com/docs/walkthroughs#uploading-local-files-for-transcription
 def read_file(path_to_file, chunk_size=5242880):

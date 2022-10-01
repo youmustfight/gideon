@@ -7,7 +7,7 @@ import textwrap
 from time import time,sleep
 
 # SETUP
-env = json.load(open(get_file_path('../.env.json')))
+env = json.load(open(get_file_path('../../.env.json')))
 # --- engines
 # https://beta.openai.com/docs/models/gpt-3
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
