@@ -2,7 +2,7 @@ import React from "react";
 import { Route, Routes } from "react-router";
 import styled from "styled-components";
 import { QuestionAnswerBox } from "./components/QuestionAnswerBox";
-import { TeamHeader } from "./components/TeamHEader";
+import { TeamHeader } from "./components/TeamHeader";
 import { GideonCaseView } from "./GideonCaseView";
 import { GideonDocumentView } from "./GideonDocumentView";
 
