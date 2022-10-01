@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  ai:
+    build:
+      context: ./frontends/ai
+    volumes:
+      - ./frontends/ai/src:/usr/src/ai/src
+      - ./frontends/ai/index.html:/usr/src/ai/index.html
+      - ./frontends/ai/package.json:/usr/src/ai/package.json
+      - ./frontends/ai/tsconfig.json:/usr/src/ai/tsconfig.json
+      - ./frontends/ai/tsconfig.node.json:/usr/src/ai/tsconfig.node.json
+      - ./frontends/ai/vite.config.json:/usr/src/ai/vite.config.json
+      - ./frontends/ai/yarn.lock:/usr/src/ai/yarn.lock
+      - /usr/src/ai/node_modules
+    ports:
+      - "1111:1111"
+    depends_on:
+      - api
+    command: "npm run start:local"
+    env_file:
+      - ./.env
+
+  api:
+    build:
+      context: ./backends
+    volumes:
+      - ./backends/documents:/usr/src/backends/documents
+      - ./backends/indexed:/usr/src/backends/indexed
+      - ./backends/src:/usr/src/backends/src
+      - ./backends/requirements.txt:/usr/src/backends/requirements.txt
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
