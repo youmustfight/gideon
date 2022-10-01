@@ -1,14 +1,12 @@
+from env import env_get_open_ai_api_key
 from gideon_ml import gpt_completion, gpt_embedding, gpt_summarize
 from gideon_search import search_similar_file_text_vectors
 from gideon_utils import get_file_path, open_file, similarity
-import json
-import os
 import openai
 
 # SETUP
-env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
-openai.api_key = env['OPEN_AI_API_KEY']
+openai.api_key = env_get_open_ai_api_key()
 
 
 # ANSWER A QUESTION

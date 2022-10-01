@@ -1,3 +1,4 @@
+from env import env_get_assembly_ai_api_key
 from gideon_ml import gpt_completion, gpt_embedding, gpt_summarize
 from gideon_utils import get_file_path, open_file
 import json
@@ -7,9 +8,7 @@ import textwrap
 from time import sleep
 
 # SETUP
-env = json.load(open(get_file_path('../../.env.json')))
-
-# provided by https://www.assemblyai.com/docs/walkthroughs#uploading-local-files-for-transcription
+# --- provided by https://www.assemblyai.com/docs/walkthroughs#uploading-local-files-for-transcription
 def read_file(path_to_file, chunk_size=5242880):
     with open(path_to_file, 'rb') as _file:
         while True:
@@ -27,7 +26,7 @@ def index_audio(filename):
     # provided by https://www.assemblyai.com/docs/walkthroughs#uploading-local-files-for-transcription
     upload_response = requests.post(
         "https://api.assemblyai.com/v2/upload",
-        headers={ "authorization": env['ASSEMBLY_AI_API_KEY'] },
+        headers={ "authorization": env_get_assembly_ai_api_key() },
         data=read_file(input_filepath)
     )
     upload_url = upload_response.json()['upload_url']
@@ -35,7 +34,7 @@ def index_audio(filename):
     # --- Start transcript processing with returned upload_url
     transcript_response = requests.post(
         "https://api.assemblyai.com/v2/transcript",
-        headers={ "authorization": env['ASSEMBLY_AI_API_KEY'], "content-type": "application/json" },
+        headers={ "authorization": env_get_assembly_ai_api_key(), "content-type": "application/json" },
         json={ "audio_url": upload_url }
     )
     print("INFO (index_audio.py): transcript requested", transcript_response.json())
@@ -45,7 +44,7 @@ def index_audio(filename):
     while is_transcript_complete == False:
         transcript_check_response = requests.get(
             "https://api.assemblyai.com/v2/transcript/{transcript_id}".format(transcript_id=transcript_id),
-            headers={ "authorization": env['ASSEMBLY_AI_API_KEY'] },
+            headers={ "authorization": env_get_assembly_ai_api_key() },
         )
         print("INFO (index_audio.py): transcript check", transcript_check_response.json()['id'], transcript_check_response.json()['status'])
         if transcript_check_response.json()['status'] == 'completed':

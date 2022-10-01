@@ -2,6 +2,7 @@ from time import sleep
 import easyocr
 import io
 import json
+from env import env_get_open_ai_api_key
 from gideon_utils import filter_empty_strs, get_file_path, open_file
 from gideon_ml import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize
 import openai
@@ -10,9 +11,8 @@ from pdf2image import convert_from_path # FYI, on Mac -> brew install poppler
 import textwrap
 
 # SETUP
-env = json.load(open(get_file_path('../../.env.json')))
 # --- OpenAI
-openai.api_key = env['OPEN_AI_API_KEY']
+openai.api_key = env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'])
 
