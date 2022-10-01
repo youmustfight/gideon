@@ -1,6 +1,6 @@
 FROM python:3.10.7-bullseye
 
-WORKDIR /user/src/backends
+WORKDIR /usr/src/backends
 
 COPY . .
 

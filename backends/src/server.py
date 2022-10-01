@@ -13,9 +13,9 @@ from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
 # INIT
+
 app = Sanic("api")
 CORS(app)
-
 
 
 # DOCUMENTS
