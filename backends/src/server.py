@@ -3,17 +3,17 @@ from sanic.response import json
 from sanic_cors import CORS
 
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys
-from index_audio import index_audio
-from index_highlight import index_highlight
-from index_pdf import index_pdf
+from indexers import index_audio
+from indexers import index_highlight
+from indexers import index_pdf
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations import search_for_locations, search_for_locations_by_vector
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
-# INIT
 
+# INIT
 app = Sanic("api")
 CORS(app)
 
