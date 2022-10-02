@@ -120,5 +120,6 @@ async def endpoint_contrast_users(request):
 # RUN
 if __name__ == "__main__":
     # TODO: recognize env var for auto_reload so we only have it in local
+    # TODO: maybe use this async forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=True)
  

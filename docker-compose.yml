@@ -20,6 +20,8 @@ services:
     command: "npm run start:local"
     env_file:
       - ./.env
+    environment:
+      - PYTHONUNBUFFERED=1
 
   api:
     build:
@@ -31,5 +33,13 @@ services:
       - ./backends/requirements.txt:/usr/src/backends/requirements.txt
     ports:
       - "3000:3000"
+    depends_on:
+      - clip
+    command: wait-for-it.sh clip:51000 -- python -u src/server.py
     env_file:
       - ./.env
+
+  clip:
+    image: jinaai/clip-server:latest
+    ports:
+      - "51000:51000"
