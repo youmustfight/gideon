@@ -108,8 +108,8 @@ export const HighlightsBox: React.FC = ({ filename }: { filename?: string }) => 
   // RENDER
   return (
     <StyledHighlightsBox>
-      {highlights?.map((hl) => (
-        <HighlightBox highlight={hl} />
+      {highlights?.map((hl, hlIndex) => (
+        <HighlightBox key={hlIndex} highlight={hl} />
       ))}
     </StyledHighlightsBox>
   );
