@@ -3,6 +3,7 @@
 
 # misc
 .log
+.DS_Store
 
 # backends
 __pycache__
