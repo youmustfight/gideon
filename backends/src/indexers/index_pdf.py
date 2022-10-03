@@ -19,7 +19,7 @@ reader = easyocr.Reader(['en'])
 # INDEX_PDF
 def index_pdf(filename, index_type):
     print('INFO (index_pdf.py): started')
-    # FILE + PROPERTIES (w/ OCR)
+    # PROCESS FILE + PROPERTIES (w/ OCR)
     is_discovery_document = index_type == "discovery"
     input_filepath = get_file_path('../documents/{filename}'.format(filename=filename))
     output_filepath = get_file_path('../indexed/{filename}.json'.format(filename=filename))
@@ -124,7 +124,7 @@ def index_pdf(filename, index_type):
     print('INFO (index_pdf.py): document_type')
     if len(document_type) == 0:
         document_type = gpt_completion(
-            open_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]),
+            open_txt_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]),
             max_tokens=75
         )
     else:
@@ -134,11 +134,11 @@ def index_pdf(filename, index_type):
     print('INFO (index_pdf.py): mentions_cases_laws')
     if len(document_text) < 250_000:
         if use_repeat_methods == True:
-            mentions_cases_laws_dirty = gpt_completion_repeated(open_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')),document_text,text_chunk_size=11_000,return_list=True)
+            mentions_cases_laws_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')),document_text,text_chunk_size=11_000,return_list=True)
         else:
-            mentions_cases_laws_dirty = gpt_completion(open_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')).replace('<<SOURCE_TEXT>>',document_text))
+            mentions_cases_laws_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')).replace('<<SOURCE_TEXT>>',document_text))
         mentions_cases_laws = filter_empty_strs(gpt_edit(
-            open_file(get_file_path('./prompts/edit_clean_list.txt')),
+            open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
             '\n'.join(mentions_cases_laws_dirty) if use_repeat_methods == True else mentions_cases_laws_dirty # join linebreaks if we have a list
         ).split('\n'))
     else:
@@ -149,40 +149,40 @@ def index_pdf(filename, index_type):
         # --- event timeline (split on linebreaks, could later do structured parsing prob of dates)
         print('INFO (index_pdf.py): event_timeline')
         if use_repeat_methods == True:
-            event_timeline_dirty = gpt_completion_repeated(open_file(get_file_path('./prompts/prompt_timeline.txt')),document_text,text_chunk_size=11_000,return_list=True)
+            event_timeline_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')),document_text,text_chunk_size=11_000,return_list=True)
         else:
-            event_timeline_dirty = gpt_completion(open_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>',document_text))
+            event_timeline_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>',document_text))
         event_timeline = filter_empty_strs(gpt_edit(
-            open_file(get_file_path('./prompts/edit_event_timeline.txt')),
+            open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
             '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
         ).split('\n'))
         
         # --- organizations mentioned
         print('INFO (index_pdf.py): mentions_organizations')
         if use_repeat_methods == True:
-            mentions_organizations_dirty = gpt_completion_repeated(open_file(get_file_path('./prompts/prompt_mentions_organizations.txt')),document_text,text_chunk_size=11_000,return_list=True)
+            mentions_organizations_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')),document_text,text_chunk_size=11_000,return_list=True)
         else:
-            mentions_organizations_dirty = gpt_completion(open_file(get_file_path('./prompts/prompt_mentions_organizations.txt')).replace('<<SOURCE_TEXT>>',document_text))
+            mentions_organizations_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')).replace('<<SOURCE_TEXT>>',document_text))
         mentions_organizations = filter_empty_strs(gpt_edit(
-            open_file(get_file_path('./prompts/edit_clean_list.txt')),
+            open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
             '\n'.join(mentions_organizations_dirty) if use_repeat_methods == True else mentions_organizations_dirty # join linebreaks if we have a list
         ).split('\n'))
         
         # --- people mentioned + context within document
         print('INFO (index_pdf.py): mentions_people')
         if use_repeat_methods == True:
-            mentions_people_dirty = gpt_completion_repeated(open_file(get_file_path('./prompts/prompt_mentions_people.txt')),document_text,text_chunk_size=11_000,return_list=True)
+            mentions_people_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')),document_text,text_chunk_size=11_000,return_list=True)
         else:
-            mentions_people_dirty = gpt_completion(open_file(get_file_path('./prompts/prompt_mentions_people.txt')).replace('<<SOURCE_TEXT>>',document_text))
+            mentions_people_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')).replace('<<SOURCE_TEXT>>',document_text))
         mentions_people = filter_empty_strs(gpt_edit(
-            open_file(get_file_path('./prompts/edit_clean_names_list.txt')),
+            open_txt_file(get_file_path('./prompts/edit_clean_names_list.txt')),
             '\n'.join(mentions_people_dirty) if use_repeat_methods == True else mentions_people_dirty # join linebreaks if we have a list
         ).split('\n'))
         # TODO: skipping follow ups on people bc it takes forever atm. faster dev cycle plz
         # print('INFO (index_pdf.py): mentions_people #{num_people}'.format(num_people=len(mentions_people)))
         # for name in mentions_people:
         #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
-        #     people[name] = gpt_completion(open_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
+        #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
 
     # FINISH
     # --- save file

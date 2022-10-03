@@ -20,7 +20,7 @@ def question_answer(query, index_type):
         answers = []
         # --- get answer from high similarity vectors
         for idx, tv in enumerate(search_text_vectors):
-            prompt = open_file(get_file_path('./prompts/prompt_answer_question.txt')).replace('<<PASSAGE>>', tv['text']).replace('<<QUESTION>>', query)
+            prompt = open_txt_file(get_file_path('./prompts/prompt_answer_question.txt')).replace('<<PASSAGE>>', tv['text']).replace('<<QUESTION>>', query)
             answer = gpt_completion(prompt,engine='text-davinci-002',max_tokens=150)
             print('INFO (question_answer.py): answer #{num} = {answer}'.format(answer=answer,num=idx+1))
             answers.append(answer)

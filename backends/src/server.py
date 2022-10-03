@@ -21,9 +21,10 @@ CORS(app)
 
 
 # DOCUMENTS
+# TODO: safer file uploading w/ async: https://stackoverflow.com/questions/48930245/how-to-perform-file-upload-in-sanic
 
 @app.route('/documents/indexed', methods = ['GET'])
-async def endpoint_documents(request):
+def app_route_documents(request):
     def reduced_json(j):
         return without_keys(j, [
             'document_text_vectors',
@@ -37,14 +38,15 @@ async def endpoint_documents(request):
     documents = list(map(reduced_json, documents)) # clear doc vectors
     return json({ "success": True, "documents": documents })
 
-@app.route('/documents/index/pdf', methods = ['POST'])
-async def endpoint_documents_intake_pdf(request):
-    # --- save file
-    file = request.files['file']
-    file.save(get_file_path("../documents/{filename}".format(filename=file.filename)))
+@app.route('/documents/index/audio', methods = ['POST'])
+def app_route_documents_index_audio(request):
+    # --- save file TODO: multiple files
+    file = request.files['file'][0]
+    file.save(get_file_path("../documents/{filename}".format(filename=file.name)))
+    # await async_write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
     # --- run processing
-    index_pdf(file.filename, "discovery")
-    # --- respond saying we got the file, but continue on w/ processing
+    index_audio(file.name)
+    # --- respond
     return json({ "success": True })
 
 @app.route('/documents/index/image', methods = ['POST'])
@@ -73,12 +75,12 @@ def app_route_documents_index_pdf(request):
 # HIGHLIGHTS
 
 @app.route('/highlights', methods = ['GET'])
-async def endpoint_highlights(request):
+def app_route_highlights(request):
     highlights = get_highlights_json()
     return json({ "success": True, "highlights": highlights })
 
 @app.route('/highlights', methods = ['POST'])
-async def endpoint_highlight_create(request):
+def app_route_highlight_create(request):
     highlight = request.json['highlight']
     # --- process highlight embedding + save
     highlight = index_highlight(
@@ -96,33 +98,35 @@ async def endpoint_highlight_create(request):
 # QUERIES
 
 @app.route('/queries/question-answer', methods = ['POST'])
-async def endpoint_question_answer(request):
+def app_route_question_answer(request):
     answer = question_answer(request.json['question'], request.json['index_type'])
     return json({ "success": True, "answer": answer })
 
 @app.route('/queries/query-info-locations', methods = ['POST'])
-async def endpoint_query_info_locations(request):
-    locations = search_for_locations(request.json['query'])
+def app_route_query_info_locations(request):
+    query_vector = gpt_embedding(request.json['query']) # query > vector
+    locations = search_for_locations_by_text_vector(query_vector)
     return json({ "success": True, "locations": locations })
 
 @app.route('/queries/vector-info-locations', methods = ['POST'])
-async def endpoint_vector_info_locations(request):
-    locations = search_for_locations_by_vector(request.json['vector'])
+def app_route_vector_info_locations(request):
+    query_vector = request.json['vector']
+    locations = search_for_locations_by_text_vector(query_vector)
     return json({ "success": True, "locations": locations })
 
 @app.route('/queries/highlights-query', methods = ['POST'])
-async def endpoint_highlights_location(request):
+def app_route_highlights_location(request):
     highlights = search_highlights(request.json['query'])
     return json({ "success": True, "highlights": highlights })
 
 @app.route('/queries/summarize-user', methods = ['POST'])
-async def endpoint_summarize_user(request):
+def app_route_summarize_user(request):
     user = request.json['user']
     answer = summarize_user(user)
     return json({ "success": True, "answer": answer })
 
 @app.route('/queries/contrast-users', methods = ['POST'])
-async def endpoint_contrast_users(request):
+def app_route_contrast_users(request):
     user_one = request.json['user_one']
     statement_one = summarize_user(user_one)
     user_two = request.json['user_two']
@@ -134,6 +138,6 @@ async def endpoint_contrast_users(request):
 # RUN
 if __name__ == "__main__":
     # TODO: recognize env var for auto_reload so we only have it in local
-    # TODO: maybe use this async forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
+    # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=True)
  

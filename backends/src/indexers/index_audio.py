@@ -22,6 +22,7 @@ def index_audio(filename):
     print("INFO (index_audio.py): started")
     input_filepath = get_file_path('../documents/{filename}'.format(filename=filename))
     output_filepath = get_file_path('../indexed/{filename}.json'.format(filename=filename))
+    # PROCESS FILE + PROPERTIES
     # --- Upload to AssemblyAI
     # provided by https://www.assemblyai.com/docs/walkthroughs#uploading-local-files-for-transcription
     upload_response = requests.post(
@@ -120,7 +121,7 @@ def index_audio(filename):
     print('INFO (index_audio.py): document_type')
     if len(document_type) == 0:
         document_type = gpt_completion(
-            open_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]),
+            open_txt_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]),
             max_tokens=75
         )
     else:
