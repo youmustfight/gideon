@@ -1,4 +1,5 @@
 import json
+from gideon_gpt import gpt_vars
 from gideon_gpt import gpt_embedding
 from gideon_utils import get_file_path
 import time
@@ -13,7 +14,11 @@ def index_highlight(
     note_text,
 ):
     print("INFO (index_highlight.py): started")
+    # PROCESS FILE + PROPERTIES
     output_filepath = get_file_path('../indexed/highlights/highlight-{user}-{ms}.json'.format(ms=time.time(),user=user))
+    # Setup Vars
+    ai_tool = "gpt3"
+    ai_models = gpt_vars()
 
     # EMBEDDINGS
     # create embeddings: highlight_text
@@ -23,6 +28,8 @@ def index_highlight(
 
     # SAVE FILE
     highlight = {
+        "ai_tool": ai_tool,
+        "ai_models": ai_models,
         "filename": filename,
         "user": user,
         "document_text_vectors_by_sentence_start_index": document_text_vectors_by_sentence_start_index,

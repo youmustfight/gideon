@@ -1,5 +1,5 @@
 from env import env_get_assembly_ai_api_key
-from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize
+from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
 from gideon_utils import get_file_path, open_txt_file
 import json
 import math
@@ -54,6 +54,8 @@ def index_audio(filename):
         sleep(3)
 
     # Setup Vars
+    ai_tool = "gpt3"
+    ai_models = gpt_vars()
     document_text = ''
     document_text_vectors = [] # { text, vector }[]
     document_text_by_minute = []  # string[]
@@ -131,6 +133,8 @@ def index_audio(filename):
     # --- save file
     with open(output_filepath, 'w') as outfile:
         json.dump({
+            "ai_tool": ai_tool,
+            "ai_models": ai_models,
             "document_summary": document_summary,
             "document_text": document_text,
             "document_text_by_minute": document_text_by_minute,

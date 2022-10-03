@@ -1,8 +1,8 @@
 import json
-from gideon_clip import clip_calc
+from gideon_clip import clip_calc, clip_vars
 from gideon_utils import get_file_path
 
-
+# INDEX_IMAGE
 async def index_image(filename):
     print("INFO (index_image.py): started")
     input_filepath = get_file_path("../documents/{filename}".format(filename=filename))
@@ -11,6 +11,8 @@ async def index_image(filename):
     # processing n/a
     image_file_paths = [input_filepath]
     # Setup Vars
+    ai_tool = "clip"
+    ai_models = clip_vars()
     document_type = ''
     document_type_classifications = []
     document_summary = ''
@@ -41,7 +43,7 @@ async def index_image(filename):
     )
     document_summary_classifications = document_summary_classifications + p_time_of_day[0]
     p_mug_shot = clip_calc(
-        classifications=["a photo of a person", "a photo containing multiple people", "a photo containing no people"],
+        classifications=["a photo of a person", "a photo containing multiple people", "a photo containing no people", "a photo containing documents", "a photo containing evidence"],
         image_file_paths=image_file_paths,
         min_similarity=0.6
     )
@@ -60,6 +62,8 @@ async def index_image(filename):
     # --- save file
     with open(output_filepath, 'w') as outfile:
         json.dump({
+            "ai_tool": ai_tool,
+            "ai_models": ai_models,
             "document_summary": document_summary,
             "document_summary_classifications": document_summary_classifications,
             "document_type": document_type,
