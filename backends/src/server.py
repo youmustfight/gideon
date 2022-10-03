@@ -47,14 +47,26 @@ async def endpoint_documents_intake_pdf(request):
     # --- respond saying we got the file, but continue on w/ processing
     return json({ "success": True })
 
-@app.route('/documents/index/audio', methods = ['POST'])
-async def endpoint_documents_intake_audio(request):
-    # --- save file
-    file = request.files['file']
-    file.save(get_file_path("../documents/{filename}".format(filename=file.filename)))
+@app.route('/documents/index/image', methods = ['POST'])
+async def app_route_documents_index_image(request):
+    # --- save file TODO: multiple files
+    file = request.files['file'][0]
+    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+    # await async_write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
     # --- run processing
-    index_audio(file.filename)
-    # --- respond saying we got the file, but continue on w/ processing
+    await index_image(file.name)
+    # --- respond
+    return json({ "success": True })
+
+@app.route('/documents/index/pdf', methods = ['POST'])
+def app_route_documents_index_pdf(request):
+    # --- save file TODO: multiple files
+    file = request.files['file'][0]
+    file.save(get_file_path("../documents/{filename}".format(filename=file.name)))
+    # await async_write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+    # --- run processing
+    index_pdf(file.name, "discovery")
+    # --- respond
     return json({ "success": True })
 
 
