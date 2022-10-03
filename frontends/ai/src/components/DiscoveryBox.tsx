@@ -11,13 +11,9 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
   return (
     <div className="discovery-box__document">
       <small>
-        <Link to={`/document/${document.filename}`}>{document.filename ?? "n/a"}</Link> (
-        {document?.format === "audio" ? (
-          <>{document?.document_text_by_minute?.length} minutes</>
-        ) : (
-          <>{document?.document_text_by_page?.length} pages</>
-        )}
-        )
+        <Link to={`/document/${document.filename}`}>{document.filename ?? "n/a"}</Link>
+        {document?.format === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
+        {document?.format === "pdf" ? <> ({document?.document_text_by_page?.length} pages)</> : null}
       </small>
       {["audio", "pdf"].includes(document.format) ? (
         <>
