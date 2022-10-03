@@ -1,6 +1,6 @@
 from env import env_get_assembly_ai_api_key
-from gideon_ml import gpt_completion, gpt_embedding, gpt_summarize
-from gideon_utils import get_file_path, open_file
+from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize
+from gideon_utils import get_file_path, open_txt_file
 import json
 import math
 import requests

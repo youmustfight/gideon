@@ -3,8 +3,8 @@ import easyocr
 import io
 import json
 from env import env_get_open_ai_api_key
-from gideon_utils import filter_empty_strs, get_file_path, open_file
-from gideon_ml import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize
+from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
+from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize
 import openai
 import os
 from pdf2image import convert_from_path # FYI, on Mac -> brew install poppler

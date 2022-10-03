@@ -2,13 +2,15 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 
-from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys
-from indexers import index_audio
-from indexers import index_highlight
-from indexers import index_pdf
+from gideon_gpt import gpt_embedding
+from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
+from indexers.index_audio import index_audio
+from indexers.index_highlight import index_highlight
+from indexers.index_pdf import index_pdf
+from indexers.index_image import index_image
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
-from queries.search_for_locations import search_for_locations, search_for_locations_by_vector
+from queries.search_for_locations import search_for_locations_by_text_vector
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 

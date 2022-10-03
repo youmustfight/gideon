@@ -1,5 +1,5 @@
 import json
-from gideon_ml import gpt_embedding
+from gideon_gpt import gpt_embedding
 from gideon_utils import get_file_path
 import time
 

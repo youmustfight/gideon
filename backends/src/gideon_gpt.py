@@ -1,4 +1,4 @@
-from gideon_utils import filter_empty_strs, get_file_path, open_file
+from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
 import json
 import math
 import openai
@@ -10,21 +10,21 @@ from time import time,sleep
 # --- engines
 # https://beta.openai.com/docs/models/gpt-3
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
-engine_completion = 'text-davinci-002' # 'text-ada-001' # 
-engine_edit = 'text-davinci-edit-001' # free atm because its in beta
-engine_embedding = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
-temperature_default = 0
+ENGINE_COMPLETION = 'text-davinci-002' # 'text-ada-001' # 
+ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
+ENGINE_EMBEDDING = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
+TEMPERATURE_DEFAULT = 0
 
 def gpt_vars():
     return {
-        "engine_completion": engine_completion,
-        "engine_edit": engine_edit,
-        "engine_embedding": engine_embedding,
-        "temperature_default": temperature_default
+        "ENGINE_COMPLETION": ENGINE_COMPLETION,
+        "ENGINE_EDIT": ENGINE_EDIT,
+        "ENGINE_EMBEDDING": ENGINE_EMBEDDING,
+        "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT
     }
 
 # FUNCTIONS
-def gpt_completion(prompt, engine=engine_completion, temperature=temperature_default, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
+def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 2
     retry = 0
     while True:
@@ -87,7 +87,7 @@ def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk
     return '\n\n'.join(result)
 
 
-def gpt_edit(instruction, input, engine=engine_edit, temperature=temperature_default, top_p=1.0):
+def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 2
     retry = 0
     while True:
@@ -111,19 +111,19 @@ def gpt_edit(instruction, input, engine=engine_edit, temperature=temperature_def
             print('Error (GPT3):', err, instruction, input)
             sleep(1)
 
-def gpt_embedding(content, engine=engine_embedding):
+def gpt_embedding(content, engine=ENGINE_EMBEDDING):
     print('INFO (GPT3): gpt_embedding - {engine}'.format(engine=engine))
     # --- OpenAI
     response = openai.Embedding.create(input=content,engine=engine)
     vector = response['data'][0]['embedding']  # this is a normal list
     return vector
 
-def gpt_summarize(text_to_recursively_summarize, engine=engine_completion):
+def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list();
     for idx, chunk in enumerate(chunks):
-        prompt = open_file(get_file_path('./prompts/prompt_summary_detailed.txt')).replace('<<SOURCE_TEXT>>', chunk)
+        prompt = open_txt_file(get_file_path('./prompts/prompt_summary_detailed.txt')).replace('<<SOURCE_TEXT>>', chunk)
         prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
         summary = gpt_completion(prompt,max_tokens=500,engine=engine) # limiting inserted completion length to get us to < 2k
         print('\n', idx + 1, 'of', len(chunks), ' - ', summary, '\n')

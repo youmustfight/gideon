@@ -1,7 +1,6 @@
 from env import env_get_open_ai_api_key
-from gideon_ml import gpt_completion, gpt_embedding, gpt_summarize
-from gideon_search import search_similar_file_text_vectors
-from gideon_utils import get_file_path, get_highlights_json, open_file, similarity
+from gideon_gpt import gpt_summarize
+from gideon_utils import get_highlights_json
 import openai
 
 # SETUP
