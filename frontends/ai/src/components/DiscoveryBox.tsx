@@ -1,5 +1,6 @@
 import axios from "axios";
 import { isBefore, subSeconds } from "date-fns";
+import { capitalize } from "lodash";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
@@ -18,30 +19,39 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
         )}
         )
       </small>
-      <p>{document.document_type}</p>
-      {viewMore ? (
+      {["audio", "pdf"].includes(document.format) ? (
         <>
-          <div className="discovery-box__document__actions">
-            <div>
-              <small onClick={() => setViewMore(false)}>Hide summary...</small>
+          <p>{document.document_type}</p>
+          {viewMore ? (
+            <>
+              <div className="discovery-box__document__actions">
+                <div>
+                  <small onClick={() => setViewMore(false)}>Hide summary...</small>
+                </div>
+              </div>
+              <div className="discovery-box__document__expanded">
+                <p>
+                  <u>Mentions</u>: {document.mentions_people?.filter((p) => p.length < 100)?.join(", ")}
+                </p>
+                <p>
+                  <u>Summary</u>: {document.document_summary}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="discovery-box__document__actions">
+              <div>
+                <small onClick={() => setViewMore(true)}>View summary...</small>
+              </div>
             </div>
-          </div>
-          <div className="discovery-box__document__expanded">
-            <p>
-              <u>Mentions</u>: {document.mentions_people?.filter((p) => p.length < 100)?.join(", ")}
-            </p>
-            <p>
-              <u>Summary</u>: {document.document_summary}
-            </p>
-          </div>
+          )}
         </>
-      ) : (
-        <div className="discovery-box__document__actions">
-          <div>
-            <small onClick={() => setViewMore(true)}>View summary...</small>
-          </div>
-        </div>
-      )}
+      ) : null}
+      {["image"].includes(document.format) ? (
+        <p>
+          {capitalize(document.document_type)}. {capitalize(document.document_summary)}.
+        </p>
+      ) : null}
     </div>
   );
 };
@@ -50,7 +60,7 @@ export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments();
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
   const [isAddingFile, setIsAddingFile] = useState(false);
-  const onSubmitFile = (type) => (e) => {
+  const onSubmitFile = (type: "audio" | "image" | "pdf") => (e) => {
     e.preventDefault();
     if (e.target.file?.files?.[0]) {
       // --- setup form data/submit
@@ -89,6 +99,12 @@ export const DiscoveryBox = () => {
           <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
             <input type="file" name="file" accept=".pdf" />
             <button type="submit">Upload PDF</button>
+          </form>
+
+          {/* IMAGE */}
+          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("image")}>
+            <input type="file" name="file" accept=".jpg,.jpeg,.png" />
+            <button type="submit">Upload Image</button>
           </form>
 
           {/* AUDIO */}

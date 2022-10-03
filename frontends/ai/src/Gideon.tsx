@@ -44,7 +44,7 @@ const StyledGideon = styled.div`
     text-decoration: underline;
   }
   .section-lead {
-    width: 100%;
+    display: flex;
     text-align: left;
     padding: 0 16px;
     margin: 4px 20px;
@@ -58,6 +58,7 @@ const StyledGideon = styled.div`
     h4 {
       font-weight: 900;
       margin: 6px 0;
+      display: flex;
     }
   }
   section {

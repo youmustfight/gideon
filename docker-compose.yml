@@ -20,8 +20,6 @@ services:
     command: "npm run start:local"
     env_file:
       - ./.env
-    environment:
-      - PYTHONUNBUFFERED=1
 
   api:
     build:
@@ -38,6 +36,8 @@ services:
     command: wait-for-it.sh clip:51000 -- python -u src/server.py
     env_file:
       - ./.env
+    environment:
+      - PYTHONUNBUFFERED=1
 
   clip:
     image: jinaai/clip-server:latest
