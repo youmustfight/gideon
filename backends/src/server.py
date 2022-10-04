@@ -2,6 +2,7 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 
+from gideon_clip import clip_text_embedding
 from gideon_gpt import gpt_embedding
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
@@ -10,7 +11,8 @@ from indexers.index_pdf import index_pdf
 from indexers.index_image import index_image
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
-from queries.search_for_locations import search_for_locations_by_text_vector
+from queries.search_for_locations import search_for_locations_by_text_embedding
+from queries.search_for_image_locations_by_text_embedding import search_for_image_locations_by_text_embedding
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
@@ -104,14 +106,21 @@ def app_route_question_answer(request):
 
 @app.route('/queries/query-info-locations', methods = ['POST'])
 def app_route_query_info_locations(request):
-    query_vector = gpt_embedding(request.json['query']) # query > vector
-    locations = search_for_locations_by_text_vector(query_vector)
+    # query > gpt vector
+    text_query_gpt_embedding = gpt_embedding(request.json['query'])
+    text_locations = search_for_locations_by_text_embedding(text_query_gpt_embedding)
+    # query > clip vector
+    text_query_clip_embedding = clip_text_embedding(request.json['query'])
+    print("text_query_clip_embedding", text_query_clip_embedding)
+    image_locations = search_for_image_locations_by_text_embedding(text_query_clip_embedding)
+    # respond w/ both
+    locations = text_locations + image_locations
     return json({ "success": True, "locations": locations })
 
 @app.route('/queries/vector-info-locations', methods = ['POST'])
 def app_route_vector_info_locations(request):
-    query_vector = request.json['vector']
-    locations = search_for_locations_by_text_vector(query_vector)
+    text_query_embedding = request.json['vector']
+    locations = search_for_locations_by_text_embedding(text_query_embedding)
     return json({ "success": True, "locations": locations })
 
 @app.route('/queries/highlights-query', methods = ['POST'])

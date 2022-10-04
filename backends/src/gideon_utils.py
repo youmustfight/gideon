@@ -24,6 +24,12 @@ def get_documents_json():
         return json.load(open(get_file_path('../indexed/{json_filename}'.format(json_filename=json_filename))))
     return list(map(json_mapper, json_files_paths))
 
+def filter_formats(formats, documents):
+    def filt(document):
+        return document['format'] in formats
+    return filter(filt, documents)
+
+
 def get_highlights_json():
     path_to_json = get_file_path("../indexed/highlights")
     json_files_paths = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]

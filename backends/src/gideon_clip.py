@@ -16,6 +16,12 @@ def clip_vars():
         "CLIP_MODEL": CLIP_MODEL
     }
 
+# --- embedding
+def clip_text_embedding(text):
+    print('INFO (CLIP): clip_text_embedding - {text}'.format(text=text))
+    processed_text = clip.tokenize(text).to(device)
+    return model.encode_text(processed_text)
+
 # --- predict method
 def clip_predict(image_inputs, classification_inputs, classifications, min_similarity=0.01):
     predictions = []
@@ -30,8 +36,8 @@ def clip_predict(image_inputs, classification_inputs, classifications, min_simil
             text_features /= text_features.norm(dim=-1, keepdim=True)
             similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
             values, indices = similarity[0].topk(len(classifications))
-            # format result
             image_predictions = []
+            # for each value aka tensor(...)
             for value, index in zip(values, indices):
                 # --- expect min of 0.01, otherwise don't push
                 if value.item() > min_similarity:
@@ -41,10 +47,10 @@ def clip_predict(image_inputs, classification_inputs, classifications, min_simil
     # return
     return predictions
 
-def clip_calc(image_file_paths, classifications, min_similarity):
-    print('INFO (CLIP): clip_calc')
+def clip_classifications(image_file_paths, classifications, min_similarity):
+    print('INFO (CLIP): clip_classifications')
     # PREPROCESS
-    # --- images
+    # --- image embeddings
     image_inputs = []
     for im in image_file_paths:
         image_decoded = Image.open(im)
@@ -53,5 +59,5 @@ def clip_calc(image_file_paths, classifications, min_similarity):
     classification_inputs = torch.cat([clip.tokenize(f"{c}") for c in classifications]).to(device)
     # MULTI-MODAL COMPARISON
     predictions = clip_predict(image_inputs=image_inputs, classification_inputs=classification_inputs, classifications=classifications, min_similarity=min_similarity)
-    print('INFO (CLIP): clip_calc predictions:', predictions)
+    print('INFO (CLIP): clip_classifications predictions:', predictions)
     return predictions

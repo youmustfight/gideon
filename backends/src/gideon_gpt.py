@@ -23,6 +23,13 @@ def gpt_vars():
         "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT
     }
 
+def gpt_embedding(content, engine=ENGINE_EMBEDDING):
+    print('INFO (GPT3): gpt_embedding - {engine}'.format(engine=engine))
+    # --- OpenAI
+    response = openai.Embedding.create(input=content,engine=engine)
+    vector = response['data'][0]['embedding']  # this is a normal list
+    return vector
+
 # FUNCTIONS
 def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 2
@@ -110,13 +117,6 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, instruction, input)
             sleep(1)
-
-def gpt_embedding(content, engine=ENGINE_EMBEDDING):
-    print('INFO (GPT3): gpt_embedding - {engine}'.format(engine=engine))
-    # --- OpenAI
-    response = openai.Embedding.create(input=content,engine=engine)
-    vector = response['data'][0]['embedding']  # this is a normal list
-    return vector
 
 def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
