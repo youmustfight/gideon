@@ -6,7 +6,8 @@ import torch
 
 # SETUP
 # --- vars
-CLIP_MODEL = "ViT-L/14@336px" # released April 2022
+# CLIP_MODEL = "ViT-B/32"
+CLIP_MODEL = "ViT-L/14" # TODO: @336
 # --- model + preprocess for images
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load(CLIP_MODEL, device=device)
@@ -21,6 +22,13 @@ def clip_text_embedding(text):
     print('INFO (CLIP): clip_text_embedding - {text}'.format(text=text))
     processed_text = clip.tokenize(text).to(device)
     return model.encode_text(processed_text)
+
+def clip_image_embedding(image_file_path):
+    with torch.no_grad():
+        image_decoded = Image.open(image_file_path)
+        image_embedding = preprocess(image_decoded).unsqueeze(0).to(device)
+        # returns a tensor
+        return image_embedding
 
 # --- predict method
 def clip_predict(image_inputs, classification_inputs, classifications, min_similarity=0.01):

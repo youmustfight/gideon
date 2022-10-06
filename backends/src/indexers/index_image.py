@@ -1,5 +1,7 @@
 import json
-from gideon_clip import clip_classifications, clip_vars
+from sentence_transformers import SentenceTransformer
+from gideon_faiss import faiss_add_image
+from gideon_clip import clip_classifications, clip_image_embedding, clip_vars
 from gideon_utils import get_file_path
 
 # INDEX_IMAGE
@@ -22,6 +24,10 @@ async def index_image(filename):
         return prediction['classification']
 
     # CLIP
+    # --- vectors... for search... inspired by... https://adeshg7.medium.com/build-your-own-search-engine-using-openais-clip-and-fastapi-part-1-89995aefbcdd
+    print('INFO (index_image.py): add vector to faiss index', document_summary_classifications)
+    faiss_add_image([input_filepath], filename)  
+    
     # --- document type (ex: mug shot, crime scene, etc. high level)
     document_type_classifications = []
     c_type = clip_classifications(
@@ -43,7 +49,7 @@ async def index_image(filename):
     )
     document_summary_classifications = document_summary_classifications + c_time_of_day[0]
     c_mug_shot = clip_classifications(
-        classifications=["a photo of a person", "a photo containing multiple people", "a photo containing no people", "a photo containing documents", "a photo containing evidence"],
+        classifications=["a photo of a person", "a photo containing multiple people", "a photo containing no people", "a photo containing documents"],
         image_file_paths=image_file_paths,
         min_similarity=0.6
     )
