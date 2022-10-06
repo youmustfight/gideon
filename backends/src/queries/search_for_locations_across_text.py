@@ -1,7 +1,8 @@
 from env import env_get_open_ai_api_key
+from gideon_faiss import faiss_search_images
 from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize
 from gideon_search import filter_text_vectors_within_top_score_diff, search_similar_file_text_vectors, sort_scored_text_vectors
-from gideon_utils import filter_formats, get_documents_json, get_file_path, open_txt_file, similarity
+from gideon_utils import filter_documents_by_format, get_documents_json, get_file_path, open_txt_file, similarity
 import openai
 
 # SETUP
@@ -10,14 +11,16 @@ openai.api_key = env_get_open_ai_api_key()
 
 
 # SEARCH QUERY
-def search_for_locations_by_text_embedding(text_query_embedding):
-    print('INFO (search_for_locations_by_vector.py): query all documents for vector', text_query_embedding)
+def search_for_locations_across_text(text_query):
+    print(f"INFO (search_for_locations_by_vector.py): query all documents via '{text_query}'")
     # SETUP
     # --- files
     json_documents = get_documents_json()
-    json_documents = filter_formats(["audio", "pdf", "video"], json_documents)
+    json_documents = filter_documents_by_format(["audio", "pdf", "video"], json_documents)
     locations = [] # { filename, page_number, score }[]
-    # VECTOR SIMILARITY SCORING
+    
+    # TEXT VECTOR SIMILARITY SCORING
+    text_query_embedding = gpt_embedding(text_query)
     # --- for each file
     for json_document_payload in json_documents:
         # --- for each document_text_vectors_by_sentence (did _by_page but i think this will be higher accuracy)
@@ -41,8 +44,9 @@ def search_for_locations_by_text_embedding(text_query_embedding):
     # --- sort & filter
     locations = sort_scored_text_vectors(locations)
     locations = filter_text_vectors_within_top_score_diff(locations, 0.05, top_score_position_to_use=1) # skipping position 0 score cause it'll be a tight match and we eval others against highest score
-    # RESPONSE
-    print('INFO (search_for_locations_by_vector.py): locations', locations)
+
+    # RETURN
+    # print('INFO (search_for_locations_by_vector.py): locations', locations)
     return locations
   
 
@@ -50,4 +54,4 @@ def search_for_locations_by_text_embedding(text_query_embedding):
 if __name__ == '__main__':
     query = input("Enter your question here: ")
     query_vector = gpt_embedding(query)
-    search_for_locations_by_text_embedding(query_vector)
+    search_for_locations_across_text(query_vector)

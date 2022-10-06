@@ -1,5 +1,5 @@
 from gideon_gpt import gpt_embedding
-from gideon_utils import get_documents_json, similarity
+from gideon_utils import filter_documents_by_format, get_documents_json, similarity
 
 def sort_scored_text_vectors(text_vectors):
     return sorted(text_vectors, key=lambda d: d['score'], reverse=True)
@@ -27,6 +27,7 @@ def get_all_document_text_vectors(index_type, vector_type='document'):
     print('INFO (gideon_search.py): get_all_document_text_vectors', index_type, vector_type)
     text_vectors = []
     json_documents = get_documents_json()
+    json_documents = filter_documents_by_format(["audio", "pdf"], json_documents)
     print('INFO (gideon_search.py): num json_documents', len(json_documents))
     # --- for each json file
     for json_document_payload in json_documents:

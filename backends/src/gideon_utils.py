@@ -9,7 +9,7 @@ dirname = os.path.dirname(__file__)
 # MATH
 def similarity(v1, v2):  # return dot product of two vectors
     sim = numpy.dot(v1, v2)
-    print('INFO (numpy): similarity: {sim}'.format(sim=sim))
+    # print('INFO (numpy): similarity: {sim}'.format(sim=sim))
     return sim
 
 
@@ -24,11 +24,10 @@ def get_documents_json():
         return json.load(open(get_file_path('../indexed/{json_filename}'.format(json_filename=json_filename))))
     return list(map(json_mapper, json_files_paths))
 
-def filter_formats(formats, documents):
-    def filt(document):
+def filter_documents_by_format(formats, documents):
+    def filter_by_format(document):
         return document['format'] in formats
-    return filter(filt, documents)
-
+    return filter(filter_by_format, documents)
 
 def get_highlights_json():
     path_to_json = get_file_path("../indexed/highlights")
