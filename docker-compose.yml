@@ -34,4 +34,14 @@ services:
     env_file:
       - ./.env
     environment:
+      - DATABASE_APP_HOST=database_app # within docker network, we use service name
       - PYTHONUNBUFFERED=1 # for getting print() pushed
+
+  database_app:
+    image: postgres:14.5
+    environment:
+      POSTGRES_DB: gideon
+      POSTGRES_USER: gideon
+      POSTGRES_PASSWORD: nojusticenopeace
+    ports:
+      - "5432:5432"
