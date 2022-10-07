@@ -6,8 +6,8 @@ import torch
 
 # SETUP
 # --- vars
-# CLIP_MODEL = "ViT-B/32"
-CLIP_MODEL = "ViT-L/14" # TODO: @336
+CLIP_MODEL = "ViT-B/32"
+# CLIP_MODEL = "ViT-L/14" # TODO: @336
 # --- model + preprocess for images
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load(CLIP_MODEL, device=device)

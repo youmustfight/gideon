@@ -1,4 +1,5 @@
 import faiss
+import os
 import numpy
 import random
 from sentence_transformers import SentenceTransformer
@@ -18,25 +19,39 @@ from gideon_utils import get_file_path
 # https://github.com/facebookresearch/faiss/issues/1118
 # https://stackoverflow.com/questions/67956633/typeerror-in-method-indexidmap-add-with-ids-argument-4-of-type-faissindex
 
-clip_image_model = SentenceTransformer('clip-ViT-L-14') # TODO: use @336 variant of L/14
+# clip_image_model = SentenceTransformer('clip-ViT-L-14') # TODO: use @336 variant of L/14
+clip_image_model = SentenceTransformer('clip-ViT-B-32') # doing this for now bc less memory usage?
+faiss_index_clip_path = get_file_path("../indexed/faiss/clip.index")
+
 
 # FAISS INDEX = IMAGES
 def faiss_build_index():
-    # --- get future tensor dimensions for index params
-    image_index_embedding_sample = clip_image_model.encode([get_file_path("../documents/gideon.png")])
-    # --- build index
-    print("INFO (gideon_faiss:faiss_build_index): shape =", image_index_embedding_sample.shape)
-    # IVF_VORONI_CLUSTERS = 39 # only needed if we're doing ann styled indexes
-    DIMENSIONS = image_index_embedding_sample.shape[1]
-    print("INFO (gideon_faiss:faiss_build_index): DIMENSIONS =", DIMENSIONS)
-    # FYI: If we're using an inverted index like IFV, we have to train i think to rebuild the top level indexes, otherwise it's trained
-    # FYI: Only IVF indexes allow add_with_ids, L2 does not. Flat is a storage type. 
-    # FYI: Not using a IVF index first means, means we're doing "exchaustive" search which may be better anyways for the legal domain since it's not excluding any result
-    # FYI: IDMap + Flat means we can get knn exhaustive search w/ add_with_ids 
-    built_index = faiss.index_factory(DIMENSIONS, "IDMap,Flat") # "Flat" "IVF4096,Flat" f"IVF{DIMENSIONS},Flat" f"IVF{IVF_VORONI_CLUSTERS},Flat"
-    print("INFO (gideon_faiss:faiss_build_index): is_trained =", built_index.is_trained)
+    # IF INDEX SAVED
+    if os.path.isfile(faiss_index_clip_path):
+        built_index = faiss.read_index(faiss_index_clip_path)
+    # IF NOT, BUILD
+    else:
+        # --- get future tensor dimensions for index params
+        image_index_embedding_sample = clip_image_model.encode([get_file_path("../documents/gideon.png")])
+        # --- build index
+        print("INFO (gideon_faiss.py:faiss_build_index): shape =", image_index_embedding_sample.shape)
+        # IVF_VORONI_CLUSTERS = 39 # only needed if we're doing ann styled indexes
+        DIMENSIONS = image_index_embedding_sample.shape[1]
+        print("INFO (gideon_faiss.py:faiss_build_index): DIMENSIONS =", DIMENSIONS)
+        # FYI: If we're using an inverted index like IFV, we have to train i think to rebuild the top level indexes, otherwise it's trained
+        # FYI: Only IVF indexes allow add_with_ids, L2 does not. Flat is a storage type. 
+        # FYI: Not using a IVF index first means, means we're doing "exchaustive" search which may be better anyways for the legal domain since it's not excluding any result
+        # FYI: IDMap + Flat means we can get knn exhaustive search w/ add_with_ids 
+        built_index = faiss.index_factory(DIMENSIONS, "IDMap,Flat") # "Flat" "IVF4096,Flat" f"IVF{DIMENSIONS},Flat" f"IVF{IVF_VORONI_CLUSTERS},Flat"
+    # RETURN (print some info to check)
+    print("INFO (gideon_faiss.py:faiss_build_index): is_trained", built_index.is_trained)
+    print("INFO (gideon_faiss.py:faiss_build_index): ntotal", built_index.ntotal)
     return built_index
+# --- at startup, build index for images/text CLIP model
+index = faiss_build_index()
 
+def faiss_save_index():
+    faiss.write_index(index, faiss_index_clip_path)
 
 # FAISS UTILS
 # filter is stricter w/ CLIP model bc similarity score variance is less
@@ -65,6 +80,8 @@ def faiss_add_image(image_filepaths, filename):
     # Return ID?
     print(f"INFO (gideon_faiss.py:faiss_add_image): index.ntotal", index.ntotal)
     print(f"INFO (gideon_faiss.py:faiss_add_image): index", index)
+    # OPTIMIZE: re-save index
+    faiss_save_index()
 
 def faiss_search_images(text_query):
     print("INFO (gideon_faiss.py:faiss_search_images): query", text_query)
@@ -81,9 +98,3 @@ def faiss_search_images(text_query):
     locations = list(map(lambda o: { "score": float(o[0]), "document_id": int(o[1]) }, list(zip(probabilities, ids))))
     # --- filter -1s
     return list(filter(lambda o: o["document_id"] > 0, locations))
-    
-
-# AT STARTUP
-# --- build image index
-index = faiss_build_index()
-
