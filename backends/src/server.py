@@ -1,18 +1,23 @@
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
+from tortoise.contrib.sanic import register_tortoise
+from tortoise.contrib.pydantic import pydantic_model_creator
 
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
 from indexers.index_image import index_image
+from models import Users
+from orm import TORTOISE_ORM
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
 from queries.search_for_locations_across_image import search_for_locations_across_image
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
+
 
 
 # INIT
@@ -109,6 +114,7 @@ def app_route_question_answer(request):
 def app_route_query_info_locations(request):
     locations_across_text = search_for_locations_across_text(request.json['query'])
     locations_across_image = search_for_locations_across_image(request.json['query'])
+    # TODO: find a way to normalize scoring of GPT3 + CLIP
     locations = locations_across_text + locations_across_image
     return json({ "success": True, "locations": locations })
 
@@ -133,7 +139,25 @@ def app_route_contrast_users(request):
     return json({ "success": True, "answer": answer })
 
 
+# USERS
+# --- mostly for testing out migrations/models/serialized responses
+
+@app.route('/users', methods = ['GET'])
+async def app_route_users(request):
+    users = await Users.all().values() # did values() to get dicts since class/models can't be serialized by default w/ sanic/tortise
+    return json({ "success": True, "users": users })
+
+
+
 # RUN
+# --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
+register_tortoise(
+    app,
+    db_url=TORTOISE_ORM['connections']['default'],
+    generate_schemas=True,
+    modules={"models": ["models"]}
+)
+# --- SANIC SERVER WORKERS
 if __name__ == "__main__":
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py

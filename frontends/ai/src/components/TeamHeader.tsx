@@ -1,8 +1,10 @@
 import React from "react";
 import styled from "styled-components";
 import { useTeamStore } from "../data/TeamStore";
+import { useUsers } from "../data/useUsers";
 
 export const TeamHeader = () => {
+  const { data } = useUsers();
   const { currentUser, setCurrentUser, users } = useTeamStore();
 
   return (
