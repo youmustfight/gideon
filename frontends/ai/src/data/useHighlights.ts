@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useQuery } from "react-query";
+import { getGideonApiUrl } from "../env";
 
 export type TDocumentHighlight = {
   filename: string;
@@ -18,7 +19,7 @@ export type TDocumentHighlight = {
 
 // Filters for user via forUser
 const reqHighlightsGet = async (): Promise<TDocumentHighlight[]> =>
-  axios.get("http://localhost:3000/highlights").then((res) => res.data.highlights);
+  axios.get(`${getGideonApiUrl()}/v1/highlights`).then((res) => res.data.highlights);
 
 export const useHighlights = () => {
   return useQuery<TDocumentHighlight[]>(["highlights"], async () => reqHighlightsGet(), {

@@ -26,7 +26,7 @@ export const highlightStore = createVanilla<THighlightStore>((set, get) => ({
   setHightlightNoteText: (hightlightNoteText) => set({ hightlightNoteText }),
   saveHighlightAndOpinion: async (payload) => {
     set({ highlightNoteSubmitted: true });
-    await axios.post("http://localhost:3000/highlights", { highlight: payload });
+    await axios.post("http://localhost:3000/v1/highlights", { highlight: payload });
     set({ highlightNoteSubmitted: false, hightlightNoteText: "", sentenceStartIndex: null, sentenceEndIndex: null });
   },
 }));

@@ -62,7 +62,7 @@ export const DiscoveryBox = () => {
       // --- setup form data/submit
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
-      axios.post(`http://localhost:3000/documents/index/${type}`, formData, {
+      axios.post(`http://localhost:3000/v1/documents/index/${type}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       // --- clear file in input if successful
