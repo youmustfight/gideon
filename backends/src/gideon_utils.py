@@ -1,5 +1,7 @@
 import base64
+import io
 import json
+import pickle
 import aiofiles
 import numpy
 import os
@@ -44,6 +46,12 @@ def open_img_file_as_base64(filepath):
     with open(filepath, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read())
         return encoded_string
+
+def write_tensor_to_bytearray(tensor):
+    numpy_tensor_array_data = io.BytesIO()
+    pickle.dump(tensor, numpy_tensor_array_data)
+    numpy_tensor_array_data.seek(0)
+    return numpy_tensor_array_data
 
 def write_file(filepath, bytes):
     with open(filepath, 'wb') as file:
