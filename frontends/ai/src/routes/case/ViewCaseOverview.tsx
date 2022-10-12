@@ -1,14 +1,14 @@
 import React from "react";
 import styled from "styled-components";
-import { DiscoveryBox } from "./components/DiscoveryBox";
-import { HighlightsBox } from "./components/HighlightsBox";
-import { useHighlights } from "./data/useHighlights";
+import { DiscoveryBox } from "../../components/DiscoveryBox";
+import { HighlightsBox } from "../../components/HighlightsBox";
+import { useHighlights } from "../../data/useHighlights";
 
-export const GideonCaseView = () => {
+export const ViewCaseOverview = () => {
   const { data: highlights = [] } = useHighlights();
   // RENDER
   return (
-    <StyledGideonCaseView>
+    <StyledViewCaseOverview>
       {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
       <div className="section-lead">
         <h4>Discovery, Evidence, Exhibits</h4>
@@ -17,7 +17,11 @@ export const GideonCaseView = () => {
         <DiscoveryBox />
       </section>
 
-      {/* MY DOCS */}
+      {/* TODO: SUMMATION (timeline w/ summaries) */}
+
+      {/* TODO: MY DOCS */}
+
+      {/* HIGHLIGHTS/ANNOTATIONS */}
       {highlights?.length > 0 ? (
         <>
           <div className="section-lead">
@@ -28,11 +32,11 @@ export const GideonCaseView = () => {
           </section>
         </>
       ) : null}
-    </StyledGideonCaseView>
+    </StyledViewCaseOverview>
   );
 };
 
-const StyledGideonCaseView = styled.div`
+const StyledViewCaseOverview = styled.div`
   padding-bottom: 40px;
   .my-docs {
     margin: 12px;
