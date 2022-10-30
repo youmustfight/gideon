@@ -1,8 +1,8 @@
+from env import env_get_open_ai_api_key
 from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
-import json
+import numpy
 import math
 import openai
-import requests
 import textwrap
 from time import time,sleep
 
@@ -14,6 +14,8 @@ ENGINE_COMPLETION = 'text-davinci-002' # 'text-ada-001' #
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
 ENGINE_EMBEDDING = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
 TEMPERATURE_DEFAULT = 0
+# --- OpenAI
+openai.api_key = env_get_open_ai_api_key()
 
 def gpt_vars():
     return {
@@ -24,11 +26,15 @@ def gpt_vars():
     }
 
 def gpt_embedding(content, engine=ENGINE_EMBEDDING):
-    print('INFO (GPT3): gpt_embedding - {engine}'.format(engine=engine))
-    # --- OpenAI
-    response = openai.Embedding.create(input=content,engine=engine)
+    print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
+    response = openai.Embedding.create(input=content,engine=engine) # OpenAI
     vector = response['data'][0]['embedding']  # this is a normal list
-    return vector
+    # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
+    # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
+    vector_as_numpy_array = numpy.asarray(vector, dtype="float32")
+    vector_shaped_for_consistency_with_faiss = numpy.expand_dims(vector_as_numpy_array, axis=0) # matching the matrix style of sentence-transformer clip encode returns, which works with faiss
+    print(f"INFO (GPT3): gpt_embedding [{engine}] finish", vector_shaped_for_consistency_with_faiss)
+    return vector_shaped_for_consistency_with_faiss
 
 # FUNCTIONS
 def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
@@ -49,25 +55,6 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
                 stop=stop)
             text = response['choices'][0]['text'].strip()
             return text
-            # --- ForeFront
-            # res = requests.post(
-            #     "https://shared-api.forefront.link/organization/FV6AbZNxxBmB/gpt-j-6b-vanilla/completions/2JrDQ5BhJAm6",
-            #     json={
-            #         "text": prompt,
-            #         "top_p": top_p,
-            #         "top_k": 40,
-            #         "temperature": temperature,
-            #         "repetition_penalty": 1,
-            #         "length": 24
-            #     },
-            #     headers={
-            #         "Authorization": "Bearer {FOREFRONT_API_KEY}".format(FOREFRONT_API_KEY=env['FOREFRONT_API_KEY']),
-            #         "Content-Type": "application/json"
-            #     }
-            # )
-            # data = res.json()
-            # text = data['result'][0]['completion'].strip()
-            # return text
         except Exception as err:
             retry += 1
             if retry >= max_retry:
@@ -93,7 +80,6 @@ def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk
         return filter_empty_strs(result)
     return '\n\n'.join(result)
 
-
 def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 2
     retry = 0
@@ -109,8 +95,6 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 top_p=top_p)
             text = response['choices'][0]['text'].strip()
             return text
-            # --- ForeFront (doesn't have an edit API endpoint)
-            # return input
         except Exception as err:
             retry += 1
             if retry >= max_retry:
