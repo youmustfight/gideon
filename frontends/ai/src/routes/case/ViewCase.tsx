@@ -9,7 +9,8 @@ import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
 
 export const ViewCase = () => {
-  const caseId = Number(useMatch("/case/:caseId")?.params.caseId);
+  const matches = useMatch("/case/:caseId/*");
+  const caseId = Number(matches?.params?.caseId);
   const { data: cse } = useCase(caseId);
 
   // RENDER
@@ -26,11 +27,11 @@ export const ViewCase = () => {
       {/* CASE VIEWS */}
       <Routes>
         {/* --- overview */}
-        <Route path="/overview" element={<ViewCaseOverview />} />
+        <Route index element={<ViewCaseOverview />} />
         {/* --- document inspection */}
         <Route path="/document/:filename" element={<ViewCaseDocument />} />
         {/* --- default overview showing. TODO: figure out relative path version */}
-        <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} />
+        {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
       </Routes>
     </StyledViewCase>
   );

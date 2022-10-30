@@ -17,7 +17,7 @@ export const Gideon: React.FC = () => {
         {/* CASES */}
         <Route path="/cases/*" element={user ? <ViewCases /> : <Navigate to="/" />} />
         {/* CASE */}
-        <Route path="/case/:caseId/*" element={user ? <ViewCase /> : <Navigate to="/" />} />
+        <Route path="/case/*" element={user ? <ViewCase /> : <Navigate to="/" />} />
         {/* ELSE */}
         <Route path="*" element={user ? <Navigate to="/cases" /> : <Navigate to="/login" />} />
       </Routes>

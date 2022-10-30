@@ -10,7 +10,7 @@ export const ViewCases = () => {
   return (
     <div>
       {cases?.map((c) => (
-        <div>
+        <div key={c.id}>
           <Link to={`/case/${c.id}`}>Link to {c.id}</Link>
         </div>
       ))}
