@@ -1,14 +1,20 @@
-from time import sleep
+import asyncio
 import easyocr
 import io
-import json
-from env import env_get_open_ai_api_key
-from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
-from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+import numpy
 import openai
-import os
-from pdf2image import convert_from_path # FYI, on Mac -> brew install poppler
+from pdf2image import convert_from_bytes, convert_from_path
+import pickle
 import textwrap
+from time import sleep
+import uuid
+
+from env import env_get_open_ai_api_key
+from gideon_faiss import index_documents_add_text, index_sentences_add_text
+from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+from gideon_utils import filter_empty_strs, get_file_path, open_txt_file, tokenize_string
+from models import Document, DocumentContent, Embedding, File
+from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 
 # SETUP
 # --- OpenAI
@@ -16,206 +22,206 @@ openai.api_key = env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'])
 
-# INDEX_PDF
-def index_pdf(filename, index_type):
-    print('INFO (index_pdf.py): started')
-    # PROCESS FILE + PROPERTIES (w/ OCR)
-    is_discovery_document = index_type == "discovery"
-    input_filepath = get_file_path('../documents/{filename}'.format(filename=filename))
-    output_filepath = get_file_path('../indexed/{filename}.json'.format(filename=filename))
-    # Setup Vars
-    # --- docs: all
-    ai_tool = "gpt3"
-    ai_models = gpt_vars()
-    document_text = '' # string
-    document_text_vectors = [] # { text, vector }[]
-    document_text_by_page = [] # string[]
-    document_text_vectors_by_page = [] # { text, vector, page_number }[]
-    document_text_vectors_by_paragraph = [] # { text, vector, page_number }[]
-    document_text_vectors_by_sentence = [] # { text, vector, page_number }[]
-    document_type = ''
-    document_summary = ''
-    # --- docs: discovery
-    event_timeline = []
-    mentions_cases_laws = []
-    mentions_organizations = []
-    mentions_people = []
-    people = {}
-    if os.path.isfile(output_filepath) == True:
-        # SKIP OCR IF WE HAVE DOCUMENT/PAGE TEXT
-        existing_data = json.load(open(output_filepath))
-        document_text = existing_data['document_text']
-        document_text_by_page = existing_data['document_text_by_page']
-        try:
-            if existing_data['document_type'] != None and len(existing_data['document_type']) > 0:
-                document_type = existing_data['document_type']
-        except:
-            print('INFO (index_pdf.py): no existing document type')
-        try:
-            if existing_data['document_summary'] != None and len(existing_data['document_summary']) > 0:
-                document_summary = existing_data['document_summary']
-        except:
-            print('INFO (index_pdf.py): no existing document summary')
-    else:
+async def _index_pdf_process_file(document):
+    print("INFO (index_pdf.py:_index_pdf_process_file) started", document)
+    # STATUS
+    files = await document.files.all()
+    print(f"INFO (index_pdf.py:_index_pdf_process_file) {len(files)} files")
+    file = files[0]
+    file_bytes = s3_get_file_bytes(file.upload_key)
+    # PDF OCR -> TEXT (SENTENCES) / IMAGES
+    # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
+    content = await document.content.all()
+    if len(content) == 0:
         # CONVERT (PDF -> Image[] for OCR)
-        print('INFO (index_pdf.py): converting {convert_file_path}'.format(convert_file_path=input_filepath))
-        pdf_image_files = convert_from_path(input_filepath, fmt='png')
-        print('INFO (index_pdf.py): converted {convert_file_path}'.format(convert_file_path=input_filepath))
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): converting {file.filename} to pngs")
+        # DEPRECATE: pdf_image_files = convert_from_path(input_filepath, fmt='png')
+        pdf_image_files = convert_from_bytes(file_bytes, fmt='png')
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): converted {file.filename} to {len(pdf_image_files)} pngs")
         # PER PAGE (get text)
+        new_content = []
         for idx, pdf_image_file in enumerate(pdf_image_files): # FYI can't unpack err happens on pages, so we cast w/ enumerate to add in an index
             page_number = idx + 1
-            print('INFO (index_pdf.py): page {page_number}'.format(page_number=page_number), pdf_image_file)
+            tokenizing_strategy = "sentence"
+            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number}'.format(page_number=page_number), pdf_image_file)
             # --- ocr (confused as shit converting PIL.PngImagePlugin.PngImageFile to bytes)
             img_byte_arr = io.BytesIO()
             pdf_image_file.save(img_byte_arr, format='png')
-            ocr_str_array = reader.readtext(img_byte_arr.getvalue(), detail=0)
-            ocr_text = ' '.join(ocr_str_array) # TODO: might be a way/place to preserve paragraph breaks for encoding
-            print('INFO (index_pdf.py): page {page_number} ocr = "{ocr_text}"'.format(page_number=page_number, ocr_text=ocr_text))
-            # --- for each chunk, summarize, compile names, create event timeline
-            document_text_by_page.append(ocr_text)
-        # JOIN ALL TEXT
-        document_text = ' '.join(document_text_by_page)
-        # SAVE IN CASE ML PARSING FAILS SO WE DONT HAVE TO REDO
-        with open(output_filepath, 'w') as outfile:
-            json.dump({
-                "filename": filename,
-                "index_type": "discovery" if is_discovery_document == True else "case_law",
-                "document_text": document_text,
-                "document_text_by_page": document_text_by_page
-            }, outfile, indent=2)
+            page_ocr_str_array = reader.readtext(img_byte_arr.getvalue(), detail=0)
+            # --- compile all extracted text tokens into 1 big string so we can break down into sentences
+            page_ocr_text = ' '.join(page_ocr_str_array).encode(encoding='ASCII',errors='ignore').decode() # safe string
+            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number} ocr = "{page_ocr_text}"'.format(page_number=page_number, page_ocr_text=page_ocr_text))
+            # --- for each page, break down into sentences for content array
+            page_ocr_text_sentences = tokenize_string(page_ocr_text, tokenizing_strategy)
+            print(f"INFO (index_pdf.py:_index_pdf_process_file): tokenized page {page_number}", page_ocr_text_sentences)
+            # --- prep document content for page
+            page_content = list(map(lambda sentence: DocumentContent(
+                document_id=document.id,
+                page_number=page_number,
+                text=sentence,
+                tokenizing_strategy=tokenizing_strategy
+            ), page_ocr_text_sentences))
+            # --- insert
+            print(f"INFO (index_pdf.py:_index_pdf_process_file): prepped {len(page_content)} document content records", page_content)
+            new_content = new_content + page_content
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserting {len(new_content)} document content records")
+        # TODO: atm, i'm doing asyncio tasks just to get all the writes in....
+        # ... then doing server restarts and running embedding processing separately until bulk is fixed
+        # HACK: For some reason, if doing multiple queries w/ 1 transaction asyncpg hangs
+        # --- this asyncio.wait strategy seems to work...? https://stackoverflow.com/questions/67240458/how-does-await-works-in-a-for-loop
+        # attempt #1
+        # await DocumentContent.bulk_create(new_content)
+        # attempt #2
+        tasks = [asyncio.create_task(nc.save()) for nc in new_content]
+        done, pending = await asyncio.wait(tasks)
+        # print(f"INFO (index_pdf.py:_index_pdf_process_file): asyncio.wait done", done)
+        # print("pending", pending)
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted {len(new_content)} new document content records")
+    document.status_processing_files = "completed"
+    await document.save(update_fields=["status_processing_files"])
 
-    # GTP3 ML
-    print('INFO (index_pdf.py): is_discovery_document = {bool}'.format(bool=is_discovery_document))
-    print('INFO (index_pdf.py): len(document_text) = {length}'.format(length=len(document_text)))
-    use_repeat_methods = len(document_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
-    print('INFO (index_pdf.py): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
+async def _index_pdf_process_embeddings(document):
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
+    document_content = await document.content.all()
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
+    document_content_text = " ".join(map(lambda content: content.text, document_content))
+    # 1) large embeddings for summarization
+    document_content_text_chunks = textwrap.wrap(document_content_text, 3_500)
+    for chunk in document_content_text_chunks:
+        # --- add to index (handles embedding creation)
+        await index_documents_add_text(chunk, document_id=document.id)
+        # --- take a break (throttled by openai 60 reqs/min)
+        sleep(2)
+    # 2) sentence embeddings for location look ups
+    for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
+        # --- add to index (handles embedding creation)
+        await index_sentences_add_text(content.text, document_content_id=content.id)
+        # --- take a break (throttled by openai 60 reqs/min)
+        sleep(2)
+    document.status_processing_embeddings = "completed"
+    document.save(update_fields=["status_processing_embeddings"])
 
-    # --- vectorize document text for summarization
-    print('INFO (index_pdf.py): vectors - document_text_vectors')
-    chunks_for_vectors = textwrap.wrap(document_text, 3_500)
-    for chunk in chunks_for_vectors:
-        sleep(2) # slowing down so we don't exceed 60 reqs/min
-        safe_chunk = chunk.encode(encoding='ASCII',errors='ignore').decode()
-        embedding = gpt_embedding(safe_chunk)
-        document_text_vectors.append({ "text": chunk, "vector": embedding })
-    # --- per page...
-    for idx, page_text in enumerate(document_text_by_page):
-        # --- vectorize page text
-        print('INFO (index_pdf.py): vectors - document_text_vectors_by_page')
-        sleep(2) # slowing down so we don't exceed 60 reqs/min
-        safe_page_text = page_text.encode(encoding='ASCII',errors='ignore').decode()
-        page_embedding = gpt_embedding(safe_page_text)
-        document_text_vectors_by_page.append({ "text": page_text, "vector": page_embedding, "page_number": idx + 1 })
-        # --- TODO: vectorize page text paragraphs (not preserved at OCR step, so not sure yet how to do this)
-        # --- vectorize page text sentences
-        print('INFO (index_pdf.py): vectors - document_text_vectors_by_sentence')
-        for page_sentence_text in safe_page_text.split(". "): # doing .\s so we don't split on abbreviations
-            sleep(2)
-            safe_page_sentence_text = page_sentence_text.encode(encoding='ASCII',errors='ignore').decode()
-            page_sentence_embedding = gpt_embedding(safe_page_sentence_text)
-            document_text_vectors_by_sentence.append({ "text": page_sentence_text, "vector": page_sentence_embedding, "page_number": idx + 1 })
-            
+async def _index_pdf_process_extractions(document):
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
+    document_content = await document.content.all()
+    document_content_text = " ".join(map(lambda content: content.text, document_content))
+    # VARS
+    # --- docs: summaries
+    document_description = ''
+    document_summary = ''
+    # --- docs: extractions
+    event_timeline = []
+    mentions_people = []
+    people = {}
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
+    use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
 
-    # --- summary
-    print('INFO (index_pdf.py): document_summary')
-    if len(document_summary) == 0 and len(document_text) < 250_000:
-        document_summary = gpt_summarize(document_text)
-    else:
-        print('INFO (index_pdf.py): document_summary exists or document is too long')
-
-    # --- classification
-    print('INFO (index_pdf.py): document_type')
-    if len(document_type) == 0:
-        document_type = gpt_completion(
-            open_txt_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]),
+    # EXTRACT
+    # --- classification/description
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description')
+    if len(document_description) == 0:
+        document_description = gpt_completion(
+            open_txt_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
             max_tokens=75
         )
     else:
-        print('INFO (index_pdf.py): document_type exists')
+        print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description exists')
+
+    # --- summary
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
+    if len(document_summary) == 0 and len(document_content_text) < 250_000:
+        document_summary = gpt_summarize(document_content_text)
+    else:
+        print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary exists or document is too long')
 
     # --- cases/laws mentioned
-    print('INFO (index_pdf.py): mentions_cases_laws')
-    if len(document_text) < 250_000:
-        if use_repeat_methods == True:
-            mentions_cases_laws_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')),document_text,text_chunk_size=11_000,return_list=True)
-        else:
-            mentions_cases_laws_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')).replace('<<SOURCE_TEXT>>',document_text))
-        mentions_cases_laws = filter_empty_strs(gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
-            '\n'.join(mentions_cases_laws_dirty) if use_repeat_methods == True else mentions_cases_laws_dirty # join linebreaks if we have a list
-        ).split('\n'))
-    else:
-        print('INFO (index_pdf.py): mentions_cases_laws skipped because document text is too long')
-    
-    # --- if a discovery document (ex: police report, testimony, motion)
-    if is_discovery_document == True:
-        # --- event timeline (split on linebreaks, could later do structured parsing prob of dates)
-        print('INFO (index_pdf.py): event_timeline')
-        if use_repeat_methods == True:
-            event_timeline_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')),document_text,text_chunk_size=11_000,return_list=True)
-        else:
-            event_timeline_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>',document_text))
-        event_timeline = filter_empty_strs(gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
-            '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
-        ).split('\n'))
-        
-        # --- organizations mentioned
-        print('INFO (index_pdf.py): mentions_organizations')
-        if use_repeat_methods == True:
-            mentions_organizations_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')),document_text,text_chunk_size=11_000,return_list=True)
-        else:
-            mentions_organizations_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')).replace('<<SOURCE_TEXT>>',document_text))
-        mentions_organizations = filter_empty_strs(gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
-            '\n'.join(mentions_organizations_dirty) if use_repeat_methods == True else mentions_organizations_dirty # join linebreaks if we have a list
-        ).split('\n'))
-        
-        # --- people mentioned + context within document
-        print('INFO (index_pdf.py): mentions_people')
-        if use_repeat_methods == True:
-            mentions_people_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')),document_text,text_chunk_size=11_000,return_list=True)
-        else:
-            mentions_people_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')).replace('<<SOURCE_TEXT>>',document_text))
-        mentions_people = filter_empty_strs(gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_clean_names_list.txt')),
-            '\n'.join(mentions_people_dirty) if use_repeat_methods == True else mentions_people_dirty # join linebreaks if we have a list
-        ).split('\n'))
-        # TODO: skipping follow ups on people bc it takes forever atm. faster dev cycle plz
-        # print('INFO (index_pdf.py): mentions_people #{num_people}'.format(num_people=len(mentions_people)))
-        # for name in mentions_people:
-        #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
-        #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
+    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws')
+    # if len(document_content_text) < 250_000:
+    #     if use_repeat_methods == True:
+    #         mentions_cases_laws_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
+    #     else:
+    #         mentions_cases_laws_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
+    #     mentions_cases_laws = filter_empty_strs(gpt_edit(
+    #         open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
+    #         '\n'.join(mentions_cases_laws_dirty) if use_repeat_methods == True else mentions_cases_laws_dirty # join linebreaks if we have a list
+    #     ).split('\n'))
+    # else:
+    #     print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws skipped because document text is too long')
+    # # --- if a discovery document (ex: police report, testimony, motion)
+    # if is_discovery_document == True:
 
-    # FINISH
-    # --- save file
-    with open(output_filepath, 'w') as outfile:
-        json.dump({
-            "ai_tool": ai_tool,
-            "ai_models": ai_models,
-            "document_summary": document_summary,
-            "document_text": document_text,
-            "document_text_vectors": document_text_vectors,
-            "document_text_by_page": document_text_by_page,
-            "document_text_vectors_by_page": document_text_vectors_by_page,
-            "document_text_vectors_by_paragraph": document_text_vectors_by_paragraph,
-            "document_text_vectors_by_sentence": document_text_vectors_by_sentence,
-            "document_type": document_type,
-            "event_timeline": event_timeline,
-            "filename": filename,
-            "format": "pdf",
-            "index_type": "discovery" if is_discovery_document == True else "case_law",
-            "mentions_cases_laws": mentions_cases_laws,
-            "mentions_organizations": mentions_organizations,
-            "mentions_people": mentions_people,
-            "people": people
-        }, outfile, indent=2)
-    print('INFO (index_pdf.py): saved file')
+    # --- event timeline (split on linebreaks, could later do structured parsing prob of dates)
+    # print('INFO (index_pdf.py:_index_pdf_process_extractions): event_timeline')
+    # if use_repeat_methods == True:
+    #     event_timeline_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
+    # else:
+    #     event_timeline_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
+    # event_timeline = filter_empty_strs(gpt_edit(
+    #     open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
+    #     '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
+    # ).split('\n'))
 
-# RUN
-if __name__ == '__main__':
-    # affidavit-search-seize.pdf
-    # motion-to-unseal.pdf
-    filename = input("Filename To Process: ")
-    is_discovery_document = input("Discovery document? [y/n]") == 'y'
-    index_pdf(filename, "discovery" if is_discovery_document == True else "case_law")
+    # --- organizations mentioned
+    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_organizations')
+    # if use_repeat_methods == True:
+    #     mentions_organizations_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
+    # else:
+    #     mentions_organizations_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
+    # mentions_organizations = filter_empty_strs(gpt_edit(
+    #     open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
+    #     '\n'.join(mentions_organizations_dirty) if use_repeat_methods == True else mentions_organizations_dirty # join linebreaks if we have a list
+    # ).split('\n'))
+
+    # --- people mentioned + context within document
+    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_people')
+    # if use_repeat_methods == True:
+    #     mentions_people_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
+    # else:
+    #     mentions_people_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
+    # mentions_people = filter_empty_strs(gpt_edit(
+    #     open_txt_file(get_file_path('./prompts/edit_clean_names_list.txt')),
+    #     '\n'.join(mentions_people_dirty) if use_repeat_methods == True else mentions_people_dirty # join linebreaks if we have a list
+    # ).split('\n'))
+    # TODO: skipping follow ups on people bc it takes forever atm. faster dev cycle plz
+    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_people #{num_people}'.format(num_people=len(mentions_people)))
+    # for name in mentions_people:
+    #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
+    #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
+
+    # --- SAVE
+    document.document_description = document_description
+    document.document_summary = document_summary
+    await document.save(update_fields=["document_description", "document_summary"])
+    return document
+
+
+# INDEX_PDF
+async def index_pdf(pyfile):
+    print(f"INFO (index_pdf.py): indexing {pyfile.name} ({pyfile.type})")
+    # SETUP DOCUMENT
+    index_document = await Document.create(
+        status_processing_files="queued",
+    )
+    # SAVE & RELATE FILE
+    filename = pyfile.name
+    upload_key = pyfile.name # TODO: avoid collisions w/ unique prefix
+    # --- save to S3
+    s3_upload_file(upload_key, pyfile)
+    # --- create File()
+    input_s3_url = s3_get_file_url(filename)
+    index_file = await File.create(
+        filename=pyfile.name,
+        mime_type=pyfile.type,
+        upload_key=upload_key,
+        upload_url=input_s3_url,
+        document_id=index_document.id
+    )
+    # PROCESS FILE & EMBEDDINGS
+    print(f"INFO (index_pdf.py): processing file", upload_key)
+    await _index_pdf_process_file(index_document)
+    print(f"INFO (index_pdf.py): processing embeddings", upload_key)
+    await _index_pdf_process_embeddings(index_document)
+    print(f"INFO (index_pdf.py): processing extractions", upload_key)
+    await _index_pdf_process_extractions(index_document)
+    print(f"INFO (index_pdf.py): finished intake of document #{index_document.id}")
