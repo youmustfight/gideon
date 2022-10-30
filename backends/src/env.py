@@ -27,6 +27,9 @@ def env_get_database_app_host():
 def env_get_database_app_port():
   return os.environ['DATABASE_APP_PORT']
 
+# GIDEON
+def env_get_gideon_api_url():
+  return "http://localhost:3000"
 
 # OPENAI
 def env_get_open_ai_api_key():
