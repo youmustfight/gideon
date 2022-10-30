@@ -31,6 +31,8 @@ services:
       - ./backends/requirements.txt:/usr/src/backends/requirements.txt
     ports:
       - "3000:3000"
+    depends_on:
+      - database_app
     env_file:
       - ./.env
     environment:
