@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { useUserLogin } from "../../data/useUser";
+import { Navigate, redirect } from "react-router-dom";
+import { useUser, useUserLogin } from "../../data/useUser";
 
 export const ViewLogin = () => {
+  const { data: user } = useUser();
   const { mutateAsync: userLogin } = useUserLogin();
   const [loginEmail, setLoginEmail] = useState("mark@gideon.com");
   const [loginPassword, setLoginPassword] = useState("");
@@ -12,6 +14,7 @@ export const ViewLogin = () => {
 
   return (
     <div>
+      {user && <Navigate to="/" replace={true} />}
       <form onSubmit={handleLogin}>
         <label>
           Email

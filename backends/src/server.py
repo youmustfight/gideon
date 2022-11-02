@@ -209,8 +209,8 @@ def app_route_contrast_users(request):
 
 @app.route('/v1/user/<user_id>', methods = ['GET'])
 async def app_route_user(request, user_id):
-    user = await User.get(id=int(user_id)).values() # always need to call values() to serialize for response
-    return json({ "success": True, "user": user })
+    user = await User.filter(id=int(user_id)).first() #.values() # always need to call values() to serialize for response
+    return json({ "success": True, "user": dict(user) })
 
 @app.route('/v1/users', methods = ['GET'])
 async def app_route_users(request):

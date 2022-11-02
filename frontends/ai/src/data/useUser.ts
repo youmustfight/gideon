@@ -31,7 +31,10 @@ const reqUserGet = async (): Promise<TUser | null> => {
   // HACK: manually setting a fetch until setting up auth
   const userId = queryClient.getQueryData(["user"])?.id;
   if (!userId) return null;
-  return axios.get(`${getGideonApiUrl()}/v1/user/${userId}`).then((res) => res.data.user);
+  // --- fetch
+  const user = await axios.get(`${getGideonApiUrl()}/v1/user/${userId}`).then((res) => res.data.user);
+  // --- return
+  return user;
 };
 
 export const useUser = () => {

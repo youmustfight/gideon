@@ -232,11 +232,11 @@ const StyledDocumentViewTranscript = styled.div`
 `;
 
 export const ViewCaseDocument = () => {
-  const paramFilename = useMatch("/document/:filename")?.params?.["filename"];
+  const { caseId, filename } = useMatch("/case/:caseId/document/:filename")?.params;
   const { data: highlights = [] } = useHighlights();
   const { data: documents = [] } = useDocuments();
-  const document = documents.find((d) => d.filename === paramFilename);
-  const hasHighlights = highlights.some((hl) => hl.filename === paramFilename);
+  const document = documents.find((d) => d.filename === filename);
+  const hasHighlights = highlights.some((hl) => hl.filename === filename);
 
   // RENDER
   return !document ? null : (
@@ -244,7 +244,7 @@ export const ViewCaseDocument = () => {
       {/* SUMMARY */}
       <div className="section-lead">
         <h4>
-          <Link to="/">
+          <Link to={`/case/${caseId}`}>
             <button>←</button>
           </Link>{" "}
           <span>{document?.filename}</span>
