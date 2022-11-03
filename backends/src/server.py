@@ -6,7 +6,7 @@ from tortoise.contrib.sanic import register_tortoise
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
-from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
+from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions, _index_pdf_process_file
 from indexers.index_image import index_image
 from models import Case, Document, User
 from orm import TORTOISE_ORM
@@ -127,6 +127,12 @@ async def app_route_documents_index_pdf(request):
     # --- run processing
     await index_pdf(pyfile)
     # --- respond
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/pdf/<document_id>/process-file', methods = ['POST'])
+async def app_route_documents_index_pdf_process_file(request, document_id):
+    document = await Document.get(id=document_id)
+    await _index_pdf_process_file(document)
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/embeddings', methods = ['POST'])

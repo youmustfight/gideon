@@ -27,6 +27,6 @@ def s3_get_file_bytes(file_key):
     bucket = env_get_aws_s3_files_bucket()
     byte_array = io.BytesIO()
     s3.download_fileobj(Bucket=bucket, Key=file_key, Fileobj=byte_array)
-    print(f"INFO (s3_utils.py:s3_get_file_bytes) S3 download '{bucket}/{file_key}'")
+    print(f"INFO (s3_utils.py:s3_get_file_bytes) downloaded S3 '{bucket}/{file_key}'")
     # returns a python File obj, not our model
     return byte_array.getvalue()
