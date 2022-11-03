@@ -1,4 +1,4 @@
-FROM python:3.10.7
+FROM python:3.10.8
 WORKDIR /usr/src/backends
 
 # "wait-for-it.sh" copy + /bin

@@ -228,9 +228,13 @@ register_tortoise(
     generate_schemas=True,
     modules={"models": ["models"]}
 )
-# --- SANIC SERVER WORKERS
 if __name__ == "__main__":
+    # INIT DB CONNECTION
+    # --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
+    # tortoise.run_async(init_tortise())
+    # INIT WORKERS
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
-    app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=True, debug=True)
+    # HACK: If I don't force single_process, OCR totally hangs
+    app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=False, single_process=True)
  
