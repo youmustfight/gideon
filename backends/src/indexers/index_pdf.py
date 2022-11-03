@@ -20,7 +20,7 @@ from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 # --- OpenAI
 openai.api_key = env_get_open_ai_api_key()
 # --- OCR
-reader = easyocr.Reader(['en'])
+reader = easyocr.Reader(['en'], gpu=False, verbose=True) # don't think we'll have GPUs on AWS instances
 
 async def _index_pdf_process_file(document):
     print("INFO (index_pdf.py:_index_pdf_process_file) started", document)
@@ -31,12 +31,15 @@ async def _index_pdf_process_file(document):
     file_bytes = s3_get_file_bytes(file.upload_key)
     # PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
+    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetching document's documentcontent")
     content = await document.content.all()
+    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(content)})")
     if len(content) == 0:
         # CONVERT (PDF -> Image[] for OCR)
         print(f"INFO (index_pdf.py:_index_pdf_process_file): converting {file.filename} to pngs")
-        # DEPRECATE: pdf_image_files = convert_from_path(input_filepath, fmt='png')
-        pdf_image_files = convert_from_bytes(file_bytes, fmt='png')
+        # PDF -> PNGs args
+        # https://github.com/Belval/pdf2image#whats-new
+        pdf_image_files = convert_from_bytes(file_bytes, fmt='png', size=(1400, None)) # always ensure max size to limit processing OCR demand
         print(f"INFO (index_pdf.py:_index_pdf_process_file): converted {file.filename} to {len(pdf_image_files)} pngs")
         # PER PAGE (get text)
         new_content = []
@@ -47,6 +50,7 @@ async def _index_pdf_process_file(document):
             # --- ocr (confused as shit converting PIL.PngImagePlugin.PngImageFile to bytes)
             img_byte_arr = io.BytesIO()
             pdf_image_file.save(img_byte_arr, format='png')
+            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number} OCRing'.format(page_number=page_number), pdf_image_file)
             page_ocr_str_array = reader.readtext(img_byte_arr.getvalue(), detail=0)
             # --- compile all extracted text tokens into 1 big string so we can break down into sentences
             page_ocr_text = ' '.join(page_ocr_str_array).encode(encoding='ASCII',errors='ignore').decode() # safe string
