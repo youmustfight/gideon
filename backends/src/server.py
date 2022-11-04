@@ -1,15 +1,19 @@
+from contextvars import ContextVar
+from pydash import to_list
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
-from tortoise.contrib.sanic import register_tortoise
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import selectinload, sessionmaker
 
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions, _index_pdf_process_file
 from indexers.index_image import index_image
-from models import Case, Document, User
-from orm import TORTOISE_ORM
+from models import serialize_list, Case, Document, User
+from orm import ORM_CONFIG
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
@@ -18,27 +22,26 @@ from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
 
-# import logging
-# import sys
-# fmt = logging.Formatter(
-#     fmt="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
-#     datefmt="%Y-%m-%d %H:%M:%S",
-# )
-# sh = logging.StreamHandler(sys.stdout)
-# sh.setLevel(logging.DEBUG)
-# sh.setFormatter(fmt)
-# # will print debug sql
-# logger_db_client = logging.getLogger("db_client")
-# logger_db_client.setLevel(logging.DEBUG)
-# logger_db_client.addHandler(sh)
-# logger_tortoise = logging.getLogger("tortoise")
-# logger_tortoise.setLevel(logging.DEBUG)
-# logger_tortoise.addHandler(sh)
-
-
 # INIT
 app = Sanic("api")
+
+
+# MIDDLEWARE
+# --- cors
 CORS(app)
+# --- db driver + session context
+sqlalchemy_bind = create_async_engine(ORM_CONFIG["connections"]["default"], echo=True)
+_sessionmaker = sessionmaker(sqlalchemy_bind, AsyncSession, expire_on_commit=False)
+_base_model_session_ctx = ContextVar("session")
+@app.middleware("request")
+async def inject_session(request):
+    request.ctx.session = _sessionmaker()
+    request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
+@app.middleware("response")
+async def close_session(request, response):
+    if hasattr(request.ctx, "session_ctx_token"):
+        _base_model_session_ctx.reset(request.ctx.session_ctx_token)
+        await request.ctx.session.close()
 
 
 # AUTH
@@ -46,46 +49,54 @@ CORS(app)
 async def app_route_auth_login(request):
     # TODO: actual auth
     # user = await User.get(email=request.json["email"]).values() # always need to call values() to serialize for response
-    user = await User.get(email=request.json["email"]).prefetch_related("cases", "organizations") # wtf how do graph fetch
-    # HACK: how the fuck does related fetching work
-    # await user.fetch_related("cases", "organizations")
-    # cases = user.cases.all()
-    # organizations = user.organizations.all()
-    # # HACK: reconstruct user payload w/ serializations ready to go
-    cases = await user.cases.all().values()
-    organizations = await user.organizations.all().values()
-    payload_user = dict(user)
-    payload_user["cases"] = cases
-    payload_user["organizations"] = organizations
+    query_user = await request.ctx.session.execute(
+        select(User)
+            .options(selectinload(User.cases), selectinload(User.organizations))
+            .where(User.email == request.json["email"])
+    )
+    user = query_user.scalars().first()
+    # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+    user_json = user.serialize() 
+    cases_json = serialize_list(user.cases)
+    organizations_json = serialize_list(user.organizations)
     # respond...
-    return json({ "success": True, "user": payload_user })
+    return json({
+        "success": True,
+        "user": user_json,
+        # "cases": cases_json,
+        # "organizations": organizations_json,
+    })
 
 
 # CASES
 @app.route('/v1/cases', methods = ['GET'])
 async def app_route_cases(request):
-    cases = []
-    # HACK: LOL learn how to do query_strings in python wtf is this
-    # request.query_string ex) "userId=1"
+    cases_json = []
     first_param_key, first_param_value = request.query_string.split("=") 
     if first_param_key == "userId":
-        user = await User.get(id=int(first_param_value))
-        cases = await user.cases.all().values()
-    return json({ "success": True, "cases": cases })
+        query_user = await request.ctx.session.execute(
+            select(User)
+                .options(selectinload(User.cases))
+                .where(User.id == int(first_param_value))
+        )
+        user = query_user.scalars().first()
+        cases_json = serialize_list(user.cases)
+    return json({ "success": True, "cases": cases_json })
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 async def app_route_case(request, case_id):
     # TODO: actual param handling
-    case = await Case.get(id=int(case_id)).prefetch_related("users") # always need to call values() to serialize for response
-    # respond
-    payload = dict(case)
-    payload["users"] = await case.users.all().values()
-    return json({ "success": True, "case": payload })
+    # case = await Case.get(id=int(case_id)).prefetch_related("users") # always need to call values() to serialize for response
+    query_case = await request.ctx.session.execute(
+        select(Case).where(Case.id == int(case_id))
+    )
+    case = query_case.scalars().first()
+    case_json = case.serialize()
+    return json({ "success": True, "case": case_json })
 
 
 # DOCUMENTS
 # TODO: safer file uploading w/ async: https://stackoverflow.com/questions/48930245/how-to-perform-file-upload-in-sanic
-
 @app.route('/v1/documents/indexed', methods = ['GET'])
 def app_route_documents(request):
     def reduced_json(j):
@@ -215,29 +226,22 @@ def app_route_contrast_users(request):
 
 @app.route('/v1/user/<user_id>', methods = ['GET'])
 async def app_route_user(request, user_id):
-    user = await User.filter(id=int(user_id)).first() #.values() # always need to call values() to serialize for response
-    return json({ "success": True, "user": dict(user) })
+    query_user = await request.ctx.session.execute(select(User).where(User.id == int(user_id)))
+    user = query_user.scalars().first()
+    # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+    user_json = user.serialize() 
+    return json({ "success": True, "user": user_json })
 
 @app.route('/v1/users', methods = ['GET'])
 async def app_route_users(request):
-     # FETCH did values() to get dicts since class/models can't be serialized by default w/ sanic/tortise
-    users = await User.all().values()
-    return json({ "success": True, "users": users })
-
+    query_user = await request.ctx.session.execute(select(User))
+    users = query_user.scalars()
+    user_json = serialize_list(users)
+    return json({ "success": True, "users": user_json })
 
 
 # RUN
-# --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
-register_tortoise(
-    app,
-    db_url=TORTOISE_ORM['connections']['default'],
-    generate_schemas=True,
-    modules={"models": ["models"]}
-)
 if __name__ == "__main__":
-    # INIT DB CONNECTION
-    # --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
-    # tortoise.run_async(init_tortise())
     # INIT WORKERS
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
