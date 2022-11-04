@@ -6,8 +6,11 @@ import openai
 from pdf2image import convert_from_bytes, convert_from_path
 import pickle
 import textwrap
+
 from time import sleep
 import uuid
+
+from sqlalchemy import insert, select, update
 
 from env import env_get_open_ai_api_key
 from gideon_faiss import index_documents_add_text, index_sentences_add_text
@@ -22,17 +25,19 @@ openai.api_key = env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'], gpu=False, verbose=True) # don't think we'll have GPUs on AWS instances
 
-async def _index_pdf_process_file(document):
-    print("INFO (index_pdf.py:_index_pdf_process_file) started", document)
+async def _index_pdf_process_file(session, document_id):
+    print("INFO (index_pdf.py:_index_pdf_process_file) started", document_id)
     # STATUS
-    files = await document.files.all()
-    print(f"INFO (index_pdf.py:_index_pdf_process_file) {len(files)} files")
-    file = files[0]
+    files_query = await session.execute(select(File).where(File.document_id == document_id))
+    files = files_query.scalars() # files = await document.files.all()
+    print(f"INFO (index_pdf.py:_index_pdf_process_file) ##TODO## files")
+    file = files.first()
     file_bytes = s3_get_file_bytes(file.upload_key)
     # PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
     print(f"INFO (index_pdf.py:_index_pdf_process_file): fetching document's documentcontent")
-    content = await document.content.all()
+    content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    content = content_query.scalars().all()
     print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(content)})")
     if len(content) == 0:
         # CONVERT (PDF -> Image[] for OCR)
@@ -40,9 +45,8 @@ async def _index_pdf_process_file(document):
         # PDF -> PNGs args
         # https://github.com/Belval/pdf2image#whats-new
         pdf_image_files = convert_from_bytes(file_bytes, fmt='png', size=(1400, None)) # always ensure max size to limit processing OCR demand
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): converted {file.filename} to {len(pdf_image_files)} pngs")
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): converted {file.filename} to ##TODO## pngs")
         # PER PAGE (get text)
-        new_content = []
         for idx, pdf_image_file in enumerate(pdf_image_files): # FYI can't unpack err happens on pages, so we cast w/ enumerate to add in an index
             page_number = idx + 1
             tokenizing_strategy = "sentence"
@@ -59,30 +63,24 @@ async def _index_pdf_process_file(document):
             page_ocr_text_sentences = tokenize_string(page_ocr_text, tokenizing_strategy)
             print(f"INFO (index_pdf.py:_index_pdf_process_file): tokenized page {page_number}", page_ocr_text_sentences)
             # --- prep document content for page
-            page_content = list(map(lambda sentence: DocumentContent(
-                document_id=document.id,
-                page_number=page_number,
-                text=sentence,
-                tokenizing_strategy=tokenizing_strategy
-            ), page_ocr_text_sentences))
-            # --- insert
-            print(f"INFO (index_pdf.py:_index_pdf_process_file): prepped {len(page_content)} document content records", page_content)
-            new_content = new_content + page_content
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserting {len(new_content)} document content records")
-        # TODO: atm, i'm doing asyncio tasks just to get all the writes in....
-        # ... then doing server restarts and running embedding processing separately until bulk is fixed
-        # HACK: For some reason, if doing multiple queries w/ 1 transaction asyncpg hangs
-        # --- this asyncio.wait strategy seems to work...? https://stackoverflow.com/questions/67240458/how-does-await-works-in-a-for-loop
-        # attempt #1
-        # await DocumentContent.bulk_create(new_content)
-        # attempt #2
-        tasks = [asyncio.create_task(nc.save()) for nc in new_content]
-        done, pending = await asyncio.wait(tasks)
-        # print(f"INFO (index_pdf.py:_index_pdf_process_file): asyncio.wait done", done)
-        # print("pending", pending)
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted {len(new_content)} new document content records")
-    document.status_processing_files = "completed"
-    await document.save(update_fields=["status_processing_files"])
+            await session.execute(
+                insert(DocumentContent)
+                    .values(list(map(lambda sentence: dict(
+                        document_id=document_id,
+                        page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
+                        text=sentence,
+                        tokenizing_strategy=tokenizing_strategy
+                    ), page_ocr_text_sentences)))
+            )
+            await session.commit()
+        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted new document content records")
+    # --- save
+    await session.execute(
+        update(Document)
+            .where(Document.id == document_id)
+            .values(status_processing_files="completed")
+    )
+    await session.commit() # just doing after each execute() bc connection just bails sometimes
 
 async def _index_pdf_process_embeddings(document):
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
@@ -201,12 +199,16 @@ async def _index_pdf_process_extractions(document):
 
 
 # INDEX_PDF
-async def index_pdf(pyfile):
+async def index_pdf(session, pyfile):
     print(f"INFO (index_pdf.py): indexing {pyfile.name} ({pyfile.type})")
     # SETUP DOCUMENT
-    index_document = await Document.create(
-        status_processing_files="queued",
-    )
+    document_query = await session.execute(
+        insert(Document)
+            .values(status_processing_files="queued")
+            .returning(Document.id)) # can't seem to return anything except id
+    document_id = document_query.scalars().first()
+    print(f"INFO (index_pdf.py): index_document id {document_id}")
+    
     # SAVE & RELATE FILE
     filename = pyfile.name
     upload_key = pyfile.name # TODO: avoid collisions w/ unique prefix
@@ -214,18 +216,22 @@ async def index_pdf(pyfile):
     s3_upload_file(upload_key, pyfile)
     # --- create File()
     input_s3_url = s3_get_file_url(filename)
-    index_file = await File.create(
-        filename=pyfile.name,
-        mime_type=pyfile.type,
-        upload_key=upload_key,
-        upload_url=input_s3_url,
-        document_id=index_document.id
-    )
+    index_file_query = await session.execute(
+        insert(File)
+            .values(
+                filename=pyfile.name,
+                mime_type=pyfile.type,
+                upload_key=upload_key,
+                upload_url=input_s3_url,
+                document_id=document_id
+            ))
+    await session.commit()
     # PROCESS FILE & EMBEDDINGS
     print(f"INFO (index_pdf.py): processing file", upload_key)
-    await _index_pdf_process_file(index_document)
+    await _index_pdf_process_file(session=session, document_id=document_id)
     print(f"INFO (index_pdf.py): processing embeddings", upload_key)
-    await _index_pdf_process_embeddings(index_document)
+    await _index_pdf_process_embeddings(session=session, document_id=document_id)
     print(f"INFO (index_pdf.py): processing extractions", upload_key)
-    await _index_pdf_process_extractions(index_document)
-    print(f"INFO (index_pdf.py): finished intake of document #{index_document.id}")
+    await _index_pdf_process_extractions(session=session, document_id=document_id)
+    print(f"INFO (index_pdf.py): finished intake of document #{document_id}")
+    # SAVE/COMMIT

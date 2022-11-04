@@ -5,6 +5,7 @@ ORM_CONFIG = {
     "connections": {
         # https://github.com/tortoise/tortoise-orm/blob/main/docs/databases.rst#db_url
         "default": f"postgresql+asyncpg://{env.env_get_database_app_user_name()}:{env.env_get_database_app_user_password()}@{env.env_get_database_app_host()}:{env.env_get_database_app_port()}/{env.env_get_database_app_name()}"
+        # "default": f"postgresql+psycopg2://{env.env_get_database_app_user_name()}:{env.env_get_database_app_user_password()}@{env.env_get_database_app_host()}:{env.env_get_database_app_port()}/{env.env_get_database_app_name()}"
     },
     "apps": {
         "models": {

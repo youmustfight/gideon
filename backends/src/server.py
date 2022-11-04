@@ -1,11 +1,10 @@
 from contextvars import ContextVar
-from pydash import to_list
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import selectinload, sessionmaker
+from sqlalchemy.orm import selectinload, sessionmaker 
 
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
@@ -29,9 +28,15 @@ app = Sanic("api")
 # MIDDLEWARE
 # --- cors
 CORS(app)
-# --- db driver + session context
-sqlalchemy_bind = create_async_engine(ORM_CONFIG["connections"]["default"], echo=True)
-_sessionmaker = sessionmaker(sqlalchemy_bind, AsyncSession, expire_on_commit=False)
+# --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
+sqlalchemy_bind = create_async_engine(
+    ORM_CONFIG["connections"]["default"],
+    echo=True,
+    echo_pool="debug",
+    pool_size=20,
+    max_overflow=20
+)
+_sessionmaker = sessionmaker(sqlalchemy_bind, AsyncSession, expire_on_commit=False, future=True)
 _base_model_session_ctx = ContextVar("session")
 @app.middleware("request")
 async def inject_session(request):
@@ -45,48 +50,45 @@ async def close_session(request, response):
 
 
 # AUTH
+# TODO: actual auth
 @app.route('/v1/auth/login', methods = ['POST'])
 async def app_route_auth_login(request):
-    # TODO: actual auth
-    # user = await User.get(email=request.json["email"]).values() # always need to call values() to serialize for response
-    query_user = await request.ctx.session.execute(
-        select(User)
-            .options(selectinload(User.cases), selectinload(User.organizations))
-            .where(User.email == request.json["email"])
-    )
-    user = query_user.scalars().first()
-    # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
-    user_json = user.serialize() 
-    cases_json = serialize_list(user.cases)
-    organizations_json = serialize_list(user.organizations)
-    # respond...
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(
+            select(User)
+                .options(selectinload(User.cases), selectinload(User.organizations))
+                .where(User.email == request.json["email"])
+        )
+        user = query_user.scalars().first()
     return json({
         "success": True,
-        "user": user_json,
-        # "cases": cases_json,
-        # "organizations": organizations_json,
+        "user": user.serialize(),
+        # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+        # "cases": serialize_list(user.cases),
+        # "organizations": serialize_list(user.organizations),
     })
 
 
 # CASES
 @app.route('/v1/cases', methods = ['GET'])
 async def app_route_cases(request):
-    cases_json = []
-    first_param_key, first_param_value = request.query_string.split("=") 
-    if first_param_key == "userId":
-        query_user = await request.ctx.session.execute(
-            select(User)
-                .options(selectinload(User.cases))
-                .where(User.id == int(first_param_value))
-        )
-        user = query_user.scalars().first()
-        cases_json = serialize_list(user.cases)
+    session = request.ctx.session
+    async with session.begin():
+        cases_json = []
+        first_param_key, first_param_value = request.query_string.split("=") 
+        if first_param_key == "userId":
+            query_user = await request.ctx.session.execute(
+                select(User)
+                    .options(selectinload(User.cases))
+                    .where(User.id == int(first_param_value))
+            )
+            user = query_user.scalars().first()
+            cases_json = serialize_list(user.cases)
     return json({ "success": True, "cases": cases_json })
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 async def app_route_case(request, case_id):
-    # TODO: actual param handling
-    # case = await Case.get(id=int(case_id)).prefetch_related("users") # always need to call values() to serialize for response
     query_case = await request.ctx.session.execute(
         select(Case).where(Case.id == int(case_id))
     )
@@ -111,32 +113,12 @@ def app_route_documents(request):
     documents = list(map(reduced_json, documents)) # clear doc vectors
     return json({ "success": True, "documents": documents })
 
-@app.route('/v1/documents/index/audio', methods = ['POST'])
-def app_route_documents_index_audio(request):
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    index_audio(file.name)
-    # --- respond
-    return json({ "success": True })
-
-@app.route('/v1/documents/index/image', methods = ['POST'])
-async def app_route_documents_index_image(request):
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    await index_image(file.name)
-    # --- respond
-    return json({ "success": True })
-
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
     # --- get file from req
     pyfile = request.files['file'][0]
     # --- run processing
-    await index_pdf(pyfile)
+    await index_pdf(session=request.ctx.session, pyfile=pyfile)
     # --- respond
     return json({ "success": True })
 
@@ -156,6 +138,26 @@ async def app_route_documents_index_pdf_embeddings(request, document_id):
 async def app_route_documents_index_pdf_extractions(request, document_id):
     document = await Document.get(id=document_id)
     await _index_pdf_process_extractions(document)
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/audio', methods = ['POST'])
+def app_route_documents_index_audio(request): 
+    # --- save file TODO: multiple files
+    file = request.files['file'][0]
+    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+    # --- run processing
+    index_audio(file.name)
+    # --- respond
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/image', methods = ['POST'])
+async def app_route_documents_index_image(request):
+    # --- save file TODO: multiple files
+    file = request.files['file'][0]
+    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+    # --- run processing
+    await index_image(file.name)
+    # --- respond
     return json({ "success": True })
 
 
@@ -222,21 +224,24 @@ def app_route_contrast_users(request):
 
 
 # USERS
-# --- mostly for testing out migrations/models/serialized responses
 
 @app.route('/v1/user/<user_id>', methods = ['GET'])
 async def app_route_user(request, user_id):
-    query_user = await request.ctx.session.execute(select(User).where(User.id == int(user_id)))
-    user = query_user.scalars().first()
-    # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
-    user_json = user.serialize() 
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(select(User).where(User.id == int(user_id)))
+        user = query_user.scalars().first()
+        # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+        user_json = user.serialize() 
     return json({ "success": True, "user": user_json })
 
 @app.route('/v1/users', methods = ['GET'])
 async def app_route_users(request):
-    query_user = await request.ctx.session.execute(select(User))
-    users = query_user.scalars()
-    user_json = serialize_list(users)
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(select(User))
+        users = query_user.scalars()
+        user_json = serialize_list(users)
     return json({ "success": True, "users": user_json })
 
 
