@@ -78,7 +78,7 @@ async def app_route_cases(request):
         cases_json = []
         first_param_key, first_param_value = request.query_string.split("=") 
         if first_param_key == "userId":
-            query_user = await request.ctx.session.execute(
+            query_user = await session.execute(
                 select(User)
                     .options(selectinload(User.cases))
                     .where(User.id == int(first_param_value))
@@ -89,11 +89,13 @@ async def app_route_cases(request):
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 async def app_route_case(request, case_id):
-    query_case = await request.ctx.session.execute(
-        select(Case).where(Case.id == int(case_id))
-    )
-    case = query_case.scalars().first()
-    case_json = case.serialize()
+    session = request.ctx.session
+    async with session.begin():
+        query_case = await session.execute(
+            select(Case).where(Case.id == int(case_id))
+        )
+        case = query_case.scalars().first()
+        case_json = case.serialize()
     return json({ "success": True, "case": case_json })
 
 
@@ -115,49 +117,49 @@ def app_route_documents(request):
 
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
-    # --- get file from req
-    pyfile = request.files['file'][0]
-    # --- run processing
-    await index_pdf(session=request.ctx.session, pyfile=pyfile)
-    # --- respond
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        await index_pdf(session=session, pyfile=pyfile)
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/process-file', methods = ['POST'])
 async def app_route_documents_index_pdf_process_file(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_file(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_file(session=session, document_id=int(document_id))
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/embeddings', methods = ['POST'])
 async def app_route_documents_index_pdf_embeddings(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_embeddings(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_embeddings(session=session, document_id=int(document_id))
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/extractions', methods = ['POST'])
 async def app_route_documents_index_pdf_extractions(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_extractions(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_extractions(session=session, document_id=int(document_id))
     return json({ "success": True })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
-def app_route_documents_index_audio(request): 
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    index_audio(file.name)
-    # --- respond
+async def app_route_documents_index_audio(request): 
+    session = request.ctx.session
+    async with session.begin():
+        file = request.files['file'][0]
+        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+        index_audio(session=session, filename=file.name)
     return json({ "success": True })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])
 async def app_route_documents_index_image(request):
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    await index_image(file.name)
-    # --- respond
+    session = request.ctx.session
+    async with session.begin():
+        file = request.files['file'][0]
+        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+        await index_image(session=session, filename=file.name)
     return json({ "success": True })
 
 

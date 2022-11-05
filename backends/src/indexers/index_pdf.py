@@ -6,9 +6,7 @@ import openai
 from pdf2image import convert_from_bytes, convert_from_path
 import pickle
 import textwrap
-
 from time import sleep
-import uuid
 
 from sqlalchemy import insert, select, update
 
@@ -16,7 +14,7 @@ from env import env_get_open_ai_api_key
 from gideon_faiss import index_documents_add_text, index_sentences_add_text
 from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from gideon_utils import filter_empty_strs, get_file_path, open_txt_file, tokenize_string
-from models import Document, DocumentContent, Embedding, File
+from models import Document, DocumentContent, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 
 # SETUP
@@ -36,10 +34,10 @@ async def _index_pdf_process_file(session, document_id):
     # PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
     print(f"INFO (index_pdf.py:_index_pdf_process_file): fetching document's documentcontent")
-    content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
-    content = content_query.scalars().all()
-    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(content)})")
-    if len(content) == 0:
+    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content = document_content_query.scalars().all()
+    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(document_content)})")
+    if len(document_content) == 0:
         # CONVERT (PDF -> Image[] for OCR)
         print(f"INFO (index_pdf.py:_index_pdf_process_file): converting {file.filename} to pngs")
         # PDF -> PNGs args
@@ -76,36 +74,39 @@ async def _index_pdf_process_file(session, document_id):
         print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted new document content records")
     # --- save
     await session.execute(
-        update(Document)
-            .where(Document.id == document_id)
+        update(Document).where(Document.id == document_id)
             .values(status_processing_files="completed")
     )
-    await session.commit() # just doing after each execute() bc connection just bails sometimes
+    await session.commit()
 
-async def _index_pdf_process_embeddings(document):
+async def _index_pdf_process_embeddings(session, document_id):
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
-    document_content = await document.content.all()
+    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
     document_content_text = " ".join(map(lambda content: content.text, document_content))
     # 1) large embeddings for summarization
     document_content_text_chunks = textwrap.wrap(document_content_text, 3_500)
     for chunk in document_content_text_chunks:
         # --- add to index (handles embedding creation)
-        await index_documents_add_text(chunk, document_id=document.id)
+        await index_documents_add_text(session, text=chunk, document_id=document_id)
         # --- take a break (throttled by openai 60 reqs/min)
         sleep(2)
     # 2) sentence embeddings for location look ups
     for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
         # --- add to index (handles embedding creation)
-        await index_sentences_add_text(content.text, document_content_id=content.id)
+        await index_sentences_add_text(session, text=content.text, document_content_id=content.id)
         # --- take a break (throttled by openai 60 reqs/min)
         sleep(2)
-    document.status_processing_embeddings = "completed"
-    document.save(update_fields=["status_processing_embeddings"])
+    await session.execute(
+        update(Document).where(Document.id == document_id)
+            .values(status_processing_embeddings="completed"))
+    await session.commit()
 
-async def _index_pdf_process_extractions(document):
+async def _index_pdf_process_extractions(session, document_id):
     print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
-    document_content = await document.content.all()
+    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content = document_content_query.scalars().all()
     document_content_text = " ".join(map(lambda content: content.text, document_content))
     # VARS
     # --- docs: summaries
@@ -118,7 +119,6 @@ async def _index_pdf_process_extractions(document):
     print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
     use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
     print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
-
     # EXTRACT
     # --- classification/description
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description')
@@ -129,14 +129,12 @@ async def _index_pdf_process_extractions(document):
         )
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description exists')
-
     # --- summary
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
     if len(document_summary) == 0 and len(document_content_text) < 250_000:
         document_summary = gpt_summarize(document_content_text)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary exists or document is too long')
-
     # --- cases/laws mentioned
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws')
     # if len(document_content_text) < 250_000:
@@ -152,7 +150,6 @@ async def _index_pdf_process_extractions(document):
     #     print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws skipped because document text is too long')
     # # --- if a discovery document (ex: police report, testimony, motion)
     # if is_discovery_document == True:
-
     # --- event timeline (split on linebreaks, could later do structured parsing prob of dates)
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): event_timeline')
     # if use_repeat_methods == True:
@@ -163,7 +160,6 @@ async def _index_pdf_process_extractions(document):
     #     open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
     #     '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
     # ).split('\n'))
-
     # --- organizations mentioned
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_organizations')
     # if use_repeat_methods == True:
@@ -174,7 +170,6 @@ async def _index_pdf_process_extractions(document):
     #     open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
     #     '\n'.join(mentions_organizations_dirty) if use_repeat_methods == True else mentions_organizations_dirty # join linebreaks if we have a list
     # ).split('\n'))
-
     # --- people mentioned + context within document
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_people')
     # if use_repeat_methods == True:
@@ -190,12 +185,13 @@ async def _index_pdf_process_extractions(document):
     # for name in mentions_people:
     #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
     #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
-
     # --- SAVE
-    document.document_description = document_description
-    document.document_summary = document_summary
-    await document.save(update_fields=["document_description", "document_summary"])
-    return document
+    await session.execute(
+        update(Document).where(Document.id == document_id).values(
+            document_description=document_description,
+            document_summary=document_summary,
+        ))
+    await session.commit()
 
 
 # INDEX_PDF
@@ -217,14 +213,13 @@ async def index_pdf(session, pyfile):
     # --- create File()
     input_s3_url = s3_get_file_url(filename)
     index_file_query = await session.execute(
-        insert(File)
-            .values(
-                filename=pyfile.name,
-                mime_type=pyfile.type,
-                upload_key=upload_key,
-                upload_url=input_s3_url,
-                document_id=document_id
-            ))
+        insert(File).values(
+            filename=pyfile.name,
+            mime_type=pyfile.type,
+            upload_key=upload_key,
+            upload_url=input_s3_url,
+            document_id=document_id
+        ))
     await session.commit()
     # PROCESS FILE & EMBEDDINGS
     print(f"INFO (index_pdf.py): processing file", upload_key)

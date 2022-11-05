@@ -7,6 +7,8 @@ import random
 from sentence_transformers import SentenceTransformer
 import uuid
 
+from sqlalchemy import insert
+
 from gideon_gpt import gpt_embedding, gpt_vars
 from gideon_clip import clip_vars, clip_image_embedding
 from gideon_utils import get_file_path, write_tensor_to_bytearray
@@ -127,7 +129,7 @@ def index_clip_search_images_by_text(text_query):
     return list(filter(lambda o: o["document_id"] > 0, locations))
 
 # --- documents
-async def index_documents_add_text(text, document_id=None, document_content_id=None):
+async def index_documents_add_text(session, text, document_id=None, document_content_id=None):
     print("INFO (gideon_faiss:index_documents_add_text): start")
     # --- get embedding
     text_embedding_tensor = gpt_embedding(text) # now returns as numpy array
@@ -137,17 +139,22 @@ async def index_documents_add_text(text, document_id=None, document_content_id=N
     s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
     # --- save embedding
     print("INFO (gideon_faiss:index_documents_add_text): save embedding")
-    embedding = await Embedding.create(
-        document_id=document_id,
-        document_content_id=document_content_id,
-        encoded_model="gpt3",
-        encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-        encoding_strategy="text",
-        text=text,
-        npy_url=s3_get_file_url(npy_file_key)
+    embedding_query = await session.execute(
+        insert(Embedding)
+            .values(
+                document_id=document_id,
+                document_content_id=document_content_id,
+                encoded_model="gpt3",
+                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
+                encoding_strategy="text",
+                text=text,
+                npy_url=s3_get_file_url(npy_file_key)
+            ).returning(Embedding.id)
     )
+    await session.commit()
+    embedding_id = embedding_query.scalars().first()
     # --- add to index (single item indexing means 1, dimensions?)
-    ids = numpy.array([embedding.id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
+    ids = numpy.array([embedding_id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
     print("INFO (gideon_faiss:index_documents_add_text): index with ids", text_embedding_tensor.shape, ids)
     index_documents.add_with_ids(text_embedding_tensor, ids)
     # OPTIMIZE: re-save index
@@ -155,7 +162,7 @@ async def index_documents_add_text(text, document_id=None, document_content_id=N
     save_index(index_documents, index_documents_save_path)
 
 # --- sentences
-async def index_sentences_add_text(text, document_id=None, document_content_id=None):
+async def index_sentences_add_text(session, text, document_id=None, document_content_id=None):
     print("INFO (gideon_faiss:index_sentences_add_text): start")
     # --- get embedding
     text_embedding_tensor = gpt_embedding(text) # now returns as numpy array
@@ -165,17 +172,22 @@ async def index_sentences_add_text(text, document_id=None, document_content_id=N
     s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
     # --- save embedding
     print("INFO (gideon_faiss:index_sentences_add_text): save embedding")
-    embedding = await Embedding.create(
-        document_id=document_id,
-        document_content_id=document_content_id,
-        encoded_model="gpt3",
-        encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-        encoding_strategy="text",
-        text=text,
-        npy_url=s3_get_file_url(npy_file_key)
+    embedding_query = await session.execute(
+        insert(Embedding)
+            .values(
+                document_id=document_id,
+                document_content_id=document_content_id,
+                encoded_model="gpt3",
+                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
+                encoding_strategy="text",
+                text=text,
+                npy_url=s3_get_file_url(npy_file_key)
+            ).returning(Embedding.id)
     )
+    await session.commit()
+    embedding_id = embedding_query.scalars().first()
     # --- add to index (single item indexing means 1, dimensions?)
-    ids = numpy.array([embedding.id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
+    ids = numpy.array([embedding_id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
     print("INFO (gideon_faiss:index_sentences_add_text): index with ids", text_embedding_tensor.shape, ids)
     index_sentences.add_with_ids(text_embedding_tensor, ids)
     # OPTIMIZE: re-save index
