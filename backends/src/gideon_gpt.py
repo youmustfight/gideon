@@ -27,7 +27,7 @@ def gpt_vars():
 
 def gpt_embedding(content, engine=ENGINE_EMBEDDING):
     print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
-    response = openai.Embedding.create(input=content,engine=engine) # OpenAI
+    response = openai.Embedding.create(input=content,engine=engine,request_timeout=10) # OpenAI
     vector = response['data'][0]['embedding']  # this is a normal list
     # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
     # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
@@ -42,7 +42,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
     retry = 0
     while True:
         try:
-            print('INFO (GPT3): gpt_completion - {engine}'.format(engine=engine))
+            print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...')
             # --- OpenAI
             response = openai.Completion.create(
                 engine=engine,
@@ -52,8 +52,11 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
                 top_p=top_p,
                 frequency_penalty=freq_pen,
                 presence_penalty=pres_pen,
-                stop=stop)
+                stop=stop,
+                request_timeout=10,
+            )
             text = response['choices'][0]['text'].strip()
+            print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...', text)
             return text
         except Exception as err:
             retry += 1
@@ -92,7 +95,9 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 input=input,
                 instruction=instruction,
                 temperature=temperature,
-                top_p=top_p)
+                top_p=top_p,
+                request_timeout=10
+            )
             text = response['choices'][0]['text'].strip()
             return text
         except Exception as err:

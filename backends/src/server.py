@@ -1,15 +1,18 @@
+from contextvars import ContextVar
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
-from tortoise.contrib.sanic import register_tortoise
+import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import selectinload, sessionmaker 
 
+import env
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions, _index_pdf_process_file
 from indexers.index_image import index_image
-from models import Case, Document, User
-from orm import TORTOISE_ORM
+from models import serialize_list, Case, Document, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
@@ -18,74 +21,91 @@ from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
 
 
-# import logging
-# import sys
-# fmt = logging.Formatter(
-#     fmt="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
-#     datefmt="%Y-%m-%d %H:%M:%S",
-# )
-# sh = logging.StreamHandler(sys.stdout)
-# sh.setLevel(logging.DEBUG)
-# sh.setFormatter(fmt)
-# # will print debug sql
-# logger_db_client = logging.getLogger("db_client")
-# logger_db_client.setLevel(logging.DEBUG)
-# logger_db_client.addHandler(sh)
-# logger_tortoise = logging.getLogger("tortoise")
-# logger_tortoise.setLevel(logging.DEBUG)
-# logger_tortoise.addHandler(sh)
-
-
 # INIT
 app = Sanic("api")
+
+# MIDDLEWARE
+# --- cors
 CORS(app)
+# --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
+sqlalchemy_bind = create_async_engine(
+    env.env_get_databasee_url(),
+    echo=True,
+    echo_pool="debug",
+    max_overflow=20,
+    pool_size=20,
+    pool_reset_on_return=None,
+)
+_sessionmaker = sessionmaker(
+    sqlalchemy_bind,
+    AsyncSession,
+    expire_on_commit=False,
+    future=True,
+)
+_base_model_session_ctx = ContextVar("session")
+@app.middleware("request")
+async def inject_session(request):
+    request.ctx.session = _sessionmaker()
+    request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
+@app.middleware("response")
+async def close_session(request, response):
+    if hasattr(request.ctx, "session_ctx_token"):
+        _base_model_session_ctx.reset(request.ctx.session_ctx_token)
+        await request.ctx.session.close()
 
 
 # AUTH
+# TODO: actual auth
 @app.route('/v1/auth/login', methods = ['POST'])
 async def app_route_auth_login(request):
-    # TODO: actual auth
-    # user = await User.get(email=request.json["email"]).values() # always need to call values() to serialize for response
-    user = await User.get(email=request.json["email"]).prefetch_related("cases", "organizations") # wtf how do graph fetch
-    # HACK: how the fuck does related fetching work
-    # await user.fetch_related("cases", "organizations")
-    # cases = user.cases.all()
-    # organizations = user.organizations.all()
-    # # HACK: reconstruct user payload w/ serializations ready to go
-    cases = await user.cases.all().values()
-    organizations = await user.organizations.all().values()
-    payload_user = dict(user)
-    payload_user["cases"] = cases
-    payload_user["organizations"] = organizations
-    # respond...
-    return json({ "success": True, "user": payload_user })
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(
+            sa.select(User)
+                .options(selectinload(User.cases), selectinload(User.organizations))
+                .where(User.email == request.json["email"])
+        )
+        user = query_user.scalar_one_or_none()
+    return json({
+        "success": True,
+        "user": user.serialize(),
+        # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+        # "cases": serialize_list(user.cases),
+        # "organizations": serialize_list(user.organizations),
+    })
 
 
 # CASES
 @app.route('/v1/cases', methods = ['GET'])
 async def app_route_cases(request):
-    cases = []
-    # HACK: LOL learn how to do query_strings in python wtf is this
-    # request.query_string ex) "userId=1"
-    first_param_key, first_param_value = request.query_string.split("=") 
-    if first_param_key == "userId":
-        user = await User.get(id=int(first_param_value))
-        cases = await user.cases.all().values()
-    return json({ "success": True, "cases": cases })
+    session = request.ctx.session
+    async with session.begin():
+        cases_json = []
+        first_param_key, first_param_value = request.query_string.split("=") 
+        if first_param_key == "userId":
+            query_user = await session.execute(
+                sa.select(User)
+                    .options(selectinload(User.cases))
+                    .where(User.id == int(first_param_value))
+            )
+            user = query_user.scalar_one_or_none()
+            cases_json = serialize_list(user.cases)
+    return json({ "success": True, "cases": cases_json })
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 async def app_route_case(request, case_id):
-    # TODO: actual param handling
-    case = await Case.get(id=int(case_id)).prefetch_related("users") # always need to call values() to serialize for response
-    # respond
-    payload = dict(case)
-    payload["users"] = await case.users.all().values()
-    return json({ "success": True, "case": payload })
+    session = request.ctx.session
+    async with session.begin():
+        query_case = await session.execute(
+            sa.select(Case).where(Case.id == int(case_id))
+        )
+        case = query_case.scalar_one_or_none()
+        case_json = case.serialize()
+    return json({ "success": True, "case": case_json })
 
 
 # DOCUMENTS
 # TODO: safer file uploading w/ async: https://stackoverflow.com/questions/48930245/how-to-perform-file-upload-in-sanic
-
 @app.route('/v1/documents/indexed', methods = ['GET'])
 def app_route_documents(request):
     def reduced_json(j):
@@ -100,51 +120,55 @@ def app_route_documents(request):
     documents = list(map(reduced_json, documents)) # clear doc vectors
     return json({ "success": True, "documents": documents })
 
-@app.route('/v1/documents/index/audio', methods = ['POST'])
-def app_route_documents_index_audio(request):
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    index_audio(file.name)
-    # --- respond
-    return json({ "success": True })
-
-@app.route('/v1/documents/index/image', methods = ['POST'])
-async def app_route_documents_index_image(request):
-    # --- save file TODO: multiple files
-    file = request.files['file'][0]
-    write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-    # --- run processing
-    await index_image(file.name)
-    # --- respond
-    return json({ "success": True })
-
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
-    # --- get file from req
-    pyfile = request.files['file'][0]
-    # --- run processing
-    await index_pdf(pyfile)
-    # --- respond
+    session = request.ctx.session
+    # with: ... is a python context creator
+    # session.begin() returns a session obj that maintains begin/commit/rollback
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        await index_pdf(session=session, pyfile=pyfile)
+        # await session.commit()
+    # commits the transaction, closes the session
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/process-file', methods = ['POST'])
 async def app_route_documents_index_pdf_process_file(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_file(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_file(session=session, document_id=int(document_id))
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/embeddings', methods = ['POST'])
 async def app_route_documents_index_pdf_embeddings(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_embeddings(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_embeddings(session=session, document_id=int(document_id))
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/extractions', methods = ['POST'])
 async def app_route_documents_index_pdf_extractions(request, document_id):
-    document = await Document.get(id=document_id)
-    await _index_pdf_process_extractions(document)
+    session = request.ctx.session
+    async with session.begin():
+        await _index_pdf_process_extractions(session=session, document_id=int(document_id))
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/audio', methods = ['POST'])
+async def app_route_documents_index_audio(request): 
+    session = request.ctx.session
+    async with session.begin():
+        file = request.files['file'][0]
+        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+        index_audio(session=session, filename=file.name)
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/image', methods = ['POST'])
+async def app_route_documents_index_image(request):
+    session = request.ctx.session
+    async with session.begin():
+        file = request.files['file'][0]
+        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
+        await index_image(session=session, filename=file.name)
     return json({ "success": True })
 
 
@@ -211,36 +235,38 @@ def app_route_contrast_users(request):
 
 
 # USERS
-# --- mostly for testing out migrations/models/serialized responses
 
 @app.route('/v1/user/<user_id>', methods = ['GET'])
 async def app_route_user(request, user_id):
-    user = await User.filter(id=int(user_id)).first() #.values() # always need to call values() to serialize for response
-    return json({ "success": True, "user": dict(user) })
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(sa.select(User).where(User.id == int(user_id)))
+        user = query_user.scalar_one_or_none()
+        # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
+        user_json = user.serialize() 
+    return json({ "success": True, "user": user_json })
 
 @app.route('/v1/users', methods = ['GET'])
 async def app_route_users(request):
-     # FETCH did values() to get dicts since class/models can't be serialized by default w/ sanic/tortise
-    users = await User.all().values()
-    return json({ "success": True, "users": users })
-
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(sa.select(User))
+        users = query_user.scalars()
+        user_json = serialize_list(users)
+    return json({ "success": True, "users": user_json })
 
 
 # RUN
-# --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
-register_tortoise(
-    app,
-    db_url=TORTOISE_ORM['connections']['default'],
-    generate_schemas=True,
-    modules={"models": ["models"]}
-)
 if __name__ == "__main__":
-    # INIT DB CONNECTION
-    # --- ORM (https://tortoise-orm.readthedocs.io/en/latest/contrib/sanic.html#contrib-sanic)
-    # tortoise.run_async(init_tortise())
     # INIT WORKERS
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # HACK: If I don't force single_process, OCR totally hangs
-    app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=False, single_process=True)
+    app.run(
+        host='0.0.0.0',
+        port=3000,
+        access_log=False,
+        auto_reload=False,
+        single_process=True,
+    )
  
