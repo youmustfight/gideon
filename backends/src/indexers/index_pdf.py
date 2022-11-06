@@ -209,14 +209,13 @@ async def index_pdf(session, pyfile):
     s3_upload_file(upload_key, pyfile)
     # --- create File()
     input_s3_url = s3_get_file_url(filename)
-    session.add(
-        insert(File).values(
-            filename=pyfile.name,
-            mime_type=pyfile.type,
-            upload_key=upload_key,
-            upload_url=input_s3_url,
-            document_id=document_id
-        ))
+    session.add(File(
+        filename=pyfile.name,
+        mime_type=pyfile.type,
+        upload_key=upload_key,
+        upload_url=input_s3_url,
+        document_id=document_id
+    ))
     try:
         # PROCESS FILE & EMBEDDINGS
         print(f"INFO (index_pdf.py): processing file", upload_key)
