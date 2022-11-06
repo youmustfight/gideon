@@ -99,7 +99,7 @@ class DocumentContent(BaseModel):
     embedding = relationship("Embedding", back_populates="document_content")
     # --- pdfs
     text = Column(Text())
-    tokenizing_strategy = Column(Text())
+    tokenizing_strategy = Column(String())
     page_number = Column(String())
     # --- audio
     # TODO: time_start

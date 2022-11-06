@@ -2,17 +2,17 @@ from contextvars import ContextVar
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
-from sqlalchemy import select
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import selectinload, sessionmaker 
 
+import env
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions, _index_pdf_process_file
 from indexers.index_image import index_image
 from models import serialize_list, Case, Document, User
-from orm import ORM_CONFIG
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
@@ -24,19 +24,24 @@ from queries.summarize_user import summarize_user
 # INIT
 app = Sanic("api")
 
-
 # MIDDLEWARE
 # --- cors
 CORS(app)
 # --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
 sqlalchemy_bind = create_async_engine(
-    ORM_CONFIG["connections"]["default"],
+    env.env_get_databasee_url(),
     echo=True,
     echo_pool="debug",
+    max_overflow=20,
     pool_size=20,
-    max_overflow=20
+    pool_reset_on_return=None,
 )
-_sessionmaker = sessionmaker(sqlalchemy_bind, AsyncSession, expire_on_commit=False, future=True)
+_sessionmaker = sessionmaker(
+    sqlalchemy_bind,
+    AsyncSession,
+    expire_on_commit=False,
+    future=True,
+)
 _base_model_session_ctx = ContextVar("session")
 @app.middleware("request")
 async def inject_session(request):
@@ -56,11 +61,11 @@ async def app_route_auth_login(request):
     session = request.ctx.session
     async with session.begin():
         query_user = await session.execute(
-            select(User)
+            sa.select(User)
                 .options(selectinload(User.cases), selectinload(User.organizations))
                 .where(User.email == request.json["email"])
         )
-        user = query_user.scalars().first()
+        user = query_user.scalar_one_or_none()
     return json({
         "success": True,
         "user": user.serialize(),
@@ -79,11 +84,11 @@ async def app_route_cases(request):
         first_param_key, first_param_value = request.query_string.split("=") 
         if first_param_key == "userId":
             query_user = await session.execute(
-                select(User)
+                sa.select(User)
                     .options(selectinload(User.cases))
                     .where(User.id == int(first_param_value))
             )
-            user = query_user.scalars().first()
+            user = query_user.scalar_one_or_none()
             cases_json = serialize_list(user.cases)
     return json({ "success": True, "cases": cases_json })
 
@@ -92,9 +97,9 @@ async def app_route_case(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
-            select(Case).where(Case.id == int(case_id))
+            sa.select(Case).where(Case.id == int(case_id))
         )
-        case = query_case.scalars().first()
+        case = query_case.scalar_one_or_none()
         case_json = case.serialize()
     return json({ "success": True, "case": case_json })
 
@@ -118,9 +123,13 @@ def app_route_documents(request):
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
     session = request.ctx.session
+    # with: ... is a python context creator
+    # session.begin() returns a session obj that maintains begin/commit/rollback
     async with session.begin():
         pyfile = request.files['file'][0]
         await index_pdf(session=session, pyfile=pyfile)
+        # await session.commit()
+    # commits the transaction, closes the session
     return json({ "success": True })
 
 @app.route('/v1/documents/index/pdf/<document_id>/process-file', methods = ['POST'])
@@ -231,8 +240,8 @@ def app_route_contrast_users(request):
 async def app_route_user(request, user_id):
     session = request.ctx.session
     async with session.begin():
-        query_user = await session.execute(select(User).where(User.id == int(user_id)))
-        user = query_user.scalars().first()
+        query_user = await session.execute(sa.select(User).where(User.id == int(user_id)))
+        user = query_user.scalar_one_or_none()
         # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
         user_json = user.serialize() 
     return json({ "success": True, "user": user_json })
@@ -241,7 +250,7 @@ async def app_route_user(request, user_id):
 async def app_route_users(request):
     session = request.ctx.session
     async with session.begin():
-        query_user = await session.execute(select(User))
+        query_user = await session.execute(sa.select(User))
         users = query_user.scalars()
         user_json = serialize_list(users)
     return json({ "success": True, "users": user_json })
@@ -253,5 +262,11 @@ if __name__ == "__main__":
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # HACK: If I don't force single_process, OCR totally hangs
-    app.run(host='0.0.0.0', port=3000, access_log=False, auto_reload=False, single_process=True)
+    app.run(
+        host='0.0.0.0',
+        port=3000,
+        access_log=False,
+        auto_reload=False,
+        single_process=True,
+    )
  

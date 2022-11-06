@@ -26,6 +26,8 @@ def env_get_database_app_host():
   return os.environ['DATABASE_APP_HOST']
 def env_get_database_app_port():
   return os.environ['DATABASE_APP_PORT']
+def env_get_databasee_url():
+  return f"postgresql+asyncpg://{env_get_database_app_user_name()}:{env_get_database_app_user_password()}@{env_get_database_app_host()}:{env_get_database_app_port()}/{env_get_database_app_name()}"
 
 # GIDEON
 def env_get_gideon_api_url():

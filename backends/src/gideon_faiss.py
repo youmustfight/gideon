@@ -137,22 +137,20 @@ async def index_documents_add_text(session, text, document_id=None, document_con
     numpy_tensor_bytearray = write_tensor_to_bytearray(text_embedding_tensor)
     npy_file_key = f"index_documents_{uuid.uuid4()}.npy"
     s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
-    # --- save embedding
+    # --- save embedding (we're doing an execute() + insert() so we can retrieve an id, not possible with add())
     print("INFO (gideon_faiss:index_documents_add_text): save embedding")
     embedding_query = await session.execute(
-        insert(Embedding)
-            .values(
-                document_id=document_id,
-                document_content_id=document_content_id,
-                encoded_model="gpt3",
-                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-                encoding_strategy="text",
-                text=text,
-                npy_url=s3_get_file_url(npy_file_key)
-            ).returning(Embedding.id)
+        insert(Embedding).values(
+            document_id=document_id,
+            document_content_id=document_content_id,
+            encoded_model="gpt3",
+            encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
+            encoding_strategy="text",
+            text=text,
+            npy_url=s3_get_file_url(npy_file_key)
+        ).returning(Embedding.id)
     )
-    await session.commit()
-    embedding_id = embedding_query.scalars().first()
+    embedding_id = embedding_query.scalar_one_or_none() # grabs the returned id integer
     # --- add to index (single item indexing means 1, dimensions?)
     ids = numpy.array([embedding_id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
     print("INFO (gideon_faiss:index_documents_add_text): index with ids", text_embedding_tensor.shape, ids)
@@ -184,8 +182,7 @@ async def index_sentences_add_text(session, text, document_id=None, document_con
                 npy_url=s3_get_file_url(npy_file_key)
             ).returning(Embedding.id)
     )
-    await session.commit()
-    embedding_id = embedding_query.scalars().first()
+    embedding_id = embedding_query.scalar_one_or_none()
     # --- add to index (single item indexing means 1, dimensions?)
     ids = numpy.array([embedding_id], dtype="int64") # idk, people say it takes int64 (https://github.com/99sbr/semantic-search-with-sbert/issues/1)
     print("INFO (gideon_faiss:index_sentences_add_text): index with ids", text_embedding_tensor.shape, ids)

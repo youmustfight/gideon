@@ -23,11 +23,13 @@ openai.api_key = env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'], gpu=False, verbose=True) # don't think we'll have GPUs on AWS instances
 
-async def _index_pdf_process_file(session, document_id):
+async def _index_pdf_process_file(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_file) started", document_id)
+    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document = document_query.scalars().one()
     # STATUS
     files_query = await session.execute(select(File).where(File.document_id == document_id))
-    files = files_query.scalars() # files = await document.files.all()
+    files = files_query.scalars()
     print(f"INFO (index_pdf.py:_index_pdf_process_file) ##TODO## files")
     file = files.first()
     file_bytes = s3_get_file_bytes(file.upload_key)
@@ -35,7 +37,7 @@ async def _index_pdf_process_file(session, document_id):
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
     print(f"INFO (index_pdf.py:_index_pdf_process_file): fetching document's documentcontent")
     document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
-    document_content = document_content_query.scalars().all()
+    document_content = document_content_query.scalars().all() # .all() will turn ScalarResult into a list()
     print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(document_content)})")
     if len(document_content) == 0:
         # CONVERT (PDF -> Image[] for OCR)
@@ -61,26 +63,23 @@ async def _index_pdf_process_file(session, document_id):
             page_ocr_text_sentences = tokenize_string(page_ocr_text, tokenizing_strategy)
             print(f"INFO (index_pdf.py:_index_pdf_process_file): tokenized page {page_number}", page_ocr_text_sentences)
             # --- prep document content for page
-            await session.execute(
-                insert(DocumentContent)
-                    .values(list(map(lambda sentence: dict(
-                        document_id=document_id,
-                        page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
-                        text=sentence,
-                        tokenizing_strategy=tokenizing_strategy
-                    ), page_ocr_text_sentences)))
+            session.add_all(
+                list(map(lambda sentence: DocumentContent(
+                    document_id=document_id,
+                    page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
+                    text=sentence,
+                    tokenizing_strategy=tokenizing_strategy
+                ), page_ocr_text_sentences))
             )
-            await session.commit()
         print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted new document content records")
     # --- save
-    await session.execute(
-        update(Document).where(Document.id == document_id)
-            .values(status_processing_files="completed")
-    )
-    await session.commit()
+    document.status_processing_files = "completed"
+    session.add(document) # if modifying a record/model, we can use add() to do an update
 
-async def _index_pdf_process_embeddings(session, document_id):
+async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
+    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document = document_query.scalars().one()
     document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
@@ -89,24 +88,25 @@ async def _index_pdf_process_embeddings(session, document_id):
     document_content_text_chunks = textwrap.wrap(document_content_text, 3_500)
     for chunk in document_content_text_chunks:
         # --- add to index (handles embedding creation)
-        await index_documents_add_text(session, text=chunk, document_id=document_id)
+        await index_documents_add_text(session=session, text=chunk, document_id=document_id)
         # --- take a break (throttled by openai 60 reqs/min)
-        sleep(2)
+        sleep(1.5)
     # 2) sentence embeddings for location look ups
     for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
         # --- add to index (handles embedding creation)
-        await index_sentences_add_text(session, text=content.text, document_content_id=content.id)
+        await index_sentences_add_text(session=session, text=content.text, document_content_id=content.id)
         # --- take a break (throttled by openai 60 reqs/min)
-        sleep(2)
-    await session.execute(
-        update(Document).where(Document.id == document_id)
-            .values(status_processing_embeddings="completed"))
-    await session.commit()
+        sleep(1.5)
+    # --- SAVE
+    document.status_processing_embeddings = "completed"
+    session.add(document)
 
-async def _index_pdf_process_extractions(session, document_id):
+async def _index_pdf_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
+    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document = document_query.scalars().one()
     document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
-    document_content = document_content_query.scalars().all()
+    document_content = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content))
     # VARS
     # --- docs: summaries
@@ -186,12 +186,9 @@ async def _index_pdf_process_extractions(session, document_id):
     #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
     #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
     # --- SAVE
-    await session.execute(
-        update(Document).where(Document.id == document_id).values(
-            document_description=document_description,
-            document_summary=document_summary,
-        ))
-    await session.commit()
+    document.document_description=document_description
+    document.document_summary=document_summary
+    session.add(document)
 
 
 # INDEX_PDF
@@ -202,7 +199,7 @@ async def index_pdf(session, pyfile):
         insert(Document)
             .values(status_processing_files="queued")
             .returning(Document.id)) # can't seem to return anything except id
-    document_id = document_query.scalars().first()
+    document_id = document_query.scalar_one_or_none()
     print(f"INFO (index_pdf.py): index_document id {document_id}")
     
     # SAVE & RELATE FILE
@@ -212,7 +209,7 @@ async def index_pdf(session, pyfile):
     s3_upload_file(upload_key, pyfile)
     # --- create File()
     input_s3_url = s3_get_file_url(filename)
-    index_file_query = await session.execute(
+    session.add(
         insert(File).values(
             filename=pyfile.name,
             mime_type=pyfile.type,
@@ -220,13 +217,17 @@ async def index_pdf(session, pyfile):
             upload_url=input_s3_url,
             document_id=document_id
         ))
-    await session.commit()
-    # PROCESS FILE & EMBEDDINGS
-    print(f"INFO (index_pdf.py): processing file", upload_key)
-    await _index_pdf_process_file(session=session, document_id=document_id)
-    print(f"INFO (index_pdf.py): processing embeddings", upload_key)
-    await _index_pdf_process_embeddings(session=session, document_id=document_id)
-    print(f"INFO (index_pdf.py): processing extractions", upload_key)
-    await _index_pdf_process_extractions(session=session, document_id=document_id)
-    print(f"INFO (index_pdf.py): finished intake of document #{document_id}")
-    # SAVE/COMMIT
+    try:
+        # PROCESS FILE & EMBEDDINGS
+        print(f"INFO (index_pdf.py): processing file", upload_key)
+        await _index_pdf_process_file(session=session, document_id=document_id)
+        print(f"INFO (index_pdf.py): processing embeddings", upload_key)
+        await _index_pdf_process_embeddings(session=session, document_id=document_id)
+        print(f"INFO (index_pdf.py): processing extractions", upload_key)
+        await _index_pdf_process_extractions(session=session, document_id=document_id)
+        print(f"INFO (index_pdf.py): finished intake of document #{document_id}")
+        # SAVE/COMMIT
+        # this happens by the context/caller of this func
+    except Exception as err:
+        print(f"ERROR (index_pdf.py):", err)
+        raise err # by throwing the error up to the route context(with), we'll trigger a rollback automatically
