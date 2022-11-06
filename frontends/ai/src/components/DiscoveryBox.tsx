@@ -2,16 +2,19 @@ import axios from "axios";
 import { isBefore, subSeconds } from "date-fns";
 import { capitalize } from "lodash";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
 
 const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
   const [viewMore, setViewMore] = useState(false);
+  const matches = useMatch("/case/:caseId/*");
+  const caseId = Number(matches?.params?.caseId);
+
   return (
     <div className="discovery-box__document">
       <small>
-        <Link to={`/document/${document.filename}`}>{document.filename ?? "n/a"}</Link>
+        <Link to={`/case/${caseId}/document/${document.filename}`}>{document.filename ?? "n/a"}</Link>
         {document?.format === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
         {document?.format === "pdf" ? <> ({document?.document_text_by_page?.length} pages)</> : null}
       </small>
@@ -62,7 +65,7 @@ export const DiscoveryBox = () => {
       // --- setup form data/submit
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
-      axios.post(`http://localhost:3000/documents/index/${type}`, formData, {
+      axios.post(`http://localhost:3000/v1/documents/index/${type}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       // --- clear file in input if successful

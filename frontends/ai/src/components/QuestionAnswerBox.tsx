@@ -20,16 +20,22 @@ export const AnswerLocationBox = ({ location }: { location: TAnswerLocation }) =
   return (
     <StyledAnswerLocationBox>
       <b>
-        <Link to={`/document/${location.filename}`}>{location.filename ?? "n/a"}</Link>,{" "}
+        <Link to={`/document/${location.filename}`}>{location.filename ?? "n/a"}</Link>
         {location.format === "pdf" ? (
-          <Link to={`/document/${location.filename}#source-text-${location.page_number}`}>
-            page {location.page_number}
-          </Link>
+          <>
+            ,{" "}
+            <Link to={`/document/${location.filename}#source-text-${location.page_number}`}>
+              page {location.page_number}
+            </Link>
+          </>
         ) : null}
         {location.format === "audio" ? (
-          <Link to={`/document/${location.filename}#source-text-${location.minute_number}`}>
-            minute {location.minute_number}
-          </Link>
+          <>
+            ,{" "}
+            <Link to={`/document/${location.filename}#source-text-${location.minute_number}`}>
+              minute {location.minute_number}
+            </Link>
+          </>
         ) : null}
       </b>
       <br />

@@ -1,10 +1,11 @@
 import React from "react";
 import styled from "styled-components";
 import { useTeamStore } from "../data/TeamStore";
-import { useUsers } from "../data/useUsers";
+// import { useUsers } from "../data/useUsers";
 
 export const TeamHeader = () => {
-  const { data } = useUsers();
+  // TODO: pull from useOrganization
+  // const { data } = useUsers();
   const { currentUser, setCurrentUser, users } = useTeamStore();
 
   return (

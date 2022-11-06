@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useQuery } from "react-query";
+import { getGideonApiUrl } from "../env";
 
 export type TDocumentSentenceTextVector = { page_number: number; text: string; vector: number[] };
 
@@ -26,7 +27,7 @@ export type TDocument = {
 
 // Filters for user via forUser
 const reqDocumentsGet = async (): Promise<TDocument[]> =>
-  axios.get("http://localhost:3000/documents/indexed").then((res) => res.data.documents);
+  axios.get(`${getGideonApiUrl()}/v1/documents/indexed`).then((res) => res.data.documents);
 
 export const useDocuments = () => {
   return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(), {

@@ -1,5 +1,7 @@
 import base64
+import io
 import json
+import pickle
 import aiofiles
 import numpy
 import os
@@ -45,6 +47,12 @@ def open_img_file_as_base64(filepath):
         encoded_string = base64.b64encode(image_file.read())
         return encoded_string
 
+def write_tensor_to_bytearray(tensor):
+    numpy_tensor_array_data = io.BytesIO()
+    pickle.dump(tensor, numpy_tensor_array_data)
+    numpy_tensor_array_data.seek(0)
+    return numpy_tensor_array_data
+
 def write_file(filepath, bytes):
     with open(filepath, 'wb') as file:
         file.write(bytes)
@@ -53,6 +61,23 @@ async def async_write_file(path, body):
     async with aiofiles.open(path, 'wb') as f:
         await f.write(body)
     f.close()
+
+# TOKENIZING
+def tokenize_string(text, strategy):
+    # SENTENCES w/ acronym + address safety
+    if strategy == "sentence":
+        # --- split naively
+        splits_init = text.split(". ")
+        # --- try to consolidate splits where it may have been on an accronym or address. Ex) ["probable cause, see Fed","R","Crim P","41(c)(1)-(2), at the premises located at 1100 S",...]
+        splits_consolidated = []
+        for idx, split in enumerate(splits_init):
+            if idx == 0 or len(split) > 80: # making 80 to be safe in capturing addresses, legal statute codes
+                splits_consolidated.append(split + ".") # add back period
+            else:
+                splits_consolidated[-1] = splits_consolidated[-1] + f" {split}."
+        return splits_consolidated
+    # OTHERWISE JUST RETURN TEXT AS ARR
+    return [text]
 
 # UTILS
 def filter_empty_strs(arr):

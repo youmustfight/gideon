@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useMatch } from "react-router-dom";
 import styled from "styled-components";
-import { HighlightsBox } from "./components/HighlightsBox";
-import { useHighlightStore } from "./data/HighlightStore";
-import { useTeamStore } from "./data/TeamStore";
-import { TDocument, TDocumentSentenceTextVector, useDocuments } from "./data/useDocuments";
-import { useHighlights } from "./data/useHighlights";
+import { HighlightsBox } from "../../components/HighlightsBox";
+import { useHighlightStore } from "../../data/HighlightStore";
+import { useTeamStore } from "../../data/TeamStore";
+import { TDocument, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
+import { useHighlights } from "../../data/useHighlights";
 
 // HACK: Urls for files I chucked in notion if we want to simulate files
 const temporaryStaticFileUrls = {
@@ -231,12 +231,12 @@ const StyledDocumentViewTranscript = styled.div`
   }
 `;
 
-export const GideonDocumentView = () => {
-  const paramFilename = useMatch("/document/:filename")?.params?.["filename"];
+export const ViewCaseDocument = () => {
+  const { caseId, filename } = useMatch("/case/:caseId/document/:filename")?.params;
   const { data: highlights = [] } = useHighlights();
   const { data: documents = [] } = useDocuments();
-  const document = documents.find((d) => d.filename === paramFilename);
-  const hasHighlights = highlights.some((hl) => hl.filename === paramFilename);
+  const document = documents.find((d) => d.filename === filename);
+  const hasHighlights = highlights.some((hl) => hl.filename === filename);
 
   // RENDER
   return !document ? null : (
@@ -244,7 +244,7 @@ export const GideonDocumentView = () => {
       {/* SUMMARY */}
       <div className="section-lead">
         <h4>
-          <Link to="/">
+          <Link to={`/case/${caseId}`}>
             <button>←</button>
           </Link>{" "}
           <span>{document?.filename}</span>
