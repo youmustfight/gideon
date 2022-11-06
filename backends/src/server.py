@@ -29,7 +29,7 @@ app = Sanic("api")
 CORS(app)
 # --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
 sqlalchemy_bind = create_async_engine(
-    env.env_get_databasee_url(),
+    env.env_get_database_app_url(),
     echo=True,
     echo_pool="debug",
     max_overflow=20,
@@ -176,7 +176,7 @@ async def app_route_documents_index_image(request):
 
 @app.route('/v1/highlights', methods = ['GET'])
 def app_route_highlights(request):
-    highlights = get_highlights_json()
+    highlights = [] # get_highlights_json()
     return json({ "success": True, "highlights": highlights })
 
 @app.route('/v1/highlights', methods = ['POST'])

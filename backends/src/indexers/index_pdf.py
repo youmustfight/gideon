@@ -11,9 +11,10 @@ from time import sleep
 from sqlalchemy import insert, select, update
 
 from env import env_get_open_ai_api_key
-from gideon_faiss import index_documents_add_text, index_sentences_add_text
+from vector_dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
+from vector_dbs.vector_utils import tokenize_string
 from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
-from gideon_utils import filter_empty_strs, get_file_path, open_txt_file, tokenize_string
+from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
 from models import Document, DocumentContent, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 
@@ -88,13 +89,13 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     document_content_text_chunks = textwrap.wrap(document_content_text, 3_500)
     for chunk in document_content_text_chunks:
         # --- add to index (handles embedding creation)
-        await index_documents_add_text(session=session, text=chunk, document_id=document_id)
+        await index_documents_text_add(session=session, text=chunk, document_id=document_id)
         # --- take a break (throttled by openai 60 reqs/min)
         sleep(1.5)
     # 2) sentence embeddings for location look ups
     for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
         # --- add to index (handles embedding creation)
-        await index_sentences_add_text(session=session, text=content.text, document_content_id=content.id)
+        await index_documents_sentences_add(session=session, text=content.text, document_content_id=content.id)
         # --- take a break (throttled by openai 60 reqs/min)
         sleep(1.5)
     # --- SAVE
@@ -194,29 +195,28 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
 # INDEX_PDF
 async def index_pdf(session, pyfile):
     print(f"INFO (index_pdf.py): indexing {pyfile.name} ({pyfile.type})")
-    # SETUP DOCUMENT
-    document_query = await session.execute(
-        insert(Document)
-            .values(status_processing_files="queued")
-            .returning(Document.id)) # can't seem to return anything except id
-    document_id = document_query.scalar_one_or_none()
-    print(f"INFO (index_pdf.py): index_document id {document_id}")
-    
-    # SAVE & RELATE FILE
-    filename = pyfile.name
-    upload_key = pyfile.name # TODO: avoid collisions w/ unique prefix
-    # --- save to S3
-    s3_upload_file(upload_key, pyfile)
-    # --- create File()
-    input_s3_url = s3_get_file_url(filename)
-    session.add(File(
-        filename=pyfile.name,
-        mime_type=pyfile.type,
-        upload_key=upload_key,
-        upload_url=input_s3_url,
-        document_id=document_id
-    ))
     try:
+        # SETUP DOCUMENT
+        document_query = await session.execute(
+            insert(Document)
+                .values(status_processing_files="queued")
+                .returning(Document.id)) # can't seem to return anything except id
+        document_id = document_query.scalar_one_or_none()
+        print(f"INFO (index_pdf.py): index_document id {document_id}")
+        # SAVE & RELATE FILE
+        filename = pyfile.name
+        upload_key = pyfile.name # TODO: avoid collisions w/ unique prefix
+        # --- save to S3
+        s3_upload_file(upload_key, pyfile)
+        # --- create File()
+        input_s3_url = s3_get_file_url(filename)
+        session.add(File(
+            filename=pyfile.name,
+            mime_type=pyfile.type,
+            upload_key=upload_key,
+            upload_url=input_s3_url,
+            document_id=document_id
+        ))
         # PROCESS FILE & EMBEDDINGS
         print(f"INFO (index_pdf.py): processing file", upload_key)
         await _index_pdf_process_file(session=session, document_id=document_id)
