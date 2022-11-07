@@ -12,6 +12,6 @@ const reqCaseGet = async (caseId: number): Promise<TCase> => {
 
 export const useCase = (caseId: number) => {
   return useQuery<TCase>(["case", caseId], async () => reqCaseGet(caseId), {
-    refetchInterval: 1000 * 15,
+    refetchInterval: 1000 * 60,
   });
 };

@@ -27,14 +27,18 @@ def gpt_vars():
 
 def gpt_embedding(content, engine=ENGINE_EMBEDDING):
     print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
-    response = openai.Embedding.create(input=content,engine=engine,request_timeout=10) # OpenAI
-    vector = response['data'][0]['embedding']  # this is a normal list
-    # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
-    # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
-    vector_as_numpy_array = numpy.asarray(vector, dtype="float32")
-    vector_shaped_for_consistency_with_faiss = numpy.expand_dims(vector_as_numpy_array, axis=0) # matching the matrix style of sentence-transformer clip encode returns, which works with faiss
-    print(f"INFO (GPT3): gpt_embedding [{engine}] finish", vector_shaped_for_consistency_with_faiss)
-    return vector_shaped_for_consistency_with_faiss
+    try:
+        response = openai.Embedding.create(input=content,engine=engine,request_timeout=10) # OpenAI
+        vector = response['data'][0]['embedding']  # this is a normal list
+        # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
+        # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
+        vector_as_numpy_array = numpy.asarray(vector, dtype="float32")
+        vector_shaped_for_consistency_with_faiss = numpy.expand_dims(vector_as_numpy_array, axis=0) # matching the matrix style of sentence-transformer clip encode returns, which works with faiss
+        print(f"INFO (GPT3): gpt_embedding [{engine}] finish", vector_shaped_for_consistency_with_faiss)
+        return vector_shaped_for_consistency_with_faiss
+    except Exception as err:
+        print(f"ERROR (GPT3): gpt_embedding", err)
+        raise err
 
 # FUNCTIONS
 def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):

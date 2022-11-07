@@ -23,7 +23,7 @@ def env_get_database_app_host():
   return os.environ['DATABASE_APP_HOST']
 def env_get_database_app_port():
   return os.environ['DATABASE_APP_PORT']
-def env_get_databasee_url():
+def env_get_database_app_url():
   return f"postgresql+psycopg2://{env_get_database_app_user_name()}:{env_get_database_app_user_password()}@{env_get_database_app_host()}:{env_get_database_app_port()}/{env_get_database_app_name()}"
 
 
@@ -36,7 +36,7 @@ def run_migrations() -> None:
     """
     # setting url via hack via https://github.com/sqlalchemy/alembic/issues/606#issuecomment-537729908
     config_section = config.get_section(config.config_ini_section)
-    config_section["sqlalchemy.url"] = env_get_databasee_url()
+    config_section["sqlalchemy.url"] = env_get_database_app_url()
     connectable = engine_from_config(
         config_section,
         prefix="sqlalchemy.",
@@ -53,6 +53,6 @@ def run_migrations() -> None:
 
 # EXEC
 # 1. alembic revision -m "create account table"
-# 2. python env.py
+# 2. "alembic upgrade head" or "alembic upgrade +1" or "alembic downgrade -1"
 run_migrations()
 

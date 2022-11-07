@@ -66,7 +66,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/question-answer", { question: answerQuestion, index_type: "discovery" })
+      .post("http://localhost:3000/v1/queries/question-answer", { question: answerQuestion, index_type: "discovery" })
       .then((res) => {
         setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
@@ -79,7 +79,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/query-info-locations", {
+      .post("http://localhost:3000/v1/queries/query-info-locations", {
         query: infoLocationQuestion,
         index_type: "discovery",
       })
@@ -95,7 +95,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/highlights-query", {
+      .post("http://localhost:3000/v1/queries/highlights-query", {
         query: highlightSearchQuery,
       })
       .then((res) => {
@@ -109,7 +109,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/summarize-user", {
+      .post("http://localhost:3000/v1/queries/summarize-user", {
         user: userToSummarize,
       })
       .then((res) => {
@@ -124,7 +124,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/queries/contrast-users", {
+      .post("http://localhost:3000/v1/queries/contrast-users", {
         user_one: userOneToContrast,
         user_two: userTwoToContrast,
       })

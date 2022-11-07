@@ -26,12 +26,22 @@ def env_get_database_app_host():
   return os.environ['DATABASE_APP_HOST']
 def env_get_database_app_port():
   return os.environ['DATABASE_APP_PORT']
-def env_get_databasee_url():
+def env_get_database_app_url():
   return f"postgresql+asyncpg://{env_get_database_app_user_name()}:{env_get_database_app_user_password()}@{env_get_database_app_host()}:{env_get_database_app_port()}/{env_get_database_app_name()}"
+def env_get_database_pinecone_api_key():
+  return os.environ['DATABASE_PINECONE_API_KEY']
+def env_get_database_pinecone_environment():
+  return os.environ['DATABASE_PINECONE_ENVIRONMENT']
 
 # GIDEON
 def env_get_gideon_api_url():
   return "http://localhost:3000"
+
+# HARDWARE
+def env_is_gpu_available():
+  is_gpu_available = os.environ['IS_GPU_AVAILABLE'] == 'true'
+  print(f'INFO (env.py:env_is_gpu_available): is_gpu_available : {is_gpu_available}')
+  return is_gpu_available
 
 # OPENAI
 def env_get_open_ai_api_key():

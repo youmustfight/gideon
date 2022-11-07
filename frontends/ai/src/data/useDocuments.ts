@@ -31,6 +31,6 @@ const reqDocumentsGet = async (): Promise<TDocument[]> =>
 
 export const useDocuments = () => {
   return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(), {
-    refetchInterval: 1000 * 15,
+    refetchInterval: 1000 * 60,
   });
 };
