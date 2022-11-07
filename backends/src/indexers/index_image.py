@@ -1,6 +1,6 @@
 import json
 from sentence_transformers import SentenceTransformer
-from gideon_clip import clip_classifications, clip_image_embedding, clip_vars
+from models.clip import clip_classifications, clip_image_embedding, clip_vars
 from gideon_utils import get_file_path
 from dbs.vectordb_pinecone import index_clip_add_image
 

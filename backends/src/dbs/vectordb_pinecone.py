@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 from sqlalchemy import insert
 import uuid
 
-from gideon_gpt import gpt_embedding, gpt_vars
+from models.gpt import gpt_embedding, gpt_vars
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from s3_utils import s3_get_file_url, s3_upload_bytes, s3_upload_file
 from dbs.vector_utils import write_tensor_to_bytearray, backup_tensor_to_s3

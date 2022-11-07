@@ -1,4 +1,4 @@
-from gideon_gpt import gpt_embedding
+from models.gpt import gpt_embedding
 from gideon_utils import filter_documents_by_format, get_documents_json
 from dbs.vector_utils import similarity
 

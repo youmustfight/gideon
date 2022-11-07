@@ -11,7 +11,7 @@ from time import sleep
 from sqlalchemy import insert, select, update
 
 import env
-from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
 from dbs.sa_models import Document, DocumentContent, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
