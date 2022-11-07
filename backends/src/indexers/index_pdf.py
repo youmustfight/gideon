@@ -10,13 +10,13 @@ from time import sleep
 
 from sqlalchemy import insert, select, update
 
-from env import env_get_open_ai_api_key
-from vector_dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
-from vector_dbs.vector_utils import tokenize_string
+import env
 from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
 from models import Document, DocumentContent, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from vector_dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
+from vector_dbs.vector_utils import tokenize_string
 
 # SETUP
 # --- OpenAI
@@ -24,55 +24,62 @@ openai.api_key = env.env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'], gpu=env.env_is_gpu_available(), verbose=True) # don't think we'll have GPUs on AWS instances
 
-async def _index_pdf_process_file(session, document_id: int) -> None:
-    print("INFO (index_pdf.py:_index_pdf_process_file) started", document_id)
+async def _index_pdf_process_content(session, document_id: int) -> None:
+    print("INFO (index_pdf.py:_index_pdf_process_content) started", document_id)
     document_query = await session.execute(select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    # STATUS
+    # 1. STATUS
     files_query = await session.execute(select(File).where(File.document_id == document_id))
     files = files_query.scalars()
-    print(f"INFO (index_pdf.py:_index_pdf_process_file) ##TODO## files")
+    print(f"INFO (index_pdf.py:_index_pdf_process_content) ##TODO## files")
     file = files.first()
     file_bytes = s3_get_file_bytes(file.upload_key)
-    # PDF OCR -> TEXT (SENTENCES) / IMAGES
+    # 2. PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
-    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetching document's documentcontent")
+    print(f"INFO (index_pdf.py:_index_pdf_process_content): fetching document's documentcontent")
     document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all() # .all() will turn ScalarResult into a list()
-    print(f"INFO (index_pdf.py:_index_pdf_process_file): fetched document's documentcontent (length: {len(document_content)})")
+    print(f"INFO (index_pdf.py:_index_pdf_process_content): fetched document's documentcontent (length: {len(document_content)})")
     if len(document_content) == 0:
-        # CONVERT (PDF -> Image[] for OCR)
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): converting {file.filename} to pngs")
-        # PDF -> PNGs args
-        # https://github.com/Belval/pdf2image#whats-new
-        pdf_image_files = convert_from_bytes(file_bytes, fmt='png', size=(1400, None)) # always ensure max size to limit processing OCR demand
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): converted {file.filename} to ##TODO## pngs")
-        # PER PAGE (get text)
+        # CONVERT (PDF -> Image[] for OCR) # https://github.com/Belval/pdf2image#whats-new
+        print(f"INFO (index_pdf.py:_index_pdf_process_content): converting {file.filename} to pngs")
+        pdf_image_files = convert_from_bytes(file_bytes, fmt='png') # TODO: always ensure max size to limit processing OCR demand? size=(1400, None)
+        print(f"INFO (index_pdf.py:_index_pdf_process_content): converted {file.filename} to ##TODO## pngs")
+        # 3. DOCUMENT CONTENT CREATE
+        # --- 3a. PER PAGE (get text)
+        document_content_sentences = []
         for idx, pdf_image_file in enumerate(pdf_image_files): # FYI can't unpack err happens on pages, so we cast w/ enumerate to add in an index
             page_number = idx + 1
-            tokenizing_strategy = "sentence"
-            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number}'.format(page_number=page_number), pdf_image_file)
+            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number}'.format(page_number=page_number), pdf_image_file)
             # --- ocr (confused as shit converting PIL.PngImagePlugin.PngImageFile to bytes)
             img_byte_arr = io.BytesIO()
             pdf_image_file.save(img_byte_arr, format='png')
-            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number} OCRing'.format(page_number=page_number), pdf_image_file)
+            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number} OCRing'.format(page_number=page_number), pdf_image_file)
             page_ocr_str_array = reader.readtext(img_byte_arr.getvalue(), detail=0)
             # --- compile all extracted text tokens into 1 big string so we can break down into sentences
             page_ocr_text = ' '.join(page_ocr_str_array).encode(encoding='ASCII',errors='ignore').decode() # safe string
-            print('INFO (index_pdf.py:_index_pdf_process_file): page {page_number} ocr = "{page_ocr_text}"'.format(page_number=page_number, page_ocr_text=page_ocr_text))
+            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number} ocr = "{page_ocr_text}"'.format(page_number=page_number, page_ocr_text=page_ocr_text))
             # --- for each page, break down into sentences for content array
-            page_ocr_text_sentences = tokenize_string(page_ocr_text, tokenizing_strategy)
-            print(f"INFO (index_pdf.py:_index_pdf_process_file): tokenized page {page_number}", page_ocr_text_sentences)
+            page_ocr_text_sentences = tokenize_string(page_ocr_text, "sentence")
+            print(f"INFO (index_pdf.py:_index_pdf_process_content): tokenized page {page_number}", page_ocr_text_sentences)
             # --- prep document content for page
-            session.add_all(
-                list(map(lambda sentence: DocumentContent(
-                    document_id=document_id,
-                    page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
-                    text=sentence,
-                    tokenizing_strategy=tokenizing_strategy
-                ), page_ocr_text_sentences))
-            )
-        print(f"INFO (index_pdf.py:_index_pdf_process_file): Inserted new document content records")
+            document_content_sentences += list(map(lambda sentence: DocumentContent(
+                document_id=document_id,
+                page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
+                text=sentence,
+                tokenizing_strategy="sentence"
+            ), page_ocr_text_sentences))
+        session.add_all(document_content_sentences)
+        # --- 3b. PER CHUNK (get text in biggest slices for summarization methods later)
+        document_text = " ".join(map(lambda content: content.text, document_content_sentences))
+        document_text_chunks = tokenize_string(document_text, "max_size")
+        document_content_text = list(map(lambda chunk: DocumentContent(
+            document_id=document_id,
+            text=chunk,
+            tokenizing_strategy="max_size"
+        ), document_text_chunks))
+        session.add_all(document_content_text)
+        print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
     # --- save
     document.status_processing_files = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
@@ -84,20 +91,16 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
-    document_content_text = " ".join(map(lambda content: content.text, document_content))
     # 1) large embeddings for summarization
-    document_content_text_chunks = textwrap.wrap(document_content_text, 3_500)
-    for chunk in document_content_text_chunks:
+    for content in list(filter(lambda content: content.tokenizing_strategy == "max_size", document_content)):
         # --- add to index (handles embedding creation)
-        await index_documents_text_add(session=session, text=chunk, document_id=document_id)
-        # --- take a break (throttled by openai 60 reqs/min)
-        sleep(1.5)
+        await index_documents_text_add(session=session, text=content.text, document_id=document_id, document_content_id=content.id)
+        sleep(1.2) # --- take a break (throttled by openai 60 reqs/min)
     # 2) sentence embeddings for location look ups
     for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
         # --- add to index (handles embedding creation)
-        await index_documents_sentences_add(session=session, text=content.text, document_content_id=content.id)
-        # --- take a break (throttled by openai 60 reqs/min)
-        sleep(1.5)
+        await index_documents_sentences_add(session=session, text=content.text, document_id=document_id, document_content_id=content.id)
+        sleep(1.2) # --- take a break (throttled by openai 60 reqs/min)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
@@ -219,7 +222,7 @@ async def index_pdf(session, pyfile):
         ))
         # PROCESS FILE & EMBEDDINGS
         print(f"INFO (index_pdf.py): processing file", upload_key)
-        await _index_pdf_process_file(session=session, document_id=document_id)
+        await _index_pdf_process_content(session=session, document_id=document_id)
         print(f"INFO (index_pdf.py): processing embeddings", upload_key)
         await _index_pdf_process_embeddings(session=session, document_id=document_id)
         print(f"INFO (index_pdf.py): processing extractions", upload_key)

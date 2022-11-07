@@ -10,7 +10,7 @@ import env
 from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
-from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions, _index_pdf_process_file
+from indexers.index_pdf import index_pdf
 from indexers.index_image import index_image
 from models import serialize_list, Case, Document, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
@@ -23,6 +23,7 @@ from queries.summarize_user import summarize_user
 
 # INIT
 app = Sanic("api")
+app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing outside the api endpoints, disallowing 503 timeout responses now
 
 # MIDDLEWARE
 # --- cors
@@ -128,29 +129,7 @@ async def app_route_documents_index_pdf(request):
     async with session.begin():
         pyfile = request.files['file'][0]
         await index_pdf(session=session, pyfile=pyfile)
-        # await session.commit()
-    # commits the transaction, closes the session
-    return json({ "success": True })
-
-@app.route('/v1/documents/index/pdf/<document_id>/process-file', methods = ['POST'])
-async def app_route_documents_index_pdf_process_file(request, document_id):
-    session = request.ctx.session
-    async with session.begin():
-        await _index_pdf_process_file(session=session, document_id=int(document_id))
-    return json({ "success": True })
-
-@app.route('/v1/documents/index/pdf/<document_id>/embeddings', methods = ['POST'])
-async def app_route_documents_index_pdf_embeddings(request, document_id):
-    session = request.ctx.session
-    async with session.begin():
-        await _index_pdf_process_embeddings(session=session, document_id=int(document_id))
-    return json({ "success": True })
-
-@app.route('/v1/documents/index/pdf/<document_id>/extractions', methods = ['POST'])
-async def app_route_documents_index_pdf_extractions(request, document_id):
-    session = request.ctx.session
-    async with session.begin():
-        await _index_pdf_process_extractions(session=session, document_id=int(document_id))
+    # middleware response commits the transaction, closes the session
     return json({ "success": True })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
@@ -201,8 +180,10 @@ def app_route_highlight_create(request):
 # TODO: class DocumentQueryResult ({ ...what is currently a 'location' })
 
 @app.route('/v1/queries/question-answer', methods = ['POST'])
-def app_route_question_answer(request):
-    answer = question_answer(request.json['question'], request.json['index_type'])
+async def app_route_question_answer(request):
+    session = request.ctx.session
+    async with session.begin():
+        answer = await question_answer(session, request.json['question'])
     return json({ "success": True, "answer": answer })
 
 @app.route('/v1/queries/query-info-locations', methods = ['POST'])
