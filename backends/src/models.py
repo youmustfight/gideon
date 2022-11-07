@@ -80,6 +80,8 @@ class Organization(BaseModel):
 
 class Document(BaseModel):
     __tablename__ = "document"
+    name = Column(Text())
+    type = Column(String()) # pdf, image, audio, video (derive search modalities from this)
     # --- O>M for files
     status_processing_files = Column(String()) # queued, processing, completed, error
     files = relationship("File", back_populates="document")
@@ -91,6 +93,16 @@ class Document(BaseModel):
     # --- extracted summaries/details
     document_description = Column(Text())
     document_summary = Column(Text())
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "status_processing_files": self.status_processing_files,
+            "status_processing_embeddings": self.status_processing_embeddings,
+            "document_description": self.document_description,
+            "document_summary": self.document_summary,
+        }
 
 class DocumentContent(BaseModel):
     __tablename__ = "documentcontent"
@@ -106,6 +118,14 @@ class DocumentContent(BaseModel):
     # TODO: time_end
     # --- pdfs + video?
     # TODO: image (file reltaion?)
+    def serialize(self):
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "text": self.text,
+            "tokenizing_strategy": self.tokenizing_strategy,
+            "page_number": self.page_number,
+        }
 
 class Embedding(BaseModel):
     __tablename__ = "embedding"
@@ -122,6 +142,16 @@ class Embedding(BaseModel):
     # TODO: image?
     # --- post-encoding
     npy_url = Column(Text()) # save npy binary to S3 if we need to load later (seems better for storage than storing in the sql database as a byte-array)
+    def serialize(self):
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "document_content_id": self.document_content_id,
+            "encoded_model": self.encoded_model,
+            "encoded_model_engine": self.encoded_model_engine,
+            "encoding_strategy": self.encoding_strategy,
+            "text": self.text,
+        }
 
 class File(BaseModel):
     __tablename__ = "file"
@@ -135,3 +165,13 @@ class File(BaseModel):
     upload_key = Column(Text())
     upload_url = Column(Text())
     upload_thumbnail_url = Column(Text())
+    def serialize(self):
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "upload_key": self.upload_key,
+            "upload_url": self.upload_url,
+            "upload_thumbnail_url": self.upload_thumbnail_url,
+        }

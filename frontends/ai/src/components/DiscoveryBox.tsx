@@ -14,11 +14,11 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
   return (
     <div className="discovery-box__document">
       <small>
-        <Link to={`/case/${caseId}/document/${document.filename}`}>{document.filename ?? "n/a"}</Link>
-        {document?.format === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
-        {document?.format === "pdf" ? <> ({document?.document_text_by_page?.length} pages)</> : null}
+        <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
+        {document?.type === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
+        {document?.type === "pdf" ? <> ({document?.document_text_by_page?.length} pages)</> : null}
       </small>
-      {["audio", "pdf"].includes(document.format) ? (
+      {["audio", "pdf"].includes(document.type) ? (
         <>
           <p>{document.document_type}</p>
           {viewMore ? (
@@ -46,7 +46,7 @@ const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
           )}
         </>
       ) : null}
-      {["image"].includes(document.format) ? (
+      {["image"].includes(document.type) ? (
         <p>
           {capitalize(document.document_type)}. {capitalize(document.document_summary)}.
         </p>

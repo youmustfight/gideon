@@ -4,14 +4,9 @@ import styled from "styled-components";
 import { HighlightsBox } from "../../components/HighlightsBox";
 import { useHighlightStore } from "../../data/HighlightStore";
 import { useTeamStore } from "../../data/TeamStore";
-import { TDocument, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
+import { useDocument } from "../../data/useDocument";
+import { TDocument, TDocumentContent, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
 import { useHighlights } from "../../data/useHighlights";
-
-// HACK: Urls for files I chucked in notion if we want to simulate files
-const temporaryStaticFileUrls = {
-  "merrick-garland-press-conference-mar-a-lago.m4a":
-    "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/def94528-5ffe-478d-8241-6fe6ad401a6f/merrick-garland-press-conference-mar-a-lago.m4a?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20220928%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20220928T224600Z&X-Amz-Expires=86400&X-Amz-Signature=38ae3fb3d8b4e9c5ef6903771242c7999a4b141bfb5303101d8841e8a82e94b5&X-Amz-SignedHeaders=host&x-id=GetObject",
-};
 
 const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   const [isFullyVisible, setIsFullyVisible] = useState(false);
@@ -34,121 +29,15 @@ const StyledDocumentViewSummary = styled.div`
   }
 `;
 
-const SentenceTextVector = ({
-  document,
-  textVector,
-  textVectorIndex,
-}: {
-  document: TDocument;
-  textVector: TDocumentSentenceTextVector;
-  textVectorIndex: number;
-}) => {
-  const { currentUser } = useTeamStore();
-  const { data: highlights } = useHighlights();
-  // SETUP
-  const [isHovering, setIsHovering] = useState(false);
-  const {
-    sentenceEndIndex,
-    sentenceStartIndex,
-    setSentenceStartIndex,
-    setSentenceEndIndex,
-    hightlightNoteText,
-    setHightlightNoteText,
-    saveHighlightAndOpinion,
-  } = useHighlightStore();
-  const isHighlighted = sentenceEndIndex === textVectorIndex || sentenceStartIndex === textVectorIndex;
-  const isBetweenHighlighted =
-    sentenceEndIndex != null &&
-    sentenceStartIndex != null &&
-    textVectorIndex < sentenceEndIndex &&
-    textVectorIndex > sentenceStartIndex;
-  const wasHighlighted = highlights?.some(
-    (hl) =>
-      hl.filename === document.filename &&
-      textVectorIndex >= hl.document_text_vectors_by_sentence_start_index &&
-      textVectorIndex <= hl.document_text_vectors_by_sentence_end_index
-  );
-  // RENDER
-  return (
-    <>
-      <StyledSentenceTextVector
-        id={`sentence-index-${textVectorIndex}`}
-        className={`${isHovering ? "hovering" : ""} ${wasHighlighted ? "was-highlighted" : ""} ${
-          isHighlighted || isBetweenHighlighted ? "highlighted" : ""
-        }`}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-      >
-        {textVector.text}
-        {"."}
-        {isHovering ? (
-          <>
-            <button onClick={() => setSentenceStartIndex(textVectorIndex)}>🖊→</button>
-            <button onClick={() => setSentenceEndIndex(textVectorIndex)}>←🖊</button>
-          </>
-        ) : null}
-      </StyledSentenceTextVector>
-      {sentenceEndIndex === textVectorIndex ? (
-        <StyledSentenceTextVectorHighlightForm
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (sentenceStartIndex != null && sentenceEndIndex != null) {
-              saveHighlightAndOpinion({
-                filename: document.filename,
-                user: currentUser,
-                document_text_vectors_by_sentence_start_index: sentenceStartIndex,
-                document_text_vectors_by_sentence_end_index: sentenceEndIndex,
-                highlight_text: document.document_text_vectors_by_sentence
-                  .slice(sentenceStartIndex, sentenceEndIndex)
-                  .map((tv) => tv.text)
-                  .join("."),
-                note_text: hightlightNoteText,
-              });
-            }
-          }}
-        >
-          <textarea value={hightlightNoteText} onChange={(e) => setHightlightNoteText(e.target.value)}></textarea>
-          <button type="submit" disabled={hightlightNoteText?.length === 0}>
-            Save Highlight & Opinion
-          </button>
-        </StyledSentenceTextVectorHighlightForm>
-      ) : null}
-    </>
-  );
-};
-
-const StyledSentenceTextVectorHighlightForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  button {
-    font-size: 12px;
-  }
-`;
-
-const StyledSentenceTextVector = styled.span`
-  button {
-    font-size: 6px;
-  }
-  &.hovering {
-    text-decoration: underline;
-  }
-  &.was-highlighted {
-    background: #ffffcf;
-  }
-  &.highlighted {
-    background: yellow;
-  }
-`;
-
 const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   const { hash } = useLocation();
-  const { setSentenceStartIndex, setSentenceEndIndex } = useHighlightStore();
+  // const { setSentenceStartIndex, setSentenceEndIndex } = useHighlightStore();
   // ON MOUNT
-  useEffect(() => {
-    // --- reset sentence highlight selections
-    setSentenceStartIndex(null);
-    setSentenceEndIndex(null);
-  }, []);
+  // useEffect(() => {
+  //   // --- reset sentence highlight selections
+  //   setSentenceStartIndex(null);
+  //   setSentenceEndIndex(null);
+  // }, []);
   useEffect(() => {
     // --- scroll if we had an #anchor link param
     setTimeout(() => {
@@ -158,34 +47,39 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
     });
   }, [hash]);
+  const documentTextByPage =
+    doc.content.reduce((accum, dc) => {
+      // don't push document content that is max chunks. that doesn't consider page
+      if (dc.tokenizing_strategy === "sentence") {
+        if (!accum[dc.page_number]) accum[dc.page_number] = [];
+        accum[dc.page_number].push(dc);
+      }
+      return accum;
+    }, {}) ?? {};
 
   // RENDER
   return (
     <StyledDocumentViewTranscript>
-      {doc.document_text_by_page?.map((pageText, pageIndex) => (
+      {Object.keys(documentTextByPage)?.map((pageNumber) => (
         <div
-          key={`source-text-${pageIndex + 1}`}
-          id={`source-text-${pageIndex + 1}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === pageIndex + 1 ? "active" : ""}
+          key={`source-text-${pageNumber}`}
+          id={`source-text-${pageNumber}`}
+          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === pageNumber ? "active" : ""}
         >
           <div className="document-transcript__header">
-            <h6>Page #{pageIndex + 1}:</h6>
+            <h6>Page #{pageNumber}:</h6>
             <hr />
           </div>
           {/* <p>{doc.document_text_by_minute}</p> */}
           <p>
-            {doc.document_text_vectors_by_sentence.map((tv, tvIndex) => (
-              <>
-                {/* DONT FILTER BC WE NEED TO PRESERVE TV ARR INDEX FOR SELECTING ACROSS PAGES */}
-                {tv.page_number === pageIndex + 1 ? (
-                  <SentenceTextVector document={doc} textVector={tv} textVectorIndex={tvIndex} />
-                ) : null}
-              </>
+            {documentTextByPage[pageNumber].map((documentContent) => (
+              <>{documentContent.text}</>
             ))}
           </p>
         </div>
       ))}
-      {doc.document_text_by_minute?.map((minuteText, index) => (
+      {/* TODO: need to fix up audio indexing first */}
+      {/* {doc.document_text_by_minute?.map((minuteText, index) => (
         <div
           key={`source-text-${index}`}
           id={`source-text-${index}`}
@@ -198,7 +92,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           </div>
           <p>{minuteText}</p>
         </div>
-      ))}
+      ))} */}
     </StyledDocumentViewTranscript>
   );
 };
@@ -232,11 +126,11 @@ const StyledDocumentViewTranscript = styled.div`
 `;
 
 export const ViewCaseDocument = () => {
-  const { caseId, filename } = useMatch("/case/:caseId/document/:filename")?.params;
-  const { data: highlights = [] } = useHighlights();
-  const { data: documents = [] } = useDocuments();
-  const document = documents.find((d) => d.filename === filename);
-  const hasHighlights = highlights.some((hl) => hl.filename === filename);
+  const { caseId, documentId } = useMatch("/case/:caseId/document/:documentId")?.params;
+  const { data: document } = useDocument(documentId);
+  // const { data: highlights = [] } = useHighlights();
+  // TODO: need to get content, file, highlights loaded in
+  const hasHighlights = false; // TODO: refactor highlights.some((hl) => hl.filename === filename);
 
   // RENDER
   return !document ? null : (
@@ -247,19 +141,20 @@ export const ViewCaseDocument = () => {
           <Link to={`/case/${caseId}`}>
             <button>←</button>
           </Link>{" "}
-          <span>{document?.filename}</span>
+          <span>{document?.name}</span>
         </h4>
         <br />
         <h2>{document?.document_type}</h2>
-        {document.format === "audio" ? (
+        {document.type === "audio" ? (
           <div>
-            <audio src={temporaryStaticFileUrls[document.filename] ?? ""} controls type="audio/mpeg"></audio>
+            <audio src={document?.[files]?.[0] ?? ""} controls type="audio/mpeg"></audio>
           </div>
         ) : null}
       </div>
       <section>
         <DocumentViewSummary document={document} />
-        {document.mentions_people?.length > 0 ? (
+        {/* TODO */}
+        {/* {document.mentions_people?.length > 0 ? (
           <>
             <small style={{ fontSize: "12px", fontWeight: "900" }}>Mentioned People</small>
             <ul>
@@ -280,11 +175,12 @@ export const ViewCaseDocument = () => {
               ))}
             </ul>
           </>
-        ) : null}
+        ) : null} */}
       </section>
 
       {/* HIGHLIGHTS */}
-      {hasHighlights ? (
+      {/* TODO */}
+      {/* {hasHighlights ? (
         <>
           <div className="section-lead">
             <h4>Highlights</h4>
@@ -293,7 +189,7 @@ export const ViewCaseDocument = () => {
             <HighlightsBox filename={document.filename} />
           </section>
         </>
-      ) : null}
+      ) : null} */}
 
       {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
       <div className="section-lead">

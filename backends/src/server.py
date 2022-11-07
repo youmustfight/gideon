@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import selectinload, sessionmaker 
 
 import env
-from gideon_utils import get_file_path, get_documents_json, get_highlights_json, without_keys, write_file
+from gideon_utils import get_file_path, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
@@ -106,20 +106,36 @@ async def app_route_case(request, case_id):
 
 
 # DOCUMENTS
-# TODO: safer file uploading w/ async: https://stackoverflow.com/questions/48930245/how-to-perform-file-upload-in-sanic
-@app.route('/v1/documents/indexed', methods = ['GET'])
-def app_route_documents(request):
-    def reduced_json(j):
-        return without_keys(j, [
-            'document_text_vectors',
-            'document_text_vectors_by_minute',
-            'document_text_vectors_by_paragraph',
-            # 'document_text_vectors_by_sentence',
-        ])
-        # Keep sentence vectors for frontend note tagging
-    documents = get_documents_json()
-    documents = list(map(reduced_json, documents)) # clear doc vectors
-    return json({ "success": True, "documents": documents })
+@app.route('/v1/document/<document_id>', methods = ['GET'])
+async def app_route_document_document_id(request, document_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_document = await session.execute(
+            sa.select(Document)
+                .options(
+                    selectinload(Document.content),
+                    selectinload(Document.files),
+                )
+                .where(Document.id == int(document_id))
+        )
+        document = query_document.scalars().first()
+        # TODO: figure out how to more elegantly pull off serialized properties
+        document_json = document.serialize()
+        document_json['content'] = serialize_list(document.content)
+        document_json['files'] = serialize_list(document.files)
+    return json({ "success": True, "document": document_json })
+
+@app.route('/v1/documents', methods = ['GET'])
+async def app_route_documents(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_documents = await session.execute(
+            # TODO: should have case_id reference
+            sa.select(Document).order_by(sa.desc(Document.id))
+        )
+        documents = query_documents.scalars()
+        documents_json = serialize_list(documents)
+    return json({ "success": True, "documents": documents_json })
 
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
@@ -149,7 +165,6 @@ async def app_route_documents_index_image(request):
         write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
         await index_image(session=session, filename=file.name)
     return json({ "success": True })
-
 
 # HIGHLIGHTS
 
