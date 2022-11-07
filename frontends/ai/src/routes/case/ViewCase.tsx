@@ -27,7 +27,7 @@ export const ViewCase = () => {
       {/* CASE VIEWS */}
       <Routes>
         {/* --- document inspection */}
-        <Route path="/:caseId/document/:filename" element={<ViewCaseDocument />} />
+        <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
         {/* --- overview */}
         <Route path="/:caseId/" element={<ViewCaseOverview />} />
         {/* --- default overview showing. TODO: figure out relative path version */}
