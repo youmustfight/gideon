@@ -106,7 +106,26 @@ async def app_route_case(request, case_id):
 
 
 # DOCUMENTS
-@app.route('/v1/documents/indexed', methods = ['GET'])
+@app.route('/v1/document/<document_id>', methods = ['GET'])
+async def app_route_document_document_id(request, document_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_document = await session.execute(
+            sa.select(Document)
+                .options(
+                    selectinload(Document.content),
+                    selectinload(Document.files),
+                )
+                .where(Document.id == int(document_id))
+        )
+        document = query_document.scalars().first()
+        # TODO: figure out how to more elegantly pull off serialized properties
+        document_json = document.serialize()
+        document_json['content'] = serialize_list(document.content)
+        document_json['files'] = serialize_list(document.files)
+    return json({ "success": True, "document": document_json })
+
+@app.route('/v1/documents', methods = ['GET'])
 async def app_route_documents(request):
     session = request.ctx.session
     async with session.begin():
@@ -146,26 +165,6 @@ async def app_route_documents_index_image(request):
         write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
         await index_image(session=session, filename=file.name)
     return json({ "success": True })
-
-@app.route('/v1/document/<document_id>', methods = ['GET'])
-async def app_route_document_document_id(request, document_id):
-    session = request.ctx.session
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document)
-                .options(
-                    selectinload(Document.content),
-                    selectinload(Document.files),
-                )
-                .where(Document.id == int(document_id))
-        )
-        document = query_document.scalars().first()
-        # TODO: figure out how to more elegantly pull off serialized properties
-        document_json = document.serialize()
-        document_json['content'] = serialize_list(document.content)
-        document_json['files'] = serialize_list(document.files)
-    return json({ "success": True, "document": document_json })
-
 
 # HIGHLIGHTS
 

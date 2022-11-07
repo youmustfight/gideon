@@ -56,7 +56,7 @@ export type TDocument = {
 
 // Filters for user via forUser
 const reqDocumentsGet = async (): Promise<TDocument[]> =>
-  axios.get(`${getGideonApiUrl()}/v1/documents/indexed`).then((res) => res.data.documents);
+  axios.get(`${getGideonApiUrl()}/v1/documents`).then((res) => res.data.documents);
 
 export const useDocuments = () => {
   return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(), {
