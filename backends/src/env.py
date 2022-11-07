@@ -37,6 +37,12 @@ def env_get_database_pinecone_environment():
 def env_get_gideon_api_url():
   return "http://localhost:3000"
 
+# HARDWARE
+def env_is_gpu_available():
+  is_gpu_available = os.environ['IS_GPU_AVAILABLE'] == 'true'
+  print(f'INFO (env.py:env_is_gpu_available): is_gpu_available : {is_gpu_available}')
+  return is_gpu_available
+
 # OPENAI
 def env_get_open_ai_api_key():
   return os.environ['OPEN_AI_API_KEY']

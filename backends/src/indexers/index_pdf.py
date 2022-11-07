@@ -20,9 +20,9 @@ from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 
 # SETUP
 # --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
+openai.api_key = env.env_get_open_ai_api_key()
 # --- OCR
-reader = easyocr.Reader(['en'], gpu=False, verbose=True) # don't think we'll have GPUs on AWS instances
+reader = easyocr.Reader(['en'], gpu=env.env_is_gpu_available(), verbose=True) # don't think we'll have GPUs on AWS instances
 
 async def _index_pdf_process_file(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_file) started", document_id)
