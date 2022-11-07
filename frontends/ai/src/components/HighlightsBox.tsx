@@ -14,7 +14,7 @@ export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight })
   const handleSearchLocationsLikeThis = () => {
     setIsSearchPending(true);
     return axios
-      .post("http://localhost:3000/queries/vector-info-locations", {
+      .post("http://localhost:3000/v1/queries/vector-info-locations", {
         vector: props.highlight.highlight_text_vector,
       })
       .then((res) => {
