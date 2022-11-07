@@ -12,7 +12,7 @@ from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
 from indexers.index_image import index_image
-from models import serialize_list, Case, Document, User
+from dbs.sa_models import serialize_list, Case, Document, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text

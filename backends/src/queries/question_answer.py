@@ -5,8 +5,8 @@ from sqlalchemy.orm import joinedload
 from env import env_get_open_ai_api_key
 from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize
 from gideon_utils import get_file_path, open_txt_file
-from models import DocumentContent, Embedding
-from vector_dbs.vectordb_pinecone import index_documents_text_query
+from dbs.sa_models import DocumentContent, Embedding
+from dbs.vectordb_pinecone import index_documents_text_query
 
 # SETUP
 # --- OpenAI

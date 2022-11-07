@@ -2,7 +2,7 @@ import json
 from sentence_transformers import SentenceTransformer
 from gideon_clip import clip_classifications, clip_image_embedding, clip_vars
 from gideon_utils import get_file_path
-from vector_dbs.vectordb_pinecone import index_clip_add_image
+from dbs.vectordb_pinecone import index_clip_add_image
 
 # INDEX_IMAGE
 async def index_image(filename):

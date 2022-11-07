@@ -1,4 +1,4 @@
-from vector_dbs.vectordb_pinecone import index_clip_search_images_by_text
+from dbs.vectordb_pinecone import index_clip_search_images_by_text
 
 def filter_image_locations_within_top_prob_diff(image_locations, percentage_diff=0.02):
     print('INFO (FaissIndexes:filter_image_locations_within_top_prob_diff)', image_locations)
