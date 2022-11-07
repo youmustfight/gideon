@@ -1,6 +1,9 @@
 import io
 import pickle
 import numpy
+import textwrap
+
+from s3_utils import s3_upload_bytes
 
 # TENSORS
 def write_tensor_to_bytearray(tensor):
@@ -8,6 +11,11 @@ def write_tensor_to_bytearray(tensor):
     pickle.dump(tensor, numpy_tensor_array_data)
     numpy_tensor_array_data.seek(0)
     return numpy_tensor_array_data
+
+def backup_tensor_to_s3(embedding_id, tensor):
+    numpy_tensor_bytearray = write_tensor_to_bytearray(tensor)
+    npy_file_key = f"embeddings/embedding_{embedding_id}.npy"
+    s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
 
 # TOKENIZING
 def tokenize_string(text, strategy):
@@ -23,6 +31,8 @@ def tokenize_string(text, strategy):
             else:
                 splits_consolidated[-1] = splits_consolidated[-1] + f" {split}."
         return splits_consolidated
+    if strategy == "max_size":
+        return textwrap.wrap(text, 3_500)
     # OTHERWISE JUST RETURN TEXT AS ARR
     return [text]
 
