@@ -1,6 +1,6 @@
 
 
-from gideon_gpt import gpt_completion, gpt_vars
+from models.gpt import gpt_completion, gpt_vars
 from gideon_utils import get_file_path, open_txt_file
 
 

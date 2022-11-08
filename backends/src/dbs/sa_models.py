@@ -137,10 +137,12 @@ class Embedding(BaseModel):
     encoded_model = Column(Text()) # gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
     # --- pre-encoding
+    # TODO: do we delete these? they can all be derived from the document_content
     encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
     text = Column(Text())
     # TODO: image?
     # --- post-encoding
+    # TODO: should we just save the vector/tensor arr to a column? feels like we should rather than dealing w/ npy storage
     npy_url = Column(Text()) # save npy binary to S3 if we need to load later (seems better for storage than storing in the sql database as a byte-array)
     def serialize(self):
         return {
