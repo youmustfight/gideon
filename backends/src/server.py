@@ -12,6 +12,7 @@ from gideon_utils import get_file_path, without_keys, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
+from indexers.index_pdf_vectors import index_pdf_vectors
 from indexers.index_image import index_image
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
@@ -25,6 +26,7 @@ from queries.summarize_user import summarize_user
 # INIT
 app = Sanic("api")
 app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing outside the api endpoints, disallowing 503 timeout responses now
+
 
 # MIDDLEWARE
 # --- cors
@@ -146,22 +148,18 @@ async def app_route_document_delete(request, document_id):
             index_documents_sentences.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
-        await session.execute(
-            sa.delete(Embedding)
-                .where(Embedding.id.in_(embeddings_ids_ints)))
+        await session.execute(sa.delete(Embedding)
+            .where(Embedding.id.in_(embeddings_ids_ints)))
         # --- document_content
-        await session.execute(
-            sa.delete(DocumentContent)
-                .where(DocumentContent.document_id == int(document_id)))
+        await session.execute(sa.delete(DocumentContent)
+            .where(DocumentContent.document_id == int(document_id)))
         # --- files
-        await session.execute(
-            sa.update(File)
-                .where(File.document_id == int(document_id))
-                .values(document_id=None))
+        await session.execute(sa.update(File)
+            .where(File.document_id == int(document_id))
+            .values(document_id=None))
         # --- document
-        await session.execute(
-            sa.delete(Document)
-                .where(Document.id == int(document_id)))
+        await session.execute(sa.delete(Document)
+            .where(Document.id == int(document_id)))
     return json({ "success": True })
 
 @app.route('/v1/documents', methods = ['GET'])
@@ -179,12 +177,12 @@ async def app_route_documents(request):
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 async def app_route_documents_index_pdf(request):
     session = request.ctx.session
-    # with: ... is a python context creator
-    # session.begin() returns a session obj that maintains begin/commit/rollback
     async with session.begin():
         pyfile = request.files['file'][0]
-        await index_pdf(session=session, pyfile=pyfile)
-    # middleware response commits the transaction, closes the session
+        # --- process file/pdf/embeddings
+        document_id = await index_pdf(session=session, pyfile=pyfile)
+        # --- queue indexing
+        await index_pdf_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
