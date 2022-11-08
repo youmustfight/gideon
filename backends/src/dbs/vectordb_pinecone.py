@@ -116,8 +116,8 @@ async def index_documents_text_query(text, top_k=10, score_limit=1.2, score_diff
         top_k=top_k,
         include_values=False,
         includeMetadata=True,
-        filter={ "embedding_id": { "$gt": 234 } } # HACK: just filtering out all prior fails
-        # TODO: namespace=""
+        # filter={ "embedding_id": { "$gt": 234 } } # HACK: just filtering out all prior fails
+        # namespace="" # TODO: might use this to isolate environments w/ same index
     )
     # --- filters
     matches = query_results['matches']
@@ -139,8 +139,8 @@ def index_documents_sentences_query(text, top_k=10, score_limit=1.2, score_diff_
         top_k=top_k,
         include_values=False,
         includeMetadata=True,
-        filter={ "embedding_id": { "$gt": 234 } } # HACK: just filtering out all prior fails
-        # TODO: namespace=""
+        # filter={ "embedding_id": { "$gt": 234 } } # HACK: just filtering out all prior fails
+        # namespace="" # TODO: might use this to isolate environments w/ same index
     )
     # --- filters
     matches = query_results['matches']
