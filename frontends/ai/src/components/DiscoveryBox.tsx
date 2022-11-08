@@ -6,7 +6,7 @@ import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
 
-const DocumentBox: React.FC = ({ document }: { document: TDocument }) => {
+const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const [viewMore, setViewMore] = useState(false);
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
@@ -79,7 +79,7 @@ export const DiscoveryBox = () => {
     <StyledDiscoveryBox>
       <ul>
         {documents.map((doc) => (
-          <li key={doc.filename}>
+          <li key={doc.id}>
             <DocumentBox document={doc} />
           </li>
         ))}

@@ -1,9 +1,7 @@
 import openai
+import pydash as _
 from env import env_get_open_ai_api_key
-from gideon_gpt import gpt_completion, gpt_embedding, gpt_summarize
-from gideon_search import filter_text_vectors_within_top_score_diff, search_similar_file_text_vectors, sort_scored_text_vectors
-from gideon_utils import filter_documents_by_format, get_documents_json, get_file_path, open_txt_file
-from vector_dbs.vector_utils import similarity
+from dbs.vectordb_pinecone import index_documents_sentences_query, get_embeddings_from_search_vectors
 
 # SETUP
 # --- OpenAI
@@ -11,47 +9,28 @@ openai.api_key = env_get_open_ai_api_key()
 
 
 # SEARCH QUERY
-def search_for_locations_across_text(text_query):
-    print(f"INFO (search_for_locations_by_vector.py): query all documents via '{text_query}'")
-    # SETUP
-    # --- files
-    json_documents = get_documents_json()
-    json_documents = filter_documents_by_format(["audio", "pdf", "video"], json_documents)
-    locations = [] # { filename, page_number, score }[]
-    
-    # TEXT VECTOR SIMILARITY SCORING
-    text_query_embedding = gpt_embedding(text_query)
-    # --- for each file
-    for json_document_payload in json_documents:
-        # --- for each document_text_vectors_by_sentence (did _by_page but i think this will be higher accuracy)
-        for sentence_text_vector in json_document_payload['document_text_vectors_by_sentence']:
-            # TODO: at document vector creation, we should stitch short phrases together. small phrases are getting high similarity scores
-            if len(sentence_text_vector['text']) > 50:
-                # --- check min similarity
-                document_score = similarity(text_query_embedding, sentence_text_vector['vector'])
-                # --- push to locations w/ 
-                location_to_push = {
-                    "format": json_document_payload['format'],
-                    "filename": json_document_payload["filename"],
-                    "score": document_score,
-                    "text": sentence_text_vector['text']
-                }
-                if json_document_payload['format'] == 'pdf':
-                    location_to_push['page_number'] = sentence_text_vector['page_number']
-                elif json_document_payload['format'] == 'audio':
-                    location_to_push['minute_number'] = sentence_text_vector['minute_number']
-                locations.append(location_to_push)
-    # --- sort & filter
-    locations = sort_scored_text_vectors(locations)
-    locations = filter_text_vectors_within_top_score_diff(locations, 0.05, top_score_position_to_use=1) # skipping position 0 score cause it'll be a tight match and we eval others against highest score
-
-    # RETURN
-    # print('INFO (search_for_locations_by_vector.py): locations', locations)
+async def search_for_locations_across_text(session, text_query):
+    print(f"INFO (search_for_locations_across_text.py): query all documents via '{text_query}'")
+    # 1. get similar vectors (TODO: allow for minimum string length so we don't skew short statements higher similarity)
+    search_text_vectors = index_documents_sentences_query(text_query)
+    # 2. convert to DocumentContent
+    embeddings = await get_embeddings_from_search_vectors(session, search_text_vectors)
+    # 3. create "locations" array showing score + document content (TODO: move query+query result into db tables)
+    def map_vector_and_content(sv):
+        sv_embedding = _.find(embeddings, lambda e: e.id == int(sv['metadata']['embedding_id']))
+        # --- some embeddings don't have attrs (could be bad data)
+        if (hasattr(sv_embedding, 'document_content') and hasattr(sv_embedding.document_content, 'document')):
+            location = dict(
+                document=sv_embedding.document_content.document,
+                document_content=sv_embedding.document_content,
+                score= sv['score']
+            )
+            print('location', location)
+            return location
+    # 3b. map document_content to search results
+    locations = list(map(map_vector_and_content, search_text_vectors))
+    # ... and then filter out any 'None's
+    locations = list(filter(lambda loc: loc != None, locations))
+    # 4. return
+    print('INFO (search_for_locations_across_text.py): locations', locations)
     return locations
-  
-
-# RUN
-if __name__ == '__main__':
-    query = input("Enter your question here: ")
-    query_vector = gpt_embedding(query)
-    search_for_locations_across_text(query_vector)

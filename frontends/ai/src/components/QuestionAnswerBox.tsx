@@ -1,45 +1,46 @@
 import axios from "axios";
 import { intersection } from "lodash";
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { useTeamStore } from "../data/TeamStore";
+import { useCase } from "../data/useCase";
+import { useCases } from "../data/useCases";
+import { TDocument, TDocumentContent, TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { HighlightBox } from "./HighlightsBox";
 
-export type TAnswerLocation = {
-  filename: string;
-  format?: "pdf" | "audio";
-  page_number: number;
-  minute_number: number;
-  score: number;
-  text: string;
-};
-
-export const AnswerLocationBox = ({ location }: { location: TAnswerLocation }) => {
+export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) => {
+  // TODO: replace with useCase() hook
+  const matches = useMatch("/case/:caseId/*")?.params;
+  const caseId = Number(matches?.caseId);
   return (
     <StyledAnswerLocationBox>
       <b>
-        <Link to={`/document/${location.filename}`}>{location.filename ?? "n/a"}</Link>
-        {location.format === "pdf" ? (
+        <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
+        {location.document.type === "pdf" ? (
           <>
             ,{" "}
-            <Link to={`/document/${location.filename}#source-text-${location.page_number}`}>
-              page {location.page_number}
+            <Link
+              to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.page_number}`}
+            >
+              page {location.document_content.page_number}
             </Link>
           </>
         ) : null}
-        {location.format === "audio" ? (
+        {location.document.type === "audio" ? (
           <>
             ,{" "}
-            <Link to={`/document/${location.filename}#source-text-${location.minute_number}`}>
-              minute {location.minute_number}
+            <Link
+              to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.minute_number}`}
+            >
+              minute {location.document_content.minute_number}
             </Link>
           </>
         ) : null}
       </b>
       <br />
-      <div>"...{location.text}..."</div>
+      <div>"...{location.document_content.text}..."</div>
     </StyledAnswerLocationBox>
   );
 };
@@ -57,7 +58,7 @@ export const QuestionAnswerBox = () => {
   // --- extras
   const [isShowingExtras, setIsShowingExtras] = useState(false);
   // --- answers state
-  const [answer, setAnswer] = useState<{ answer?: string; locations?: TAnswerLocation[] } | null>(null);
+  const [answer, setAnswer] = useState<{ answer?: string; locations?: TQueryLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
   // --- q1 : Ask Question
   const [answerQuestion, setAnswerQuestion] = useState("");
@@ -66,9 +67,9 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/question-answer", { question: answerQuestion, index_type: "discovery" })
+      .post("http://localhost:3000/v1/queries/document-query", { question: answerQuestion, index_type: "discovery" })
       .then((res) => {
-        setAnswer({ answer: res.data.answer });
+        setAnswer({ answer: res.data.answer, locations: res.data.locations });
         setIsAnswerPending(false);
       });
   };
@@ -79,7 +80,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/query-info-locations", {
+      .post("http://localhost:3000/v1/queries/documents-locations", {
         query: infoLocationQuestion,
         index_type: "discovery",
       })

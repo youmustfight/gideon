@@ -1,6 +1,6 @@
-from gideon_gpt import gpt_embedding
+from models.gpt import gpt_embedding
 from gideon_utils import filter_documents_by_format, get_documents_json
-from vector_dbs.vector_utils import similarity
+from dbs.vector_utils import similarity
 
 def sort_scored_text_vectors(text_vectors):
     return sorted(text_vectors, key=lambda d: d['score'], reverse=True)

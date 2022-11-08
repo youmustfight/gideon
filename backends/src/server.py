@@ -1,10 +1,11 @@
 from contextvars import ContextVar
+import pinecone
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import selectinload, sessionmaker 
+from sqlalchemy.orm import joinedload, selectinload, sessionmaker
 
 import env
 from gideon_utils import get_file_path, without_keys, write_file
@@ -12,7 +13,7 @@ from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
 from indexers.index_image import index_image
-from models import serialize_list, Case, Document, User
+from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
@@ -67,13 +68,7 @@ async def app_route_auth_login(request):
                 .where(User.email == request.json["email"])
         )
         user = query_user.scalar_one_or_none()
-    return json({
-        "success": True,
-        "user": user.serialize(),
-        # TODO: figure out how to do these serialize() calls recurisvely within user.serialize()
-        # "cases": serialize_list(user.cases),
-        # "organizations": serialize_list(user.organizations),
-    })
+    return json({ "success": True, "user": user.serialize() })
 
 
 # CASES
@@ -107,7 +102,7 @@ async def app_route_case(request, case_id):
 
 # DOCUMENTS
 @app.route('/v1/document/<document_id>', methods = ['GET'])
-async def app_route_document_document_id(request, document_id):
+async def app_route_document_get(request, document_id):
     session = request.ctx.session
     async with session.begin():
         query_document = await session.execute(
@@ -124,6 +119,50 @@ async def app_route_document_document_id(request, document_id):
         document_json['content'] = serialize_list(document.content)
         document_json['files'] = serialize_list(document.files)
     return json({ "success": True, "document": document_json })
+
+@app.route('/v1/document/<document_id>', methods = ['DELETE'])
+async def app_route_document_delete(request, document_id):
+    session = request.ctx.session
+    async with session.begin():
+        # FETCH
+        # --- embeddings
+        query_embeddings = await session.execute(
+            sa.select(Embedding).options(
+                joinedload(Embedding.document_content).options(
+                    joinedload(DocumentContent.document)
+            )).where(Embedding.document_content.has(
+                DocumentContent.document.has(
+                    Document.id == int(document_id)))))
+        embeddings = query_embeddings.scalars().all()
+        embeddings_ids_ints = list(map(lambda e: e.id, embeddings))
+        embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
+        # DELETE INDEX VECTORS (via embedidngs)
+        if (len(embeddings_ids_strs) > 0):
+            index_documents_clip = pinecone.Index("documents-clip")
+            index_documents_clip.delete(ids=embeddings_ids_strs)
+            index_documents_text = pinecone.Index("documents-text")
+            index_documents_text.delete(ids=embeddings_ids_strs)
+            index_documents_sentences = pinecone.Index("documents-sentences")
+            index_documents_sentences.delete(ids=embeddings_ids_strs)
+        # DELETE MODELS
+        # --- embeddings
+        await session.execute(
+            sa.delete(Embedding)
+                .where(Embedding.id.in_(embeddings_ids_ints)))
+        # --- document_content
+        await session.execute(
+            sa.delete(DocumentContent)
+                .where(DocumentContent.document_id == int(document_id)))
+        # --- files
+        await session.execute(
+            sa.update(File)
+                .where(File.document_id == int(document_id))
+                .values(document_id=None))
+        # --- document
+        await session.execute(
+            sa.delete(Document)
+                .where(Document.id == int(document_id)))
+    return json({ "success": True })
 
 @app.route('/v1/documents', methods = ['GET'])
 async def app_route_documents(request):
@@ -166,8 +205,8 @@ async def app_route_documents_index_image(request):
         await index_image(session=session, filename=file.name)
     return json({ "success": True })
 
-# HIGHLIGHTS
 
+# HIGHLIGHTS
 @app.route('/v1/highlights', methods = ['GET'])
 def app_route_highlights(request):
     highlights = [] # get_highlights_json()
@@ -189,28 +228,42 @@ def app_route_highlight_create(request):
     return json({ "success": True })
 
 
-# QUERIES
-# TODO: class Document
-# TODO: class DocumentQuery ({ text, image, vector })
-# TODO: class DocumentQueryResult ({ ...what is currently a 'location' })
+# INDEXES
+@app.route('/v1/index/<index_name>', methods = ['DELETE'])
+def app_route_index_delete(request, index_name):
+    index_to_clear = pinecone.Index(index_name)
+    index_to_clear.delete(deleteAll=True)
+    return json({ "success": True })
 
-@app.route('/v1/queries/question-answer', methods = ['POST'])
+
+# QUERIES
+@app.route('/v1/queries/document-query', methods = ['POST'])
 async def app_route_question_answer(request):
     session = request.ctx.session
     async with session.begin():
         answer = await question_answer(session, request.json['question'])
     return json({ "success": True, "answer": answer })
 
-@app.route('/v1/queries/query-info-locations', methods = ['POST'])
-def app_route_query_info_locations(request):
-    locations_across_text = search_for_locations_across_text(request.json['query'])
-    locations_across_image = search_for_locations_across_image(request.json['query'])
-    # TODO: find a way to normalize scoring of GPT3 + CLIP
-    locations = locations_across_text + locations_across_image
-    return json({ "success": True, "locations": locations })
+@app.route('/v1/queries/documents-locations', methods = ['POST'])
+async def app_route_query_info_locations(request):
+    session = request.ctx.session
+    async with session.begin():
+        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
+        def serialize_location(location):
+            return dict(
+                document=location['document'].serialize(),
+                document_content=location['document_content'].serialize(),
+                score=location['score']
+            )
+        locations_across_text_serialized = list(map(serialize_location, locations_across_text))
+        # TODO: re-instate gpt3+clip
+        # locations_across_image = search_for_locations_across_image(request.json['query'])
+        # locations = locations_across_text + locations_across_image
+    return json({ "success": True, "locations": locations_across_text_serialized })
 
 @app.route('/v1/queries/highlights-query', methods = ['POST'])
 def app_route_highlights_location(request):
+    # TODO: refactor
     highlights = search_highlights(request.json['query'])
     return json({ "success": True, "highlights": highlights })
 
@@ -231,7 +284,6 @@ def app_route_contrast_users(request):
 
 
 # USERS
-
 @app.route('/v1/user/<user_id>', methods = ['GET'])
 async def app_route_user(request, user_id):
     session = request.ctx.session

@@ -1,5 +1,5 @@
 from env import env_get_open_ai_api_key
-from gideon_gpt import gpt_summarize
+from models.gpt import gpt_summarize
 from gideon_utils import get_highlights_json
 import openai
 

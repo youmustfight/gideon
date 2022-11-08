@@ -8,12 +8,12 @@ from sentence_transformers import SentenceTransformer
 from sqlalchemy import insert
 import uuid
 
-from gideon_gpt import gpt_embedding, gpt_vars
-from gideon_clip import clip_vars, clip_image_embedding
+from models.gpt import gpt_embedding, gpt_vars
+from models.clip import clip_vars, clip_image_embedding
 from gideon_utils import get_file_path
-from models import Document, DocumentContent, Embedding, File
+from dbs.sa_models import Document, DocumentContent, Embedding, File
 from s3_utils import s3_get_file_url, s3_upload_bytes, s3_upload_file
-from vector_dbs.vector_utils import write_tensor_to_bytearray
+from dbs.vector_utils import write_tensor_to_bytearray
 
 # FFS FIGURING THIS OUT STILL
 # https://anttihavanko.medium.com/building-image-search-with-openai-clip-5a1deaa7a6e2

@@ -2,14 +2,15 @@ import axios from "axios";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+import { TQueryLocation } from "../data/useDocuments";
 import { TDocumentHighlight, useHighlights } from "../data/useHighlights";
-import { AnswerLocationBox, TAnswerLocation } from "./QuestionAnswerBox";
+import { AnswerLocationBox } from "./QuestionAnswerBox";
 
 export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight }) => {
   // SETUP
   const hl = props.highlight;
   // --- request like this
-  const [locations, setLocations] = useState<TAnswerLocation[]>([]);
+  const [locations, setLocations] = useState<TQueryLocation[]>([]);
   const [isSearchPending, setIsSearchPending] = useState(false);
   const handleSearchLocationsLikeThis = () => {
     setIsSearchPending(true);

@@ -11,12 +11,12 @@ from time import sleep
 from sqlalchemy import insert, select, update
 
 import env
-from gideon_gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
-from models import Document, DocumentContent, File
+from dbs.sa_models import Document, DocumentContent, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
-from vector_dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
-from vector_dbs.vector_utils import tokenize_string
+from dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
+from dbs.vector_utils import tokenize_string
 
 # SETUP
 # --- OpenAI
