@@ -1,7 +1,7 @@
 
 
-from gideon_gpt import gpt_completion, gpt_vars
-from gideon_utils import get_file_path, open_txt_file
+from models.gpt import gpt_completion, gpt_vars
+from files.file_utils import get_file_path, open_txt_file
 
 
 def contrast_two_user_statements(user_one, statement_one, user_two, statement_two, engine=gpt_vars()['ENGINE_COMPLETION']):

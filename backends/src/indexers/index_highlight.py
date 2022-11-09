@@ -1,7 +1,7 @@
 import json
 from models.gpt import gpt_vars
 from models.gpt import gpt_embedding
-from gideon_utils import get_file_path
+from files.file_utils import get_file_path
 import time
 
 

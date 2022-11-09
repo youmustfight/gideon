@@ -1,9 +1,8 @@
 import openai
 from env import env_get_open_ai_api_key
-from models.gpt import gpt_completion, gpt_embedding, gpt_summarize
-from gideon_search import filter_text_vectors_within_top_score_diff, search_similar_file_text_vectors, sort_scored_text_vectors
-from gideon_utils import get_documents_json, get_file_path, get_highlights_json, open_txt_file
+from models.gpt import gpt_embedding
 from dbs.vector_utils import similarity
+# DEPRECATED: from gideon_search import filter_text_vectors_within_top_score_diff, search_similar_file_text_vectors, sort_scored_text_vectors
 
 # SETUP
 # --- OpenAI
@@ -15,7 +14,7 @@ def search_highlights(query):
     print('INFO (search_highlights.py): query all highlights with query "{query}"'.format(query=query))
     # SETUP
     # --- files
-    json_highlights = get_highlights_json()
+    json_highlights = [] # get_highlights_json()
     highlights = []
     # --- get query embed for similarity scoring
     query_vector = gpt_embedding(query)
@@ -32,15 +31,9 @@ def search_highlights(query):
       # -- append
       highlights.append(json_highlight_payload)
     # --- sort & filter
-    highlights = sort_scored_text_vectors(highlights)
-    highlights = filter_text_vectors_within_top_score_diff(highlights, 0.2) # be looser w/ this score?
+    # highlights = sort_scored_text_vectors(highlights)
+    # highlights = filter_text_vectors_within_top_score_diff(highlights, 0.2) # be looser w/ this score?
     
     # RESPONSE
     print('INFO (search_highlights.py): highlights', highlights)
     return highlights
-
-
-# RUN
-if __name__ == '__main__':
-    query = input("Enter your question here: ")
-    search_highlights(query)

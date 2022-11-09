@@ -1,6 +1,5 @@
 from env import env_get_open_ai_api_key
 from models.gpt import gpt_summarize
-from gideon_utils import get_highlights_json
 import openai
 
 # SETUP
@@ -11,7 +10,7 @@ openai.api_key = env_get_open_ai_api_key()
 def summarize_user(user):
     print('INFO (summarize_user.py): summarizing "{user}" notes'.format(user=user))
     # VECTOR SIMILARITY SCORING
-    highlights = get_highlights_json()
+    highlights = [] # get_highlights_json()
     def filter_user_highlight(highlight):
       return highlight['user'] == user
     user_highlights = list(filter(filter_user_highlight, highlights))

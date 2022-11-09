@@ -3,7 +3,7 @@ import pickle
 import numpy
 import textwrap
 
-from s3_utils import s3_upload_bytes
+from files.s3_utils import s3_upload_bytes
 
 # TENSORS
 def write_tensor_to_bytearray(tensor):

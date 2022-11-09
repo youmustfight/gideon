@@ -1,22 +1,19 @@
-import asyncio
 import easyocr
 import io
-import numpy
 import openai
+import numpy as np
 from pdf2image import convert_from_bytes, convert_from_path
-import pickle
-import textwrap
+import sqlalchemy as sa
 from time import sleep
 
-from sqlalchemy import insert, select, update
-
 import env
-from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
-from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
-from dbs.sa_models import Document, DocumentContent, File
-from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
 from dbs.vector_utils import tokenize_string
+from files.file_utils import get_file_path, open_txt_file
+from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+from utils import filter_empty_strs
 
 # SETUP
 # --- OpenAI
@@ -26,10 +23,10 @@ reader = easyocr.Reader(['en'], gpu=env.env_is_gpu_available(), verbose=True) # 
 
 async def _index_pdf_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_content) started", document_id)
-    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     # 1. STATUS
-    files_query = await session.execute(select(File).where(File.document_id == document_id))
+    files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
     files = files_query.scalars()
     print(f"INFO (index_pdf.py:_index_pdf_process_content) ##TODO## files")
     file = files.first()
@@ -37,7 +34,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     # 2. PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
     print(f"INFO (index_pdf.py:_index_pdf_process_content): fetching document's documentcontent")
-    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all() # .all() will turn ScalarResult into a list()
     print(f"INFO (index_pdf.py:_index_pdf_process_content): fetched document's documentcontent (length: {len(document_content)})")
     if len(document_content) == 0:
@@ -84,34 +81,39 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     document.name = file.filename
     document.type = "pdf"
     document.status_processing_files = "completed"
+    document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
 
 async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
-    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
-    # 1) large embeddings for summarization
-    for content in list(filter(lambda content: content.tokenizing_strategy == "max_size", document_content)):
-        # --- add to index (handles embedding creation)
-        await index_documents_text_add(session=session, text=content.text, document_id=document_id, document_content_id=content.id)
-        sleep(1.2) # --- take a break (throttled by openai 60 reqs/min)
-    # 2) sentence embeddings for location look ups
-    for content in list(filter(lambda content: content.tokenizing_strategy == "sentence", document_content)):
-        # --- add to index (handles embedding creation)
-        await index_documents_sentences_add(session=session, text=content.text, document_id=document_id, document_content_id=content.id)
-        sleep(1.2) # --- take a break (throttled by openai 60 reqs/min)
+    # --- CREATE EMBEDDINGS (context is derived from relation)
+    for content in list(document_content):
+        text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
+        text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
+        await session.execute(
+            sa.insert(Embedding).values(
+                document_id=document_id,
+                document_content_id=content.id,
+                encoded_model="gpt3",
+                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
+                encoding_strategy="text",
+                vector_json=text_embedding_vector,
+            ))
+        sleep(1.2) # openai 60 reqs/min
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
 
 async def _index_pdf_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
-    document_query = await session.execute(select(Document).where(Document.id == document_id))
+    document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    document_content_query = await session.execute(select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content))
     # VARS
@@ -194,16 +196,17 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # --- SAVE
     document.document_description=document_description
     document.document_summary=document_summary
+    document.status_processing_extractions = "completed"
     session.add(document)
 
 
 # INDEX_PDF
-async def index_pdf(session, pyfile):
+async def index_pdf(session, pyfile) -> int:
     print(f"INFO (index_pdf.py): indexing {pyfile.name} ({pyfile.type})")
     try:
         # SETUP DOCUMENT
         document_query = await session.execute(
-            insert(Document)
+            sa.insert(Document)
                 .values(status_processing_files="queued")
                 .returning(Document.id)) # can't seem to return anything except id
         document_id = document_query.scalar_one_or_none()
@@ -230,8 +233,8 @@ async def index_pdf(session, pyfile):
         print(f"INFO (index_pdf.py): processing extractions", upload_key)
         await _index_pdf_process_extractions(session=session, document_id=document_id)
         print(f"INFO (index_pdf.py): finished intake of document #{document_id}")
-        # SAVE/COMMIT
-        # this happens by the context/caller of this func
+        # RETURN (SAVE/COMMIT happens via context/caller of this func)
+        return document_id
     except Exception as err:
         print(f"ERROR (index_pdf.py):", err)
         raise err # by throwing the error up to the route context(with), we'll trigger a rollback automatically

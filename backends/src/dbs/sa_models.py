@@ -1,7 +1,7 @@
 from pydash import to_list
 from sqlalchemy import Column, Integer, ForeignKey, String, Table, Text
 from sqlalchemy.orm import declarative_base, relationship
-
+from sqlalchemy.dialects.postgresql import JSONB
 
 # BASE SETUP
 
@@ -84,13 +84,15 @@ class Document(BaseModel):
     type = Column(String()) # pdf, image, audio, video (derive search modalities from this)
     # --- O>M for files
     status_processing_files = Column(String()) # queued, processing, completed, error
+    status_processing_content = Column(String()) # queued, processing, completed, error
     files = relationship("File", back_populates="document")
     # --- content
     content = relationship("DocumentContent", back_populates="document")
     # --- content -> embeddings
     status_processing_embeddings = Column(String()) # queued, processing, completed, error
     embeddings = relationship("Embedding", back_populates="document")
-    # --- extracted summaries/details
+    # --- content -> extracted summaries/details
+    status_processing_extractions = Column(String()) # queued, processing, completed, error
     document_description = Column(Text())
     document_summary = Column(Text())
     def serialize(self):
@@ -136,12 +138,10 @@ class Embedding(BaseModel):
     # --- encoding model/engine info
     encoded_model = Column(Text()) # gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
-    # --- pre-encoding
     encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
-    text = Column(Text())
-    # TODO: image?
     # --- post-encoding
-    npy_url = Column(Text()) # save npy binary to S3 if we need to load later (seems better for storage than storing in the sql database as a byte-array)
+    vector_json=Column(JSONB) # for storing raw values to easily access later
+    npy_url = Column(Text()) # save npy binary to S3? probably unnecessary for now for vector_json
     def serialize(self):
         return {
             "id": self.id,
@@ -150,7 +150,6 @@ class Embedding(BaseModel):
             "encoded_model": self.encoded_model,
             "encoded_model_engine": self.encoded_model_engine,
             "encoding_strategy": self.encoding_strategy,
-            "text": self.text,
         }
 
 class File(BaseModel):
