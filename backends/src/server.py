@@ -256,6 +256,7 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
+        # --- pdfs/transcripts
         locations_across_text = await search_for_locations_across_text(session, request.json['query'])
         def serialize_location(location):
             return dict(
@@ -264,10 +265,12 @@ async def app_route_query_info_locations(request):
                 score=location['score']
             )
         locations_across_text_serialized = list(map(serialize_location, locations_across_text))
-        # TODO: re-instate gpt3+clip
-        # locations_across_image = search_for_locations_across_image(request.json['query'])
-        # locations = locations_across_text + locations_across_image
-    return json({ "success": True, "locations": locations_across_text_serialized })
+        # --- images
+        locations_across_image = await search_for_locations_across_image(session, request.json['query'])
+        locations_across_image_serialized = list(map(serialize_location, locations_across_image))
+        # --- combined
+        locations = locations_across_image_serialized + locations_across_text_serialized
+    return json({ "success": True, "locations": locations })
 
 # @app.route('/v1/queries/highlights-query', methods = ['POST'])
 # def app_route_highlights_location(request):
