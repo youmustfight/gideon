@@ -58,7 +58,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
                 frequency_penalty=freq_pen,
                 presence_penalty=pres_pen,
                 stop=stop,
-                request_timeout=10,
+                request_timeout=30,
             )
             text = response['choices'][0]['text'].strip()
             print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...', text)
@@ -101,7 +101,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 instruction=instruction,
                 temperature=temperature,
                 top_p=top_p,
-                request_timeout=10
+                request_timeout=30
             )
             text = response['choices'][0]['text'].strip()
             return text
@@ -112,7 +112,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
             print('Error (GPT3):', err, instruction, input)
             sleep(1)
 
-def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
+def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list();
@@ -123,7 +123,7 @@ def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
         print('\n', idx + 1, 'of', len(chunks), ' - ', summary, '\n')
         result.append(summary)
     results_string = ' '.join(result)
-    # --- check if to summarize again 
-    if len(results_string) > 4000:
+    # --- check if to summarize again (this can get stuck in a loop if it can't summarize further)
+    if len(results_string) > max_length:
         return gpt_summarize(results_string,engine=engine)
     return results_string

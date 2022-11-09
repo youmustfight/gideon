@@ -23,11 +23,11 @@ async def question_answer(session, query):
         # --- 3a. get answer from high similarity vectors
         for idx, dc in enumerate(document_content):
             prompt = open_txt_file(get_file_path('./prompts/prompt_answer_question.txt')).replace('<<PASSAGE>>', dc.text).replace('<<QUESTION>>', query)
-            answer = gpt_completion(prompt,engine='text-davinci-002',max_tokens=150)
+            answer = gpt_completion(prompt,max_tokens=150)
             print(f'INFO (question_answer.py): answer #{idx+1} = {answer}')
             answers.append(answer)
         # --- 3b. summarize answers
-        final_answer = gpt_summarize('\n\n'.join(answers), engine='text-davinci-002')
+        final_answer = gpt_summarize('\n\n'.join(answers), max_length=650)
     else:
         final_answer = 'Found nothing relevant to your question.'
     # 4. return answer/no answer
