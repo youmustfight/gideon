@@ -168,7 +168,7 @@ async def app_route_documents(request):
     async with session.begin():
         query_documents = await session.execute(
             sa.select(Document)
-                .options(subqueryload(Document.content))
+                .options(subqueryload(Document.content), subqueryload(Document.files))
                 .order_by(sa.desc(Document.id)))
         documents = query_documents.scalars().all()
         # there's got to be a better way to deal w/ this
@@ -177,6 +177,7 @@ async def app_route_documents(request):
             doc['content'] = list(filter(
                 lambda c: c['tokenizing_strategy'] == 'sentence',
                 serialize_list(d.content)))
+            doc['files'] = serialize_list(d.files)
             return doc
         documents_json = list(map(map_documents_and_content, documents))
     return json({ "success": True, "documents": documents_json })
