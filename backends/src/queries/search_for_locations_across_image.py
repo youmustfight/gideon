@@ -16,7 +16,8 @@ async def search_for_locations_across_image(session, text_query):
             location = dict(
                 document=sv_embedding.document_content.document,
                 document_content=sv_embedding.document_content,
-                score= sv['score']
+                score=sv['score'],
+                score_metric="cosine",
             )
             print('location', location)
             return location
