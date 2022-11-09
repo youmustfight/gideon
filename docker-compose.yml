@@ -47,3 +47,8 @@ services:
       POSTGRES_PASSWORD: nojusticenopeace
     ports:
       - "5432:5432"
+
+  queue:
+    image: redis:6.2.7
+    ports:
+      - "6379:6379"
