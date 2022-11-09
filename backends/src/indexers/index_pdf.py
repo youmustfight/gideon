@@ -140,7 +140,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # --- summary
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
     if len(document_summary) == 0 and len(document_content_text) < 250_000:
-        document_summary = gpt_summarize(document_content_text)
+        document_summary = gpt_summarize(document_content_text, max_length=4000)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary exists or document is too long')
     # --- cases/laws mentioned

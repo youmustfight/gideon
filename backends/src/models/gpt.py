@@ -112,7 +112,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
             print('Error (GPT3):', err, instruction, input)
             sleep(1)
 
-def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
+def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list();
@@ -123,7 +123,7 @@ def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION):
         print('\n', idx + 1, 'of', len(chunks), ' - ', summary, '\n')
         result.append(summary)
     results_string = ' '.join(result)
-    # --- check if to summarize again 
-    if len(results_string) > 4000:
+    # --- check if to summarize again (this can get stuck in a loop if it can't summarize further)
+    if len(results_string) > max_length:
         return gpt_summarize(results_string,engine=engine)
     return results_string

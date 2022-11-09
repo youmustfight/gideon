@@ -32,7 +32,7 @@ def summarize_user(user):
         # --- summarize notes
         print('INFO (summarize_user.py): summarizing notes\n\n', '\n\n'.join(notes))
         safe_notes = '\n\n'.join(notes).encode(encoding='ASCII',errors='ignore').decode()
-        summary = gpt_summarize(safe_notes, engine='text-davinci-002')
+        summary = gpt_summarize(safe_notes)
     else:
         summary = 'Found no highlights for user.'
     # RESPONSE

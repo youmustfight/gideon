@@ -11,9 +11,9 @@ import env
 from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
-from indexers.index_pdf import index_pdf
+from indexers.index_image import index_image, _index_image_process_extractions
+from indexers.index_pdf import index_pdf, _index_pdf_process_extractions
 from indexers.index_vectors import index_vectors
-from indexers.index_image import index_image
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
@@ -158,6 +158,19 @@ async def app_route_document_delete(request, document_id):
         # --- document
         await session.execute(sa.delete(Document)
             .where(Document.id == int(document_id)))
+    return json({ "success": True })
+
+@app.route('/v1/document/<document_id>/summarize', methods = ['POST'])
+async def app_route_documents_index_pdf(request, document_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_document = await session.execute(
+            sa.select(Document).where(Document.id == int(document_id)))
+        document = query_document.scalars().first()
+        if (document.type == "pdf"):
+            await _index_pdf_process_extractions(session=session, document_id=document.id)
+        if (document.type == "image"):
+            await _index_image_process_extractions(session=session, document_id=document.id)
     return json({ "success": True })
 
 @app.route('/v1/documents', methods = ['GET'])

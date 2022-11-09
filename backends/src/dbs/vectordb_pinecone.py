@@ -63,7 +63,7 @@ def index_clip_image_add(embedding_id, vector, metadata=None):
 
 # INDEX QUERIES
   
-async def index_documents_text_query(text, top_k=12, score_limit=1.2, score_diff_percent=0.5):
+async def index_documents_text_query(text, top_k=12, score_limit=1.2, score_diff_percent=0.15):
     print(f'INFO (vectordb_pinecone:index_documents_text_query): query "{text}"')
     text_embedding_tensor = gpt_embedding(text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
