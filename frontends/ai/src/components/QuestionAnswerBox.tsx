@@ -40,12 +40,13 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
         ) : null}
       </b>
       <br />
-      <div>"...{location.document_content.text}..."</div>
+      {location.document_content.text ? <div>"...{location.document_content.text}..."</div> : null}
     </StyledAnswerLocationBox>
   );
 };
 
 const StyledAnswerLocationBox = styled.div`
+  min-height: 20px;
   font-size: 12px;
   div {
     margin-top: 4px;
