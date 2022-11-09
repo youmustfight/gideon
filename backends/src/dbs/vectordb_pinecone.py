@@ -1,15 +1,12 @@
 import env
 import numpy as np
 import pinecone
-from sentence_transformers import SentenceTransformer
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 
 from models.gpt import gpt_embedding
 from models.clip import clip_text_embedding
 from dbs.sa_models import DocumentContent, Embedding
-from files.s3_utils import s3_get_file_url, s3_upload_bytes, s3_upload_file
-from dbs.vector_utils import write_tensor_to_bytearray, backup_tensor_to_s3
 
 # SETUP
 # --- pinecone
@@ -17,14 +14,21 @@ pinecone.init(
   api_key=env.env_get_database_pinecone_api_key(),
   environment=env.env_get_database_pinecone_environment()
 )
-index_documents_clip_url = "documents-clip-8bb34d7.svc.us-west1-gcp.pinecone.io"
-index_documents_clip = pinecone.Index("documents-clip")
-# TODO: split these into namespaces (https://www.pinecone.io/docs/namespaces/)
+index_documents_clip_url = "documents-clip-768-8bb34d7.svc.us-west1-gcp.pinecone.io"
+index_documents_clip = pinecone.Index("documents-clip-768") # cosine
+# TODO: split these into namespaces? (https://www.pinecone.io/docs/namespaces/)
 # TODO: or actually, instead of namespacing on types of vectors, could do it for prod/dev/local/etc. enviornment names
-index_documents_text_url = "documents-text-8bb34d7.svc.us-west1-gcp.pinecone.io"
-index_documents_text = pinecone.Index("documents-text")
-index_documents_sentences_url = "documents-sentences-8bb34d7.svc.us-west1-gcp.pinecone.io"
-index_documents_sentences = pinecone.Index("documents-sentences")
+index_documents_text_url = "documents-text-12288-8bb34d7.svc.us-west1-gcp.pinecone.io"
+index_documents_text = pinecone.Index("documents-text-12288") # euclidian
+index_documents_sentences_url = "documents-sentences-12288-8bb34d7.svc.us-west1-gcp.pinecone.io"
+index_documents_sentences = pinecone.Index("documents-sentences-12288") # euclidian
+
+def get_indexes():
+    return {
+        "index_documents_clip": index_documents_clip,
+        "index_documents_text": index_documents_text,
+        "index_documents_sentences": index_documents_sentences,
+    }
 
 
 # INDEX UPSERTS
@@ -35,7 +39,7 @@ def index_documents_text_add(embedding_id, vector, metadata=None):
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
     # --- index upsert
-    index_documents_text.upsert(vectors=[pinecone_upsert_record])
+    get_indexes()["index_documents_text"].upsert(vectors=[pinecone_upsert_record])
     print("INFO (vectordb_pinecone:index_documents_text_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
 
 def index_documents_sentences_add(embedding_id, vector, metadata=None):
@@ -44,7 +48,7 @@ def index_documents_sentences_add(embedding_id, vector, metadata=None):
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
     # --- index upsert
-    index_documents_sentences.upsert(vectors=[pinecone_upsert_record])
+    get_indexes()["index_documents_sentences"].upsert(vectors=[pinecone_upsert_record])
     print("INFO (vectordb_pinecone:index_documents_sentences_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
 
 def index_clip_image_add(embedding_id, vector, metadata=None):
@@ -53,7 +57,7 @@ def index_clip_image_add(embedding_id, vector, metadata=None):
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
     # --- index upsert
-    index_documents_clip.upsert(vectors=[pinecone_upsert_record])
+    get_indexes()["index_documents_clip"].upsert(vectors=[pinecone_upsert_record])
     print("INFO (vectordb_pinecone:index_clip_image_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
 
 

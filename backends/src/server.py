@@ -21,6 +21,7 @@ from queries.search_for_locations_across_text import search_for_locations_across
 from queries.search_for_locations_across_image import search_for_locations_across_image
 from queries.search_highlights import search_highlights
 from queries.summarize_user import summarize_user
+from dbs.vectordb_pinecone import get_indexes
 
 
 # INIT
@@ -140,12 +141,9 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
-            index_documents_clip = pinecone.Index("documents-clip")
-            index_documents_clip.delete(ids=embeddings_ids_strs)
-            index_documents_text = pinecone.Index("documents-text")
-            index_documents_text.delete(ids=embeddings_ids_strs)
-            index_documents_sentences = pinecone.Index("documents-sentences")
-            index_documents_sentences.delete(ids=embeddings_ids_strs)
+            get_indexes()["index_documents_clip"].delete(ids=embeddings_ids_strs)
+            get_indexes()["index_documents_text"].delete(ids=embeddings_ids_strs)
+            get_indexes()["index_documents_sentences"].delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
         await session.execute(sa.delete(Embedding)

@@ -1,6 +1,5 @@
 import json
 import openai
-from sentence_transformers import SentenceTransformer
 import sqlalchemy as sa
 import numpy as np
 from sqlalchemy.orm import joinedload
