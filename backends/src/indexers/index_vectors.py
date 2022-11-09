@@ -1,9 +1,9 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
-from dbs.vectordb_pinecone import index_documents_sentences_add, index_documents_text_add
+from dbs.vectordb_pinecone import index_documents_sentences_add, index_documents_text_add, index_clip_image_add
 from dbs.sa_models import Document, DocumentContent, Embedding
 
-async def index_pdf_vectors(session, document_id):
+async def index_vectors(session, document_id):
     # FETCH
     query_embeddings = await session.execute(
         sa.select(Embedding).options(
@@ -36,4 +36,13 @@ async def index_pdf_vectors(session, document_id):
                     "document_id": document_id,
                     "document_content_id": dc.id,
                     "string_length": len(dc.text)
+                })
+        # --- index content (image)
+        if (dc.image_file_id != None):
+            index_clip_image_add(
+                embedding_id=em.id,
+                vector=em.vector_json,
+                metadata={
+                    "document_id": document_id,
+                    "document_content_id": dc.id,
                 })

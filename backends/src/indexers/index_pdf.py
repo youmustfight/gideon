@@ -6,10 +6,10 @@ from pdf2image import convert_from_bytes, convert_from_path
 import sqlalchemy as sa
 from time import sleep
 
-import env
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
 from dbs.vector_utils import tokenize_string
+import env
 from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
@@ -77,7 +77,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         ), document_text_chunks))
         session.add_all(document_content_text)
         print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
-    # --- save
+    # 4. SAVE
     document.name = file.filename
     document.type = "pdf"
     document.status_processing_files = "completed"

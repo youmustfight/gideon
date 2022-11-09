@@ -40,12 +40,13 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
         ) : null}
       </b>
       <br />
-      <div>"...{location.document_content.text}..."</div>
+      {location.document_content.text ? <div>"...{location.document_content.text}..."</div> : null}
     </StyledAnswerLocationBox>
   );
 };
 
 const StyledAnswerLocationBox = styled.div`
+  min-height: 20px;
   font-size: 12px;
   div {
     margin-top: 4px;
@@ -161,7 +162,7 @@ export const QuestionAnswerBox = () => {
       <form className="question-box" onSubmit={handleHighlightSearch}>
         <label>
           <span>Search Highlights</span>
-          <input value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
+          <input disabled value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
         </label>
         <button type="submit" disabled={isAnswerPending || !(highlightSearchQuery?.length > 0)}>
           Ask
@@ -170,7 +171,7 @@ export const QuestionAnswerBox = () => {
       <div className="question-box">
         <label>
           <span>Summarize Laywer</span>
-          <select value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
+          <select disabled value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
             <option value="">----</option>
             {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
               <option key={user}>{user}</option>
@@ -188,13 +189,13 @@ export const QuestionAnswerBox = () => {
       <div className="question-box">
         <label>
           <span>Contrast Laywers</span>
-          <select value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
+          <select disabled value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
             <option value="">----</option>
             {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
               <option key={user}>{user}</option>
             ))}
           </select>
-          <select value={userTwoToContrast} onChange={(e) => setUserTwoToContrast(e.target.value)}>
+          <select disabled value={userTwoToContrast} onChange={(e) => setUserTwoToContrast(e.target.value)}>
             <option value="">----</option>
             {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
               <option key={user}>{user}</option>

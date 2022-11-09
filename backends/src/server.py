@@ -12,7 +12,7 @@ from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
-from indexers.index_pdf_vectors import index_pdf_vectors
+from indexers.index_vectors import index_vectors
 from indexers.index_image import index_image
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
@@ -168,7 +168,7 @@ async def app_route_documents(request):
     async with session.begin():
         query_documents = await session.execute(
             sa.select(Document)
-                .options(subqueryload(Document.content))
+                .options(subqueryload(Document.content), subqueryload(Document.files))
                 .order_by(sa.desc(Document.id)))
         documents = query_documents.scalars().all()
         # there's got to be a better way to deal w/ this
@@ -177,6 +177,7 @@ async def app_route_documents(request):
             doc['content'] = list(filter(
                 lambda c: c['tokenizing_strategy'] == 'sentence',
                 serialize_list(d.content)))
+            doc['files'] = serialize_list(d.files)
             return doc
         documents_json = list(map(map_documents_and_content, documents))
     return json({ "success": True, "documents": documents_json })
@@ -189,7 +190,18 @@ async def app_route_documents_index_pdf(request):
         # --- process file/pdf/embeddings
         document_id = await index_pdf(session=session, pyfile=pyfile)
         # --- queue indexing
-        await index_pdf_vectors(session=session, document_id=document_id)
+        await index_vectors(session=session, document_id=document_id)
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/image', methods = ['POST'])
+async def app_route_documents_index_image(request):
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        # --- process file/embeddings
+        document_id = await index_image(session=session, pyfile=pyfile)
+        # --- queue indexing
+        await index_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
 # @app.route('/v1/documents/index/audio', methods = ['POST'])
@@ -199,15 +211,6 @@ async def app_route_documents_index_pdf(request):
 #         pyfile = request.files['file'][0]
 #         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
 #         index_audio(session=session, filename=pyfile.name)
-#     return json({ "success": True })
-
-# @app.route('/v1/documents/index/image', methods = ['POST'])
-# async def app_route_documents_index_image(request):
-#     session = request.ctx.session
-#     async with session.begin():
-#         pyfile = request.files['file'][0]
-#         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
-#         await index_image(session=session, filename=pyfile.name)
 #     return json({ "success": True })
 
 
@@ -253,6 +256,7 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
+        # --- pdfs/transcripts
         locations_across_text = await search_for_locations_across_text(session, request.json['query'])
         def serialize_location(location):
             return dict(
@@ -261,10 +265,12 @@ async def app_route_query_info_locations(request):
                 score=location['score']
             )
         locations_across_text_serialized = list(map(serialize_location, locations_across_text))
-        # TODO: re-instate gpt3+clip
-        # locations_across_image = search_for_locations_across_image(request.json['query'])
-        # locations = locations_across_text + locations_across_image
-    return json({ "success": True, "locations": locations_across_text_serialized })
+        # --- images
+        locations_across_image = await search_for_locations_across_image(session, request.json['query'])
+        locations_across_image_serialized = list(map(serialize_location, locations_across_image))
+        # --- combined
+        locations = locations_across_image_serialized + locations_across_text_serialized
+    return json({ "success": True, "locations": locations })
 
 # @app.route('/v1/queries/highlights-query', methods = ['POST'])
 # def app_route_highlights_location(request):

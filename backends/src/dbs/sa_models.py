@@ -118,8 +118,10 @@ class DocumentContent(BaseModel):
     # --- audio
     # TODO: time_start
     # TODO: time_end
-    # --- pdfs + video?
-    # TODO: image (file reltaion?)
+    # --- image
+    image_file_id = Column(Integer, ForeignKey("file.id"))
+    image_file = relationship("File", back_populates="document_content_image_file")
+    # --- video
     def serialize(self):
         return {
             "id": self.id,
@@ -156,6 +158,7 @@ class File(BaseModel):
     __tablename__ = "file"
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="files")
+    document_content_image_file = relationship("DocumentContent", back_populates="image_file")
     # ex: a 38 page PDF gets associated w/ the base document
     # embedding_id = fields.OneToOneRelation(Document) # ex: each page of the PDF gets associated w/ an embedding 
     # --- file props

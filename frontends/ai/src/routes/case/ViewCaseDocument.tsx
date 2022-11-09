@@ -9,6 +9,16 @@ import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument, TDocumentContent, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
 import { useHighlights } from "../../data/useHighlights";
 
+const DocumentViewImage = styled.div`
+  width: 100%;
+  min-height: 480px;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-image: url(${(props) => props.imageSrc});
+  margin-left: 6px;
+`;
+
 const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   const [isFullyVisible, setIsFullyVisible] = useState(false);
   return (
@@ -201,12 +211,23 @@ export const ViewCaseDocument = () => {
       ) : null} */}
 
       {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
-      <div className="section-lead">
-        <h4>Source Text/Transcript</h4>
-      </div>
-      <section>
-        <DocumentViewTranscript document={document} />
-      </section>
+      {document.type !== "image" && (
+        <>
+          <div className="section-lead">
+            <h4>Source Text/Transcript</h4>
+          </div>
+          <section>
+            <DocumentViewTranscript document={document} />
+          </section>
+        </>
+      )}
+
+      {/* IMAGE TEXT BY PAGE/MINUTE */}
+      {document.type === "image" && (
+        <section>
+          <DocumentViewImage imageSrc={document.files[0].upload_url} />
+        </section>
+      )}
 
       {/* DELETES */}
       <hr />
