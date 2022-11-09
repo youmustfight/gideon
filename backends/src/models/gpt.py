@@ -58,7 +58,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
                 frequency_penalty=freq_pen,
                 presence_penalty=pres_pen,
                 stop=stop,
-                request_timeout=10,
+                request_timeout=30,
             )
             text = response['choices'][0]['text'].strip()
             print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...', text)
@@ -101,7 +101,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 instruction=instruction,
                 temperature=temperature,
                 top_p=top_p,
-                request_timeout=10
+                request_timeout=30
             )
             text = response['choices'][0]['text'].strip()
             return text
