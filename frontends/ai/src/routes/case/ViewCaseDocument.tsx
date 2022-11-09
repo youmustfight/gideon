@@ -1,13 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { HighlightsBox } from "../../components/HighlightsBox";
-import { useHighlightStore } from "../../data/HighlightStore";
-import { useTeamStore } from "../../data/TeamStore";
-import { useDocument } from "../../data/useDocument";
+import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
-import { TDocument, TDocumentContent, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
-import { useHighlights } from "../../data/useHighlights";
+import { TDocument } from "../../data/useDocuments";
 
 const DocumentViewImage = styled.div`
   width: 100%;
@@ -25,7 +21,14 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
     <StyledDocumentViewSummary>
       <p>
         {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
-        <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>
+        <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
+        {isFullyVisible ? (
+          <>
+            <br />
+            <br />
+            <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
+          </>
+        ) : null}
       </p>
     </StyledDocumentViewSummary>
   );

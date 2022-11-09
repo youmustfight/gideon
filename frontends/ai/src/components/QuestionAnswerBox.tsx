@@ -1,12 +1,10 @@
 import axios from "axios";
 import { intersection } from "lodash";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { useTeamStore } from "../data/TeamStore";
-import { useCase } from "../data/useCase";
-import { useCases } from "../data/useCases";
-import { TDocument, TDocumentContent, TQueryLocation } from "../data/useDocuments";
+import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { HighlightBox } from "./HighlightsBox";
 
