@@ -1,5 +1,6 @@
 from env import env_get_open_ai_api_key
-from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
+from files.file_utils import get_file_path, open_txt_file
+from utils import filter_empty_strs
 import numpy
 import math
 import openai

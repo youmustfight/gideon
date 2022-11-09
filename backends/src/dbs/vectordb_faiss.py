@@ -10,7 +10,7 @@ import uuid
 
 from models.gpt import gpt_embedding, gpt_vars
 from models.clip import clip_vars, clip_image_embedding
-from gideon_utils import get_file_path
+from files.file_utils import get_file_path
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from files.s3_utils import s3_get_file_url, s3_upload_bytes, s3_upload_file
 from dbs.vector_utils import write_tensor_to_bytearray

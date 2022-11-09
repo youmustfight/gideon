@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import joinedload, selectinload, sessionmaker
 
 import env
-from gideon_utils import get_file_path, without_keys, write_file
+from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
