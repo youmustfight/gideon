@@ -8,7 +8,8 @@ from time import sleep
 
 import env
 from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
-from gideon_utils import filter_empty_strs, get_file_path, open_txt_file
+from files.file_utils import get_file_path, open_txt_file
+from utils import filter_empty_strs
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
