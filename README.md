@@ -11,9 +11,11 @@
 
 ### Run it Locally
 
-1. Create a file in the root of this repo called `.env`, and copy values from here to it: https://gist.github.com/youmustfight/e19ba8c5806716d2f92d9ccbfb31b630
-2. Spin up the frontend/backend from the root of this repo with `docker-compose up` (if api requirements change, rebuild the api with `docker-compose build api`)
+1. Create a file in the root of this repo called `.env`, and copy values from the gist, notion page, or whever it's being stored atm.
+2. Spin up the frontend/backend from the root of this repo with `docker-compose up` (when api requirements change, rebuild the api with `docker-compose build api`)
 3. Once running, go to directory `databases/app` and run migrations with `alembic upgrade head`
+4. Then from the same directory, seed the database with a user/case via `python seed.py`
+5. You're good to go! Just go to `localhost:7000`, click through the login/case views, and start uploading files + querying!
 
 ---
 
