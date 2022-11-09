@@ -28,14 +28,6 @@ index_documents_sentences_url = "documents-sentences-8bb34d7.svc.us-west1-gcp.pi
 index_documents_sentences = pinecone.Index("documents-sentences")
 
 
-# TODO
-def index_clip_add_image(image_filepaths, filename):
-  pass
-
-# TODO
-def index_clip_search_images_by_text(text_query):
-  pass
-
 # INDEX UPSERTS
 
 def index_documents_text_add(embedding_id, vector, metadata=None):
@@ -55,7 +47,16 @@ def index_documents_sentences_add(embedding_id, vector, metadata=None):
     # --- index upsert
     index_documents_sentences.upsert(vectors=[pinecone_upsert_record])
     print("INFO (vectordb_pinecone:index_documents_sentences_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
-  
+
+def index_clip_image_add(embedding_id, vector, metadata=None):
+    print("INFO (vectordb_pinecone:index_clip_image_add): start", embedding_id)
+    pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
+    # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
+    if (metadata != None): pinecone_upsert_record[2].update(metadata)
+    # --- index upsert
+    index_documents_clip.upsert(vectors=[pinecone_upsert_record])
+    print("INFO (vectordb_pinecone:index_clip_image_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
+
 
 # INDEX QUERIES
   
@@ -103,6 +104,11 @@ def index_documents_sentences_query(text, top_k=12, score_limit=1.2, score_diff_
     print(f'INFO (vectordb_pinecone:index_documents_sentences_query): query "{text}"', matches)
     return matches
 
+def index_clip_image_search(text_query):
+    pass
+
+def index_clip_text_search(text_query):
+    pass
 
 # INDEX VECTOR JOINS
 
