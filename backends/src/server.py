@@ -189,7 +189,18 @@ async def app_route_documents_index_pdf(request):
         # --- process file/pdf/embeddings
         document_id = await index_pdf(session=session, pyfile=pyfile)
         # --- queue indexing
-        await index_pdf_vectors(session=session, document_id=document_id)
+        await index_vectors(session=session, document_id=document_id)
+    return json({ "success": True })
+
+@app.route('/v1/documents/index/image', methods = ['POST'])
+async def app_route_documents_index_image(request):
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        # --- process file/embeddings
+        document_id = await index_image(session=session, pyfile=pyfile)
+        # --- queue indexing
+        await index_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
 # @app.route('/v1/documents/index/audio', methods = ['POST'])
@@ -199,15 +210,6 @@ async def app_route_documents_index_pdf(request):
 #         pyfile = request.files['file'][0]
 #         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
 #         index_audio(session=session, filename=pyfile.name)
-#     return json({ "success": True })
-
-# @app.route('/v1/documents/index/image', methods = ['POST'])
-# async def app_route_documents_index_image(request):
-#     session = request.ctx.session
-#     async with session.begin():
-#         pyfile = request.files['file'][0]
-#         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
-#         await index_image(session=session, filename=pyfile.name)
 #     return json({ "success": True })
 
 
