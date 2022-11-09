@@ -5,8 +5,8 @@ import { useUser, useUserLogin } from "../../data/useUser";
 export const ViewLogin = () => {
   const { data: user } = useUser();
   const { mutateAsync: userLogin } = useUserLogin();
-  const [loginEmail, setLoginEmail] = useState("mark@gideon.com");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("gideon@gideon.com");
+  const [loginPassword, setLoginPassword] = useState("gideon");
   const handleLogin = (e) => {
     e.preventDefault();
     userLogin({ email: loginEmail, password: loginPassword });

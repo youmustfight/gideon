@@ -51,10 +51,10 @@ const StyledViewCase = styled.div`
   }
   .section-lead {
     display: flex;
+    flex-direction: column;
     text-align: left;
     padding: 0 16px;
     margin: 4px 20px;
-    margin-top: 32px;
     h2 {
       font-size: 20px;
       font-weight: 900;

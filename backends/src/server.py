@@ -5,7 +5,7 @@ from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import joinedload, selectinload, sessionmaker
+from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 
 import env
 from files.file_utils import get_file_path, write_file
@@ -167,11 +167,18 @@ async def app_route_documents(request):
     session = request.ctx.session
     async with session.begin():
         query_documents = await session.execute(
-            # TODO: should have case_id reference
-            sa.select(Document).order_by(sa.desc(Document.id))
-        )
-        documents = query_documents.scalars()
-        documents_json = serialize_list(documents)
+            sa.select(Document)
+                .options(subqueryload(Document.content))
+                .order_by(sa.desc(Document.id)))
+        documents = query_documents.scalars().all()
+        # there's got to be a better way to deal w/ this
+        def map_documents_and_content(d):
+            doc = d.serialize()
+            doc['content'] = list(filter(
+                lambda c: c['tokenizing_strategy'] == 'sentence',
+                serialize_list(d.content)))
+            return doc
+        documents_json = list(map(map_documents_and_content, documents))
     return json({ "success": True, "documents": documents_json })
 
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
@@ -185,23 +192,23 @@ async def app_route_documents_index_pdf(request):
         await index_pdf_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
-@app.route('/v1/documents/index/audio', methods = ['POST'])
-async def app_route_documents_index_audio(request): 
-    session = request.ctx.session
-    async with session.begin():
-        file = request.files['file'][0]
-        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-        index_audio(session=session, filename=file.name)
-    return json({ "success": True })
+# @app.route('/v1/documents/index/audio', methods = ['POST'])
+# async def app_route_documents_index_audio(request): 
+#     session = request.ctx.session
+#     async with session.begin():
+#         pyfile = request.files['file'][0]
+#         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
+#         index_audio(session=session, filename=pyfile.name)
+#     return json({ "success": True })
 
-@app.route('/v1/documents/index/image', methods = ['POST'])
-async def app_route_documents_index_image(request):
-    session = request.ctx.session
-    async with session.begin():
-        file = request.files['file'][0]
-        write_file(get_file_path("../documents/{filename}".format(filename=file.name)), file.body)
-        await index_image(session=session, filename=file.name)
-    return json({ "success": True })
+# @app.route('/v1/documents/index/image', methods = ['POST'])
+# async def app_route_documents_index_image(request):
+#     session = request.ctx.session
+#     async with session.begin():
+#         pyfile = request.files['file'][0]
+#         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
+#         await index_image(session=session, filename=pyfile.name)
+#     return json({ "success": True })
 
 
 # HIGHLIGHTS
@@ -210,27 +217,27 @@ def app_route_highlights(request):
     highlights = [] # get_highlights_json()
     return json({ "success": True, "highlights": highlights })
 
-@app.route('/v1/highlights', methods = ['POST'])
-def app_route_highlight_create(request):
-    highlight = request.json['highlight']
-    # --- process highlight embedding + save
-    highlight = index_highlight(
-        filename=highlight['filename'],
-        user=highlight['user'],
-        document_text_vectors_by_sentence_start_index=highlight['document_text_vectors_by_sentence_start_index'],
-        document_text_vectors_by_sentence_end_index=highlight['document_text_vectors_by_sentence_end_index'],
-        highlight_text=highlight['highlight_text'],
-        note_text=highlight['note_text']
-    )
-    # --- respond
-    return json({ "success": True })
+# @app.route('/v1/highlights', methods = ['POST'])
+# def app_route_highlight_create(request):
+#     highlight = request.json['highlight']
+#     # --- process highlight embedding + save
+#     highlight = index_highlight(
+#         filename=highlight['filename'],
+#         user=highlight['user'],
+#         document_text_vectors_by_sentence_start_index=highlight['document_text_vectors_by_sentence_start_index'],
+#         document_text_vectors_by_sentence_end_index=highlight['document_text_vectors_by_sentence_end_index'],
+#         highlight_text=highlight['highlight_text'],
+#         note_text=highlight['note_text']
+#     )
+#     # --- respond
+#     return json({ "success": True })
 
 
 # INDEXES
 @app.route('/v1/index/<index_name>', methods = ['DELETE'])
 def app_route_index_delete(request, index_name):
     index_to_clear = pinecone.Index(index_name)
-    index_to_clear.delete(deleteAll=True)
+    index_to_clear.delete(deleteAll=True) # just deletes all vectors
     return json({ "success": True })
 
 
@@ -259,26 +266,26 @@ async def app_route_query_info_locations(request):
         # locations = locations_across_text + locations_across_image
     return json({ "success": True, "locations": locations_across_text_serialized })
 
-@app.route('/v1/queries/highlights-query', methods = ['POST'])
-def app_route_highlights_location(request):
-    # TODO: refactor
-    highlights = search_highlights(request.json['query'])
-    return json({ "success": True, "highlights": highlights })
+# @app.route('/v1/queries/highlights-query', methods = ['POST'])
+# def app_route_highlights_location(request):
+#     # TODO: refactor
+#     highlights = search_highlights(request.json['query'])
+#     return json({ "success": True, "highlights": highlights })
 
-@app.route('/v1/queries/summarize-user', methods = ['POST'])
-def app_route_summarize_user(request):
-    user = request.json['user']
-    answer = summarize_user(user)
-    return json({ "success": True, "answer": answer })
+# @app.route('/v1/queries/summarize-user', methods = ['POST'])
+# def app_route_summarize_user(request):
+#     user = request.json['user']
+#     answer = summarize_user(user)
+#     return json({ "success": True, "answer": answer })
 
-@app.route('/v1/queries/contrast-users', methods = ['POST'])
-def app_route_contrast_users(request):
-    user_one = request.json['user_one']
-    statement_one = summarize_user(user_one)
-    user_two = request.json['user_two']
-    statement_two = summarize_user(user_two)
-    answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
-    return json({ "success": True, "answer": answer })
+# @app.route('/v1/queries/contrast-users', methods = ['POST'])
+# def app_route_contrast_users(request):
+#     user_one = request.json['user_one']
+#     statement_one = summarize_user(user_one)
+#     user_two = request.json['user_two']
+#     statement_two = summarize_user(user_two)
+#     answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
+#     return json({ "success": True, "answer": answer })
 
 
 # USERS

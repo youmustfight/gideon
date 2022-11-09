@@ -55,8 +55,6 @@ const StyledAnswerLocationBox = styled.div`
 export const QuestionAnswerBox = () => {
   const { data: highlights = [] } = useHighlights();
   const { users } = useTeamStore();
-  // --- extras
-  const [isShowingExtras, setIsShowingExtras] = useState(false);
   // --- answers state
   const [answer, setAnswer] = useState<{ answer?: string; locations?: TQueryLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
@@ -160,71 +158,57 @@ export const QuestionAnswerBox = () => {
           Ask
         </button>
       </form>
-      {highlights?.length > 0 ? (
-        <>
-          <form className="question-box" onSubmit={handleHighlightSearch}>
-            <label>
-              <span>Search Highlights</span>
-              <input value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
-            </label>
-            <button type="submit" disabled={isAnswerPending || !(highlightSearchQuery?.length > 0)}>
-              Ask
-            </button>
-          </form>
-          {isShowingExtras ? (
-            <>
-              <div className="question-box">
-                <label>
-                  <span>Summarize Laywer</span>
-                  <select value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
-                    <option value="">----</option>
-                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
-                      <option key={user}>{user}</option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="submit"
-                  disabled={isAnswerPending || !(userToSummarize?.length > 0)}
-                  onClick={handleUserSummarizing}
-                >
-                  Summarize
-                </button>
-              </div>
-              <div className="question-box">
-                <label>
-                  <span>Contrast Laywers</span>
-                  <select value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
-                    <option value="">----</option>
-                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
-                      <option key={user}>{user}</option>
-                    ))}
-                  </select>
-                  <select value={userTwoToContrast} onChange={(e) => setUserTwoToContrast(e.target.value)}>
-                    <option value="">----</option>
-                    {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
-                      <option key={user}>{user}</option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="submit"
-                  disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}
-                  onClick={handleUserContrasting}
-                >
-                  Contrast
-                </button>
-              </div>
-            </>
-          ) : (
-            <div style={{ fontSize: "8px", marginTop: "6px", textAlign: "center", width: "100%" }}>
-              <u onClick={() => setIsShowingExtras(true)}>
-                <small>+ Extras</small>
-              </u>
-            </div>
-          )}
-        </>
-      ) : null}
+      <form className="question-box" onSubmit={handleHighlightSearch}>
+        <label>
+          <span>Search Highlights</span>
+          <input value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
+        </label>
+        <button type="submit" disabled={isAnswerPending || !(highlightSearchQuery?.length > 0)}>
+          Ask
+        </button>
+      </form>
+      <div className="question-box">
+        <label>
+          <span>Summarize Laywer</span>
+          <select value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
+            <option value="">----</option>
+            {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+              <option key={user}>{user}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={isAnswerPending || !(userToSummarize?.length > 0)}
+          onClick={handleUserSummarizing}
+        >
+          Summarize
+        </button>
+      </div>
+      <div className="question-box">
+        <label>
+          <span>Contrast Laywers</span>
+          <select value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
+            <option value="">----</option>
+            {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+              <option key={user}>{user}</option>
+            ))}
+          </select>
+          <select value={userTwoToContrast} onChange={(e) => setUserTwoToContrast(e.target.value)}>
+            <option value="">----</option>
+            {intersection(users, Array.from(new Set(highlights.map((hl) => hl.user)))).map((user) => (
+              <option key={user}>{user}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}
+          onClick={handleUserContrasting}
+        >
+          Contrast
+        </button>
+      </div>
 
       {(isAnswerPending || answer != null) && (
         <div className="answer">

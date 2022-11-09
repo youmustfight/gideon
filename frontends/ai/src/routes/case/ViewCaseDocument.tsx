@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useMatch } from "react-router-dom";
+import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { HighlightsBox } from "../../components/HighlightsBox";
 import { useHighlightStore } from "../../data/HighlightStore";
 import { useTeamStore } from "../../data/TeamStore";
 import { useDocument } from "../../data/useDocument";
+import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument, TDocumentContent, TDocumentSentenceTextVector, useDocuments } from "../../data/useDocuments";
 import { useHighlights } from "../../data/useHighlights";
 
@@ -126,11 +127,19 @@ const StyledDocumentViewTranscript = styled.div`
 `;
 
 export const ViewCaseDocument = () => {
+  const navigate = useNavigate();
   const { caseId, documentId } = useMatch("/case/:caseId/document/:documentId")?.params;
   const { data: document } = useDocument(documentId);
+  // --- highlights
   // const { data: highlights = [] } = useHighlights();
-  // TODO: need to get content, file, highlights loaded in
-  const hasHighlights = false; // TODO: refactor highlights.some((hl) => hl.filename === filename);
+  // const hasHighlights = false; // TODO: refactor highlights.some((hl) => hl.filename === filename);
+  // --- deletion
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteHandler = async () => {
+    setIsDeleting(true);
+    await reqDocumentDelete(documentId);
+    navigate(`/case/${caseId}`);
+  };
 
   // RENDER
   return !document ? null : (
@@ -144,7 +153,7 @@ export const ViewCaseDocument = () => {
           <span>{document?.name}</span>
         </h4>
         <br />
-        <h2>{document?.document_type}</h2>
+        <h2>{document?.document_description}</h2>
         {document.type === "audio" ? (
           <div>
             <audio src={document?.[files]?.[0] ?? ""} controls type="audio/mpeg"></audio>
@@ -197,6 +206,14 @@ export const ViewCaseDocument = () => {
       </div>
       <section>
         <DocumentViewTranscript document={document} />
+      </section>
+
+      {/* DELETES */}
+      <hr />
+      <section>
+        <button disabled={isDeleting} onClick={deleteHandler} style={{ width: "100%" }}>
+          Delete Document
+        </button>
       </section>
     </div>
   );
