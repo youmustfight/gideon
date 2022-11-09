@@ -1,4 +1,4 @@
-from dbs.vectordb_pinecone import index_clip_search_images_by_text
+from dbs.vectordb_pinecone import index_clip_text_search
 
 def filter_image_locations_within_top_prob_diff(image_locations, percentage_diff=0.02):
     print('INFO (FaissIndexes:filter_image_locations_within_top_prob_diff)', image_locations)
@@ -15,7 +15,7 @@ def search_for_locations_across_image(text_query):
     print('INFO (search_for_locations_across_image.py): query images via multi-modal', text_query)
     # SEARCH
     # --- search
-    locations = index_clip_search_images_by_text(text_query)
+    locations = index_clip_text_search(text_query)
     # --- sort & filter
     # locations = filter_image_locations_within_top_prob_diff(locations)
     # RETURN

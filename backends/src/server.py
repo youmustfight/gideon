@@ -12,7 +12,7 @@ from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio
 from indexers.index_highlight import index_highlight
 from indexers.index_pdf import index_pdf
-from indexers.index_pdf_vectors import index_pdf_vectors
+from indexers.index_vectors import index_vectors
 from indexers.index_image import index_image
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.contrast_two_user_statements import contrast_two_user_statements
