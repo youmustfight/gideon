@@ -5,7 +5,7 @@ from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import joinedload, selectinload, sessionmaker
+from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 
 import env
 from files.file_utils import get_file_path, write_file
@@ -167,11 +167,18 @@ async def app_route_documents(request):
     session = request.ctx.session
     async with session.begin():
         query_documents = await session.execute(
-            # TODO: should have case_id reference
-            sa.select(Document).order_by(sa.desc(Document.id))
-        )
-        documents = query_documents.scalars()
-        documents_json = serialize_list(documents)
+            sa.select(Document)
+                .options(subqueryload(Document.content))
+                .order_by(sa.desc(Document.id)))
+        documents = query_documents.scalars().all()
+        # there's got to be a better way to deal w/ this
+        def map_documents_and_content(d):
+            doc = d.serialize()
+            doc['content'] = list(filter(
+                lambda c: c['tokenizing_strategy'] == 'sentence',
+                serialize_list(d.content)))
+            return doc
+        documents_json = list(map(map_documents_and_content, documents))
     return json({ "success": True, "documents": documents_json })
 
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
@@ -230,7 +237,7 @@ def app_route_highlight_create(request):
 @app.route('/v1/index/<index_name>', methods = ['DELETE'])
 def app_route_index_delete(request, index_name):
     index_to_clear = pinecone.Index(index_name)
-    index_to_clear.delete(deleteAll=True)
+    index_to_clear.delete(deleteAll=True) # just deletes all vectors
     return json({ "success": True })
 
 

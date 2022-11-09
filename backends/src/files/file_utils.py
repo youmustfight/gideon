@@ -2,11 +2,11 @@ import base64
 import aiofiles
 import os
 
-dirname = os.path.dirname(__file__)
+src_dirname = os.path.join(os.path.dirname(__file__), "..")
 
 # FILES
 def get_file_path(relative_path):
-    return os.path.join(dirname, relative_path)
+    return os.path.join(src_dirname, relative_path)
 
 def open_txt_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as infile:
