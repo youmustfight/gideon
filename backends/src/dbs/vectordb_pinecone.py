@@ -68,7 +68,8 @@ async def index_documents_text_query(text, top_k=12, score_limit=1.2, score_diff
     text_embedding_tensor = gpt_embedding(text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
-    query_results = index_documents_text.query(
+    # USES EUCLIDIAN SO LOWER SCORE IS BETTER MATCH?????????
+    query_results = get_indexes()["index_documents_text"].query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,
@@ -90,7 +91,8 @@ def index_documents_sentences_query(text, top_k=12, score_limit=1.2, score_diff_
     text_embedding_tensor = gpt_embedding(text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
-    query_results = index_documents_sentences.query(
+    # USES EUCLIDIAN SO LOWER SCORE IS BETTER MATCH?????????
+    query_results = get_indexes()["index_documents_sentences"].query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,
@@ -110,12 +112,13 @@ def index_documents_sentences_query(text, top_k=12, score_limit=1.2, score_diff_
 def index_clip_image_search(image_data):
     pass
 
-def index_clip_text_search(text, top_k=12, score_limit=160, score_diff_percent=0.04):
+def index_clip_text_search(text, top_k=12, score_limit=0.1, score_diff_percent=0.1):
     print(f'INFO (vectordb_pinecone:index_clip_text_search): query "{text}"')
     text_embedding_tensor = clip_text_embedding(text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
-    query_results = index_documents_clip.query(
+    # USES COSINE SO HIGHER SCORE IS BETTER MATCH?????????
+    query_results = get_indexes()["index_documents_clip"].query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,
@@ -124,10 +127,10 @@ def index_clip_text_search(text, top_k=12, score_limit=160, score_diff_percent=0
     # --- rank sort & filters
     matches = query_results['matches']
     if (score_limit != None):
-        matches = list(filter(lambda m: m['score'] < score_limit, matches))
+        matches = list(filter(lambda m: m['score'] > score_limit, matches))
     if (score_diff_percent != None and len(matches) > 0):
-        lowest_score = matches[0].score
-        matches = list(filter(lambda m: m['score'] < (lowest_score + (lowest_score * score_diff_percent)), matches))
+        highest_score = matches[0].score
+        matches = list(filter(lambda m: m['score'] > (highest_score - (highest_score * score_diff_percent)), matches))
     print(f'INFO (vectordb_pinecone:index_clip_text_search): query "{text}"', matches)
     return matches
 
