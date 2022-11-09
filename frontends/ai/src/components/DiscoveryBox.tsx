@@ -10,17 +10,17 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const [viewMore, setViewMore] = useState(false);
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
-
+  const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
   return (
     <div className="discovery-box__document">
       <small>
         <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
         {document?.type === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
-        {document?.type === "pdf" ? <> ({document?.document_text_by_page?.length} pages)</> : null}
+        {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
       </small>
       {["audio", "pdf"].includes(document.type) ? (
         <>
-          <p>{document.document_type}</p>
+          <p>{document.document_description}</p>
           {viewMore ? (
             <>
               <div className="discovery-box__document__actions">
@@ -48,7 +48,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
       ) : null}
       {["image"].includes(document.type) ? (
         <p>
-          {capitalize(document.document_type)}. {capitalize(document.document_summary)}.
+          {capitalize(document.document_description)}. {capitalize(document.document_summary)}.
         </p>
       ) : null}
     </div>
@@ -91,7 +91,6 @@ export const DiscoveryBox = () => {
           </li>
         ) : null}
       </ul>
-
       {isAddingFile ? (
         <>
           {/* PDF */}
@@ -114,7 +113,7 @@ export const DiscoveryBox = () => {
         </>
       ) : (
         <button className="add-files-btn" onClick={() => setIsAddingFile(true)}>
-          + PDF, Audio, Video
+          + Upload PDF, Image, Audio, Video
         </button>
       )}
     </StyledDiscoveryBox>

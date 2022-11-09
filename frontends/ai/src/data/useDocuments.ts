@@ -31,8 +31,8 @@ export type TDocument = {
   status_processing_embeddings?: boolean;
   document_description?: string;
   document_summary?: string;
-  content: TDocumentContent[];
-  files: TFile[];
+  content?: TDocumentContent[];
+  files?: TFile[];
   // v1 (when saving everything to disk as json)
   // document_summary: string;
   // document_text: string;
