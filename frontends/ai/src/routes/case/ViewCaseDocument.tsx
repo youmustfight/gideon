@@ -61,33 +61,44 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
     });
   }, [hash]);
-  const documentTextByPage =
-    doc.content.reduce((accum, dc) => {
-      // don't push document content that is max chunks. that doesn't consider page
-      if (dc.tokenizing_strategy === "sentence") {
+  const documentTextByGrouping = doc.content.reduce((accum, dc) => {
+    // don't push document content that is max chunks. that doesn't consider page
+    if (dc.tokenizing_strategy === "sentence") {
+      if (doc.type === "pdf") {
         if (!accum[dc.page_number]) accum[dc.page_number] = [];
         accum[dc.page_number].push(dc);
       }
-      return accum;
-    }, {}) ?? {};
+      if (doc.type === "audio") {
+        const minute = Math.floor(dc.start_second / 60);
+        if (!accum[minute]) accum[minute] = [];
+        accum[minute].push(dc);
+      }
+    }
+    return accum;
+  }, {});
 
   // RENDER
   return (
     <StyledDocumentViewTranscript>
-      {Object.keys(documentTextByPage)?.map((pageNumber) => (
+      {Object.keys(documentTextByGrouping)?.map((groupingNumber) => (
         <div
-          key={`source-text-${pageNumber}`}
-          id={`source-text-${pageNumber}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === pageNumber ? "active" : ""}
+          key={`source-text-${groupingNumber}`}
+          id={`source-text-${groupingNumber}`}
+          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === groupingNumber ? "active" : ""}
         >
           <div className="document-transcript__header">
-            <h6>Page #{pageNumber}:</h6>
+            <h6>
+              {doc.type === "pdf" ? "Page" : "Minute"} #{groupingNumber}:
+            </h6>
             <hr />
           </div>
           {/* <p>{doc.document_text_by_minute}</p> */}
           <p>
-            {documentTextByPage[pageNumber].map((documentContent) => (
-              <>{documentContent.text}</>
+            {documentTextByGrouping[groupingNumber].map((documentContent) => (
+              <>
+                {" "}
+                <span>{documentContent.text}</span>
+              </>
             ))}
           </p>
         </div>
@@ -167,11 +178,6 @@ export const ViewCaseDocument = () => {
         </h4>
         <br />
         <h2>{document?.document_description}</h2>
-        {document.type === "audio" ? (
-          <div>
-            <audio src={document?.[files]?.[0] ?? ""} controls type="audio/mpeg"></audio>
-          </div>
-        ) : null}
       </div>
       <section>
         <DocumentViewSummary document={document} />
@@ -212,6 +218,23 @@ export const ViewCaseDocument = () => {
           </section>
         </>
       ) : null} */}
+
+      {/* AUDIO */}
+      {document.type === "audio" ? (
+        <>
+          <div className="section-lead">
+            <h4>Audio Preview</h4>
+          </div>
+          <section>
+            <audio
+              src={document?.files?.[0]?.upload_url ?? ""}
+              controls
+              type="audio/mpeg"
+              style={{ width: "100%" }}
+            ></audio>
+          </section>
+        </>
+      ) : null}
 
       {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
       {document.type !== "image" && (

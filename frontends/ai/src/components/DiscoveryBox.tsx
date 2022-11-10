@@ -64,6 +64,9 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         ) : null}
       </div>
       {["image"].includes(document.type) ? <DocumentPreviewImage imageSrc={document.files[0].upload_url} /> : null}
+      {["audio"].includes(document.type) ? (
+        <audio src={document.files[0].upload_url} controls style={{ width: "120px" }} />
+      ) : null}
     </div>
   );
 };
@@ -120,10 +123,8 @@ export const DiscoveryBox = () => {
 
           {/* AUDIO */}
           <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
-            <input type="file" name="file" accept=".m4a,.mp3" disabled />
-            <button type="submit" disabled>
-              Upload Audio
-            </button>
+            <input type="file" name="file" accept=".m4a,.mp3" />
+            <button type="submit">Upload Audio</button>
           </form>
 
           {/* VIDEO */}

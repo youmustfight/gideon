@@ -32,7 +32,7 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
             <Link
               to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.minute_number}`}
             >
-              minute {location.document_content.minute_number}
+              minute {Math.floor(location.document_content.start_second / 60)}
             </Link>
           </>
         ) : null}
@@ -223,7 +223,7 @@ export const QuestionAnswerBox = () => {
               {answer?.locations ? (
                 <ul>
                   {answer?.locations?.map((l) => (
-                    <li>
+                    <li key={l.document_content.id}>
                       <AnswerLocationBox location={l} />
                     </li>
                   ))}
