@@ -140,7 +140,11 @@ export const QuestionAnswerBox = () => {
       <form className="question-box" onSubmit={handleQuestion}>
         <label>
           <span>Ask Question</span>
-          <input value={answerQuestion} onChange={(e) => setAnswerQuestion(e.target.value)} />
+          <input
+            placeholder="Where did the search warrant authorize a raid on?"
+            value={answerQuestion}
+            onChange={(e) => setAnswerQuestion(e.target.value)}
+          />
         </label>
         <button type="submit" disabled={isAnswerPending || !(answerQuestion?.length > 0)}>
           Ask
@@ -150,6 +154,7 @@ export const QuestionAnswerBox = () => {
         <label>
           <span>Search for Detail</span>
           <input
+            placeholder="Presidential authority on disclosure"
             value={infoLocationQuestion}
             onChange={(e) => setInfoLocationQuestion(e.target.value)}
             disabled={isAnswerPending}
