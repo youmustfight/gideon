@@ -122,7 +122,8 @@ async def app_route_case(request):
         # --- insert case w/ user (model mapping/definition knows how to insert w/ junction table)
         case_to_insert = Case(users=[user])
         session.add(case_to_insert)
-    return json({ "success": True })
+        await session.flush()
+    return json({ "success": True, "case": { "id": case_to_insert.id } })
 
 
 # DOCUMENTS

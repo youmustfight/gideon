@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMatch, useNavigate } from "react-router";
 import styled from "styled-components";
 import { useCase } from "../data/useCase";
@@ -12,8 +12,8 @@ export const CaseDriver = () => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = matches?.params?.caseId;
   const { data: user } = useUser();
-  const { data: cases } = useCases({ userId: user?.id });
   const { data: cse } = useCase(caseId);
+  const { data: cases } = useCases({ userId: user?.id });
   const { mutateAsync: caseUpdate } = useCaseUpdate();
   const { mutateAsync: caseCreate } = useCaseCreate();
   // --- cases selecting
@@ -26,6 +26,11 @@ export const CaseDriver = () => {
       setSelectedCaseNumber(id);
       navigate(`/case/${id}`);
     }
+  };
+  // --- case creation post navigation
+  const caseCreationHelper = async () => {
+    const cse = await caseCreate({ userId: user?.id });
+    navigate(`/case/${cse.id}`);
   };
 
   // RENDER
@@ -50,7 +55,7 @@ export const CaseDriver = () => {
               </option>
             ))}
           </select>
-          {user ? <button onClick={() => caseCreate({ userId: user?.id })}>+ Add Case</button> : null}
+          {user ? <button onClick={() => caseCreationHelper()}>+ Add Case</button> : null}
         </div>
       )}
     </StyledCaseDriver>
