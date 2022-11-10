@@ -14,31 +14,41 @@ export const ViewLogin = () => {
   };
 
   return (
-    <StyledViewLogin>
+    <>
       {user && <Navigate to="/cases" replace={true} />}
-      <form onSubmit={handleLogin}>
-        <label>
-          Email
-          <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-        </label>
-        <label>
-          Password
-          <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-        </label>
-        <button type="submit">Login</button>
-      </form>
-    </StyledViewLogin>
+      <StyledViewLogin>
+        <form onSubmit={handleLogin}>
+          <label htmlFor="login-email">Email</label>
+          <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+          <label htmlFor="login-password">Password</label>
+          <input
+            id="login-password"
+            type="password"
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+          />
+          <button type="submit">Login</button>
+        </form>
+      </StyledViewLogin>
+    </>
   );
 };
 
 const StyledViewLogin = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
   form {
+    width: 100%;
+    max-width: 240px;
     height: 400px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    margin: 0 auto;
+    input {
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    button {
+      width: 100%;
+    }
   }
 `;
