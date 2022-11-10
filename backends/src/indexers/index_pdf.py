@@ -1,6 +1,5 @@
 import easyocr
 import io
-import openai
 import numpy as np
 from pdf2image import convert_from_bytes, convert_from_path
 import sqlalchemy as sa
@@ -16,8 +15,6 @@ from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_em
 from utils import filter_empty_strs
 
 # SETUP
-# --- OpenAI
-openai.api_key = env.env_get_open_ai_api_key()
 # --- OCR
 reader = easyocr.Reader(['en'], gpu=env.env_is_gpu_available(), verbose=True) # don't think we'll have GPUs on AWS instances
 
@@ -78,8 +75,6 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         session.add_all(document_content_text)
         print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
     # 4. SAVE
-    document.name = file.filename
-    document.type = "pdf"
     document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
@@ -207,7 +202,7 @@ async def index_pdf(session, pyfile) -> int:
         # SETUP DOCUMENT
         document_query = await session.execute(
             sa.insert(Document)
-                .values(status_processing_files="queued")
+                .values(name=pyfile.name, status_processing_files="queued", type="pdf")
                 .returning(Document.id)) # can't seem to return anything except id
         document_id = document_query.scalar_one_or_none()
         print(f"INFO (index_pdf.py): index_document id {document_id}")
