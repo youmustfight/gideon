@@ -15,7 +15,7 @@
 2. Spin up the frontend/backend from the root of this repo with `docker-compose up` (when api requirements change, rebuild the api with `docker-compose build api`)
 3. Once running, go to directory `databases/app` and run migrations with `alembic upgrade head`
 4. Then from the same directory, seed the database with a user/case via `python seed.py`
-5. You're good to go! Just go to `localhost:7000`, click through the login/case views, and start uploading files + querying!
+5. You're good to go! Just go to `localhost:1111`, click through the login/case views, and start uploading files + querying!
 
 ---
 
