@@ -88,7 +88,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         >
           <div className="document-transcript__header">
             <h6>
-              {doc.type === "pdf" ? "Page" : "Minute"} #{groupingNumber}:
+              {doc.type === "pdf" ? "Page" : "▶️ Minute"} #{groupingNumber}:
             </h6>
             <hr />
           </div>
@@ -103,21 +103,6 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           </p>
         </div>
       ))}
-      {/* TODO: need to fix up audio indexing first */}
-      {/* {doc.document_text_by_minute?.map((minuteText, index) => (
-        <div
-          key={`source-text-${index}`}
-          id={`source-text-${index}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === index ? "active" : ""}
-        >
-          <div className="document-transcript__header">
-            <h6>Minute {index}:</h6>
-            <hr />
-            <button>▶️</button>
-          </div>
-          <p>{minuteText}</p>
-        </div>
-      ))} */}
     </StyledDocumentViewTranscript>
   );
 };
