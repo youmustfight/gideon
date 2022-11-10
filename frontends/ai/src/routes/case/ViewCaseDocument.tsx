@@ -84,7 +84,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         <div
           key={`source-text-${groupingNumber}`}
           id={`source-text-${groupingNumber}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === groupingNumber ? "active" : ""}
+          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(groupingNumber) ? "active" : ""}
         >
           <div className="document-transcript__header">
             <h6>

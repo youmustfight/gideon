@@ -30,7 +30,9 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
           <>
             ,{" "}
             <Link
-              to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.minute_number}`}
+              to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
+                location.document_content.start_second / 60
+              )}`}
             >
               minute {Math.floor(location.document_content.start_second / 60)}
             </Link>
