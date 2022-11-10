@@ -116,8 +116,8 @@ class DocumentContent(BaseModel):
     tokenizing_strategy = Column(String())
     page_number = Column(String())
     # --- audio
-    # TODO: time_start
-    # TODO: time_end
+    start_second = Column(Integer)
+    end_second = Column(Integer)
     # --- image
     image_file_id = Column(Integer, ForeignKey("file.id"))
     image_file = relationship("File", back_populates="document_content_image_file")
@@ -129,6 +129,8 @@ class DocumentContent(BaseModel):
             "text": self.text,
             "tokenizing_strategy": self.tokenizing_strategy,
             "page_number": self.page_number,
+            "start_second": self.start_second,
+            "end_second": self.end_second,
         }
 
 class Embedding(BaseModel):
