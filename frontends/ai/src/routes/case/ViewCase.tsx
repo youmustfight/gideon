@@ -2,8 +2,8 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router";
 import { useMatch } from "react-router-dom";
 import styled from "styled-components";
+import { CaseDriver } from "../../components/CaseDriver";
 import { QuestionAnswerBox } from "../../components/QuestionAnswerBox";
-import { TeamHeader } from "../../components/TeamHeader";
 import { useCase } from "../../data/useCase";
 import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
@@ -15,31 +15,29 @@ export const ViewCase = () => {
 
   // RENDER
   return (
-    <StyledViewCase>
-      {/* PERSISTING HEADER */}
-      {/* --- nav/team */}
-      <TeamHeader />
-      {/* --- AI inputs */}
-      <section>
-        <QuestionAnswerBox />
-      </section>
+    <>
+      <CaseDriver />
+      <StyledViewCase>
+        {/* --- AI inputs */}
+        <section>
+          <QuestionAnswerBox />
+        </section>
 
-      {/* CASE VIEWS */}
-      <Routes>
-        {/* --- document inspection */}
-        <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
-        {/* --- overview */}
-        <Route path="/:caseId/" element={<ViewCaseOverview />} />
-        {/* --- default overview showing. TODO: figure out relative path version */}
-        {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
-      </Routes>
-    </StyledViewCase>
+        {/* CASE VIEWS */}
+        <Routes>
+          {/* --- document inspection */}
+          <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
+          {/* --- overview */}
+          <Route path="/:caseId/" element={<ViewCaseOverview />} />
+          {/* --- default overview showing. TODO: figure out relative path version */}
+          {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
+        </Routes>
+      </StyledViewCase>
+    </>
   );
 };
 
 const StyledViewCase = styled.div`
-  min-height: 100vh;
-  background: #f1f4f8;
   a,
   a:active a:visited,
   a:hover {

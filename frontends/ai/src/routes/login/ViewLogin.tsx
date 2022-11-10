@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Navigate, redirect } from "react-router-dom";
+import styled from "styled-components";
 import { useUser, useUserLogin } from "../../data/useUser";
 
 export const ViewLogin = () => {
@@ -13,8 +14,8 @@ export const ViewLogin = () => {
   };
 
   return (
-    <div>
-      {user && <Navigate to="/" replace={true} />}
+    <StyledViewLogin>
+      {user && <Navigate to="/cases" replace={true} />}
       <form onSubmit={handleLogin}>
         <label>
           Email
@@ -26,6 +27,18 @@ export const ViewLogin = () => {
         </label>
         <button type="submit">Login</button>
       </form>
-    </div>
+    </StyledViewLogin>
   );
 };
+
+const StyledViewLogin = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  form {
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+`;
