@@ -30,8 +30,6 @@ async def _index_image_process_content(session, document_id) -> None:
     )
     session.add(document_content)
     # 3. SAVE
-    document.name = file.filename
-    document.type = "image"
     document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document)
@@ -117,7 +115,7 @@ async def index_image(session, pyfile) -> int:
         # SETUP DOCUMENT
         document_query = await session.execute(
             sa.insert(Document)
-                .values(status_processing_files="queued")
+                .values(name=pyfile.name, status_processing_files="queued", type="image")
                 .returning(Document.id)) # can't seem to return anything except id
         document_id = document_query.scalar_one_or_none()
         print(f"INFO (index_image.py): index_document id {document_id}")
