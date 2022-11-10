@@ -225,7 +225,7 @@ async def app_route_documents_index_audio(request):
         # --- process file/embeddings
         document_id = await index_audio(session=session, pyfile=pyfile)
         # --- queue indexing
-        # await index_vectors(session=session, document_id=document_id)
+        await index_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
 
