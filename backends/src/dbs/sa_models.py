@@ -56,11 +56,13 @@ class User(BaseModel):
 
 class Case(BaseModel):
     __tablename__ = "case"
+    name = Column(Text())
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     def serialize(self):
         return {
             "id": self.id,
+            "name": self.name,
             # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
             # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
         }

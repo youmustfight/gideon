@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Navigate, redirect } from "react-router-dom";
+import styled from "styled-components";
 import { useUser, useUserLogin } from "../../data/useUser";
 
 export const ViewLogin = () => {
@@ -13,19 +14,41 @@ export const ViewLogin = () => {
   };
 
   return (
-    <div>
-      {user && <Navigate to="/" replace={true} />}
-      <form onSubmit={handleLogin}>
-        <label>
-          Email
-          <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-        </label>
-        <label>
-          Password
-          <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-        </label>
-        <button type="submit">Login</button>
-      </form>
-    </div>
+    <>
+      {user && <Navigate to="/cases" replace={true} />}
+      <StyledViewLogin>
+        <form onSubmit={handleLogin}>
+          <label htmlFor="login-email">Email</label>
+          <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+          <label htmlFor="login-password">Password</label>
+          <input
+            id="login-password"
+            type="password"
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+          />
+          <button type="submit">Login</button>
+        </form>
+      </StyledViewLogin>
+    </>
   );
 };
+
+const StyledViewLogin = styled.div`
+  form {
+    width: 100%;
+    max-width: 240px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0 auto;
+    input {
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    button {
+      width: 100%;
+    }
+  }
+`;

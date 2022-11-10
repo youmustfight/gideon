@@ -7,48 +7,55 @@ import { useUser } from "../src/data/useUser";
 import { ViewCases } from "./routes/cases/ViewCases";
 import { Link } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ToolWindow } from "./components/ToolWindow";
 
 export const Gideon: React.FC = () => {
   const { data: user } = useUser();
   // RENDER
   return (
-    <>
-      <Routes>
-        {/* CASES */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute user={user}>
+    <Routes>
+      {/* AUTH */}
+      <Route
+        path="/login"
+        element={
+          <ToolWindow>
+            <ViewLogin />
+          </ToolWindow>
+        }
+      />
+      {/* CASES */}
+      <Route
+        path="/cases"
+        element={
+          <ProtectedRoute user={user}>
+            <ToolWindow>
               <ViewCases />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* CASE */}
-        <Route
-          path="/case/*"
-          element={
-            <ProtectedRoute user={user}>
+            </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
+      {/* CASE */}
+      <Route
+        path="/case/*"
+        element={
+          <ProtectedRoute user={user}>
+            <ToolWindow>
               <ViewCase />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* AUTH */}
-        <Route path="/login" element={<ViewLogin />} />
-
-        {/* NO MATCH */}
-        {/* React Router V6 removes <Switch/> and says don't do navigates in <Routes/>  */}
-        {/* <Route path="/" element={user ? <Navigate to="/cases" /> : <Navigate to="/login" />} /> */}
-        <Route
-          path="*"
-          element={
+            </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
+      {/* NO MATCH */}
+      <Route
+        path="*"
+        element={
+          <ToolWindow>
             <div>
               Missing Page. Go to <Link to="/login">login</Link>.
             </div>
-          }
-        />
-      </Routes>
-    </>
+          </ToolWindow>
+        }
+      />
+    </Routes>
   );
 };

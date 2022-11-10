@@ -60,7 +60,6 @@ async def close_session(request, response):
 
 
 # AUTH
-# TODO: actual auth
 @app.route('/v1/auth/login', methods = ['POST'])
 async def app_route_auth_login(request):
     session = request.ctx.session
@@ -96,11 +95,35 @@ async def app_route_case(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
-            sa.select(Case).where(Case.id == int(case_id))
-        )
+            sa.select(Case).where(Case.id == int(case_id)))
         case = query_case.scalar_one_or_none()
         case_json = case.serialize()
     return json({ "success": True, "case": case_json })
+
+@app.route('/v1/case/<case_id>', methods = ['PUT'])
+async def app_route_case(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_case = await session.execute(
+            sa.select(Case).where(Case.id == int(case_id)))
+        case = query_case.scalars().one()
+        # TODO: make this better lol
+        case.name = request.json['case']['name']
+        session.add(case)
+    return json({ "success": True })
+
+@app.route('/v1/case', methods = ['POST'])
+async def app_route_case(request):
+    session = request.ctx.session
+    async with session.begin():
+        # --- get user for relation
+        query_user = await session.execute(sa.select(User).where(User.id == int(request.json['userId'])))
+        user = query_user.scalars().one()
+        # --- insert case w/ user (model mapping/definition knows how to insert w/ junction table)
+        case_to_insert = Case(users=[user])
+        session.add(case_to_insert)
+        await session.flush()
+    return json({ "success": True, "case": { "id": case_to_insert.id } })
 
 
 # DOCUMENTS

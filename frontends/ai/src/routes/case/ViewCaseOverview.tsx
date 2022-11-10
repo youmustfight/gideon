@@ -8,31 +8,33 @@ export const ViewCaseOverview = () => {
   const { data: highlights = [] } = useHighlights();
   // RENDER
   return (
-    <StyledViewCaseOverview>
-      {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-      <div className="section-lead">
-        <h4>Discovery, Evidence, Exhibits</h4>
-      </div>
-      <section>
-        <DiscoveryBox />
-      </section>
+    <>
+      <StyledViewCaseOverview>
+        {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
+        <div className="section-lead">
+          <h4>Discovery, Evidence, Exhibits</h4>
+        </div>
+        <section>
+          <DiscoveryBox />
+        </section>
 
-      {/* TODO: SUMMATION (timeline w/ summaries) */}
+        {/* TODO: SUMMATION (timeline w/ summaries) */}
 
-      {/* TODO: MY DOCS */}
+        {/* TODO: MY DOCS */}
 
-      {/* HIGHLIGHTS/ANNOTATIONS */}
-      {highlights?.length > 0 ? (
-        <>
-          <div className="section-lead">
-            <h4>Highlights</h4>
-          </div>
-          <section>
-            <HighlightsBox />
-          </section>
-        </>
-      ) : null}
-    </StyledViewCaseOverview>
+        {/* HIGHLIGHTS/ANNOTATIONS */}
+        {highlights?.length > 0 ? (
+          <>
+            <div className="section-lead">
+              <h4>Highlights</h4>
+            </div>
+            <section>
+              <HighlightsBox />
+            </section>
+          </>
+        ) : null}
+      </StyledViewCaseOverview>
+    </>
   );
 };
 
