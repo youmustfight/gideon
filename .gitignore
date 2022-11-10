@@ -15,5 +15,4 @@ public
 .parcel-cache
 
 # tmp storage/things to remove
-indexed
 tmp
