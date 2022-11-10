@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 
 import env
 from files.file_utils import get_file_path, write_file
-from indexers.index_audio import index_audio
+from indexers.index_audio import index_audio, _index_audio_process_extractions
 from indexers.index_highlight import index_highlight
 from indexers.index_image import index_image, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_extractions
@@ -171,6 +171,8 @@ async def app_route_documents_index_pdf(request, document_id):
             await _index_pdf_process_extractions(session=session, document_id=document.id)
         if (document.type == "image"):
             await _index_image_process_extractions(session=session, document_id=document.id)
+        if (document.type == "audio"):
+            await _index_audio_process_extractions(session=session, document_id=document.id)
     return json({ "success": True })
 
 @app.route('/v1/documents', methods = ['GET'])
@@ -215,14 +217,16 @@ async def app_route_documents_index_image(request):
         await index_vectors(session=session, document_id=document_id)
     return json({ "success": True })
 
-# @app.route('/v1/documents/index/audio', methods = ['POST'])
-# async def app_route_documents_index_audio(request): 
-#     session = request.ctx.session
-#     async with session.begin():
-#         pyfile = request.files['file'][0]
-#         write_file(get_file_path("../documents/{filename}".format(filename=pyfile.name)), pyfile.body)
-#         index_audio(session=session, filename=pyfile.name)
-#     return json({ "success": True })
+@app.route('/v1/documents/index/audio', methods = ['POST'])
+async def app_route_documents_index_audio(request): 
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        # --- process file/embeddings
+        document_id = await index_audio(session=session, pyfile=pyfile)
+        # --- queue indexing
+        # await index_vectors(session=session, document_id=document_id)
+    return json({ "success": True })
 
 
 # HIGHLIGHTS
