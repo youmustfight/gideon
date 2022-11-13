@@ -17,6 +17,10 @@
 4. Then from the same directory, seed the database with a user/case via `python seed.py`
 5. You're good to go! Just go to `localhost:1111`, click through the login/case views, and start uploading files + querying!
 
+### Gotcha's Currently
+
+- Running Sanic with multiple workers/dev doesn't work in a docker container. Restart the API after changes have been made by typing in a separate shell `docker-compose restart api`. You can keep the cluster running.
+
 ---
 
 ![](./ops/ai-library-2.png)

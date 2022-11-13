@@ -16,7 +16,7 @@ try:
     cursor = connection.cursor()
     # Executing a SQL query
     # --- user
-    insert_user_query = """ INSERT INTO "user" (name, email) VALUES ('gideon', 'gideon@gideon.com') """
+    insert_user_query = """ INSERT INTO "user" (name, email, password) VALUES ('gideon', 'gideon@gideon.com', 'foundation') """
     cursor.execute(insert_user_query)
     connection.commit()
     # --- case

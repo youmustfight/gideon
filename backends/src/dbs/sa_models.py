@@ -43,6 +43,7 @@ class User(BaseModel):
     __tablename__ = "user"
     name = Column(Text())
     email = Column(Text())
+    password = Column(Text())
     cases = relationship("Case", secondary=case_user_junction, back_populates="users")
     organizations = relationship("Organization", secondary=organization_user_junction, back_populates="users")
     def serialize(self):
