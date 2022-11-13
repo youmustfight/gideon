@@ -7,6 +7,10 @@ load_dotenv("../.env")
 def env_get_assembly_ai_api_key():
   return os.environ['ASSEMBLY_AI_API_KEY']
 
+# AUTH
+def env_jwt_secret():
+  return os.environ["AUTH_JWT_SECRET"]
+
 # AWS
 def env_get_aws_access_key_id():
   return os.environ['AWS_ACCESS_KEY_ID']
