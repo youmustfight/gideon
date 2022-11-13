@@ -7,7 +7,7 @@ import { useCaseCreate } from "../data/useCaseCreate";
 import { useCaseUpdate } from "../data/useCaseUpdate";
 import { useUser } from "../data/useUser";
 
-export const CaseDriver = () => {
+export const CaseDriver: React.FC = () => {
   const navigate = useNavigate();
   const matches = useMatch("/case/:caseId/*");
   const caseId = matches?.params?.caseId;

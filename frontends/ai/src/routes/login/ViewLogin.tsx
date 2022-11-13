@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Navigate, redirect } from "react-router-dom";
 import styled from "styled-components";
-import { useUser, useUserLogin } from "../../data/useUser";
+import { useUser } from "../../data/useUser";
+import { useUserLogin } from "../../data/useUserLogin";
 
 export const ViewLogin = () => {
   const { data: user } = useUser();
   const { mutateAsync: userLogin } = useUserLogin();
   const [loginEmail, setLoginEmail] = useState("gideon@gideon.com");
-  const [loginPassword, setLoginPassword] = useState("gideon");
+  const [loginPassword, setLoginPassword] = useState("foundation");
   const handleLogin = (e) => {
     e.preventDefault();
     userLogin({ email: loginEmail, password: loginPassword });

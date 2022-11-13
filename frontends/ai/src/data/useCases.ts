@@ -8,7 +8,9 @@ type TUseCasesParams = {
 };
 
 const reqCasesGet = async (params: TUseCasesParams): Promise<TCase[]> => {
-  return axios.get(`${getGideonApiUrl()}/v1/cases`, { params }).then((res) => res.data.cases);
+  return axios
+    .get(`${getGideonApiUrl()}/v1/cases`, { params: { user_id: params.userId } })
+    .then((res) => res.data.cases);
 };
 
 export const useCases = (params: TUseCasesParams) => {

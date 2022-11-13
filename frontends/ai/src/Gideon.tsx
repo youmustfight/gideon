@@ -10,9 +10,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ToolWindow } from "./components/ToolWindow";
 
 export const Gideon: React.FC = () => {
-  const { data: user } = useUser();
+  const { data: user, isSuccess: isSuccessUserFetch } = useUser();
+
   // RENDER
-  return (
+  return !isSuccessUserFetch ? null : (
     <Routes>
       {/* AUTH */}
       <Route
