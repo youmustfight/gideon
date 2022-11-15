@@ -8,50 +8,76 @@ import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { HighlightBox } from "./HighlightsBox";
 
+const StyledAnswerLocationBox = styled.div`
+  margin-top: 4px;
+  min-height: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 8px;
+  border-radius: 6px;
+  & > div.answer-location-box__text {
+    flex-grow: 1;
+    b {
+      font-size: 12px;
+    }
+    p {
+      margin: 8px 0 0;
+    }
+  }
+`;
+
+const StyledAnswerLocationBoxImage = styled.div`
+  width: 100%;
+  max-width: 120px;
+  min-height: 60px;
+  max-height: 60px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-image: url(${(props) => props.imageSrc});
+  margin-left: 8px;
+`;
+
 export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) => {
   // TODO: replace with useCase() hook
   const matches = useMatch("/case/:caseId/*")?.params;
   const caseId = Number(matches?.caseId);
   return (
     <StyledAnswerLocationBox>
-      <b>
-        <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
-        {location.document.type === "pdf" ? (
-          <>
-            ,{" "}
-            <Link
-              to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.page_number}`}
-            >
-              page {location.document_content.page_number}
-            </Link>
-          </>
-        ) : null}
-        {["audio", "video"].includes(location.document.type) ? (
-          <>
-            ,{" "}
-            <Link
-              to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
-                location.document_content.start_second / 60
-              )}`}
-            >
-              minute {Math.floor(location.document_content.start_second / 60)}
-            </Link>
-          </>
-        ) : null}
-      </b>
-      <br />
-      {location.document_content.text ? <div>"...{location.document_content.text}..."</div> : null}
+      <div className="answer-location-box__text">
+        <b>
+          <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
+          {location.document.type === "pdf" ? (
+            <>
+              ,{" "}
+              <Link
+                to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.page_number}`}
+              >
+                page {location.document_content.page_number}
+              </Link>
+            </>
+          ) : null}
+          {["audio", "video"].includes(location.document.type) ? (
+            <>
+              ,{" "}
+              <Link
+                to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
+                  location.document_content.start_second / 60
+                )}`}
+              >
+                minute {Math.floor(location.document_content.start_second / 60)}
+              </Link>
+            </>
+          ) : null}
+        </b>
+        {location.document_content.text ? <p>"...{location.document_content.text}..."</p> : null}
+      </div>
+      {location.image_file ? <StyledAnswerLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
     </StyledAnswerLocationBox>
   );
 };
-
-const StyledAnswerLocationBox = styled.div`
-  min-height: 20px;
-  font-size: 12px;
-  div {
-    margin-top: 4px;
-  }
-`;
 
 export const QuestionAnswerBox = () => {
   const { data: highlights = [] } = useHighlights();

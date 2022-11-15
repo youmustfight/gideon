@@ -26,7 +26,6 @@ async def search_for_locations_across_text(session, text_query):
                 score= sv['score'],
                 score_metric="euclidean",
             )
-            print('location', location)
             return location
     # 3b. map document_content to search results
     locations = list(map(map_vector_and_content, search_text_vectors))

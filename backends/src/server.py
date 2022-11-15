@@ -163,8 +163,13 @@ async def app_route_document_get(request, document_id):
         )
         document = query_document.scalars().first()
         # TODO: figure out how to more elegantly pull off serialized properties
+        def map_content(cn):
+            payload = cn.serialize()
+            if (cn.image_file != None):
+                payload['image_file'] = cn.image_file.serialize()
+            return payload
         document_json = document.serialize()
-        document_json['content'] = serialize_list(document.content)
+        document_json['content'] = list(map(map_content, document.content))
         document_json['files'] = serialize_list(document.files)
     return json({ 'status': 'success', "document": document_json })
 
@@ -341,18 +346,25 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
-        def serialize_location(location):
+        def serialize_location_text(location):
             return dict(
                 document=location['document'].serialize(),
                 document_content=location['document_content'].serialize(),
                 score=location['score']
             )
+        def serialize_location_image(location):
+            return dict(
+                document=location['document'].serialize(),
+                document_content=location['document_content'].serialize(),
+                image_file=location['image_file'].serialize(), # cannot for the life of me do a ternary/logic check for serializing this, so made 2 functions
+                score=location['score']
+            )
         # --- pdfs/transcripts
         locations_across_text = await search_for_locations_across_text(session, request.json['query'])
-        locations_across_text_serialized = list(map(serialize_location, locations_across_text))
-        # --- images
+        locations_across_text_serialized = list(map(serialize_location_text, locations_across_text))
+        # --- images (including video frames)
         locations_across_image = await search_for_locations_across_image(session, request.json['query'])
-        locations_across_image_serialized = list(map(serialize_location, locations_across_image))
+        locations_across_image_serialized = list(map(serialize_location_image, locations_across_image))
         # --- combined
         locations = locations_across_image_serialized + locations_across_text_serialized
     return json({ 'status': 'success', "locations": locations })

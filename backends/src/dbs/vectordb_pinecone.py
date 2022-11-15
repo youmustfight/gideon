@@ -143,9 +143,12 @@ async def get_embeddings_from_search_vectors(session, search_vectors):
     embedding_query = await session.execute(
         sa.select(Embedding)
             .options(
-                joinedload(Embedding.document_content).options(
-                    joinedload(DocumentContent.document)
-                ))
+                joinedload(Embedding.document_content)
+                    .options(
+                        joinedload(DocumentContent.document),
+                        joinedload(DocumentContent.image_file),
+                    )
+            )
             .where(Embedding.id.in_(search_text_embedding_ids))
     )
     embeddings = embedding_query.scalars().all()
