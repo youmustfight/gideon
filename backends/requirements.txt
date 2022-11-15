@@ -6,6 +6,8 @@ easyocr==1.6.2
 faiss-cpu==1.7.2
 numpy==1.23.3
 openai==0.25.0
+opencv-python-headless==4.5.4.60
+patchify==0.2.3
 pdf2image==1.16.0
 pinecone-client==2.0.13
 pydash==5.1.1
