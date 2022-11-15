@@ -16,10 +16,10 @@ async def search_for_locations_across_image(session, text_query):
             location = dict(
                 document=sv_embedding.document_content.document,
                 document_content=sv_embedding.document_content,
+                image_file=sv_embedding.document_content.image_file,
                 score=sv['score'],
                 score_metric="cosine",
             )
-            print('location', location)
             return location
     # 3b. map document_content to search results
     locations = list(map(map_vector_and_content, search_text_vectors))

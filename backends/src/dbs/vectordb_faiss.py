@@ -12,7 +12,7 @@ from models.gpt import gpt_embedding, gpt_vars
 from models.clip import clip_vars, clip_image_embedding
 from files.file_utils import get_file_path
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from files.s3_utils import s3_get_file_url, s3_upload_bytes, s3_upload_file
+from files.s3_utils import s3_get_file_url, s3_upload_file_bytes, s3_upload_file
 from dbs.vector_utils import write_tensor_to_bytearray
 
 # FFS FIGURING THIS OUT STILL
@@ -136,7 +136,7 @@ async def index_documents_add_text(session, text, document_id=None, document_con
     # --- save as .npy file to s3 as backup
     numpy_tensor_bytearray = write_tensor_to_bytearray(text_embedding_tensor)
     npy_file_key = f"index_documents_{uuid.uuid4()}.npy"
-    s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
+    s3_upload_file_bytes(npy_file_key, numpy_tensor_bytearray)
     # --- save embedding (we're doing an execute() + insert() so we can retrieve an id, not possible with add())
     print("INFO (vectordb_faiss:index_documents_add_text): save embedding")
     embedding_query = await session.execute(
@@ -169,7 +169,7 @@ async def index_sentences_add_text(session, text, document_id=None, document_con
     # --- save as .npy file to s3 as backup
     numpy_tensor_bytearray = write_tensor_to_bytearray(text_embedding_tensor)
     npy_file_key = f"index_sentences_{uuid.uuid4()}.npy"
-    s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
+    s3_upload_file_bytes(npy_file_key, numpy_tensor_bytearray)
     # --- save embedding
     print("INFO (vectordb_faiss:index_sentences_add_text): save embedding")
     embedding_query = await session.execute(

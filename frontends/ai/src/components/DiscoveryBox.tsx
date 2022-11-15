@@ -2,15 +2,23 @@ import axios from "axios";
 import { isBefore, subSeconds } from "date-fns";
 import { capitalize } from "lodash";
 import React, { useState } from "react";
+import ReactPlayer from "react-player";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
 
+const DocumentPreviewAudio = styled.audio`
+  min-width: 120px;
+  max-width: 120px;
+  width: 120px;
+`;
 const DocumentPreviewImage = styled.div`
-  width: 54px;
-  height: 54px;
+  min-width: 120px;
+  max-width: 120px;
+  width: 120px;
+  height: 72px;
   background-position: center;
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
   background-image: url(${(props) => props.imageSrc});
   margin-left: 6px;
@@ -29,7 +37,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
           {document?.type === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
-        {["audio", "pdf"].includes(document.type) ? (
+        {["audio", "pdf", "video"].includes(document.type) ? (
           <>
             <p>{document.document_description}</p>
             {viewMore ? (
@@ -64,8 +72,9 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         ) : null}
       </div>
       {["image"].includes(document.type) ? <DocumentPreviewImage imageSrc={document.files[0].upload_url} /> : null}
-      {["audio"].includes(document.type) ? (
-        <audio src={document.files[0].upload_url} controls style={{ width: "120px" }} />
+      {["audio"].includes(document.type) ? <DocumentPreviewAudio src={document.files[0].upload_url} controls /> : null}
+      {["video"].includes(document.type) ? (
+        <ReactPlayer width="120px" height="" url={document.files[0].upload_url} controls={false} />
       ) : null}
     </div>
   );
@@ -75,7 +84,7 @@ export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments();
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
   const [isAddingFile, setIsAddingFile] = useState(false);
-  const onSubmitFile = (type: "audio" | "image" | "pdf") => (e) => {
+  const onSubmitFile = (type: "audio" | "image" | "pdf" | "video") => (e) => {
     e.preventDefault();
     if (e.target.file?.files?.[0]) {
       // --- setup form data/submit
@@ -128,11 +137,9 @@ export const DiscoveryBox = () => {
           </form>
 
           {/* VIDEO */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
-            <input type="file" name="file" accept=".mp4,.mov" disabled />
-            <button type="submit" disabled>
-              Upload Video
-            </button>
+          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("video")}>
+            <input type="file" name="file" accept=".mp4,.mov" />
+            <button type="submit">Upload Video</button>
           </form>
         </>
       ) : (

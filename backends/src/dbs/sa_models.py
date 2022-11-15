@@ -118,13 +118,13 @@ class DocumentContent(BaseModel):
     text = Column(Text())
     tokenizing_strategy = Column(String())
     page_number = Column(String())
-    # --- audio
-    start_second = Column(Integer)
-    end_second = Column(Integer)
     # --- image
     image_file_id = Column(Integer, ForeignKey("file.id"))
     image_file = relationship("File", back_populates="document_content_image_file")
-    # --- video
+    patch_size = Column(Integer)
+    # --- audio/video
+    start_second = Column(Integer)
+    end_second = Column(Integer)
     def serialize(self):
         return {
             "id": self.id,

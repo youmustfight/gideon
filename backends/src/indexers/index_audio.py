@@ -1,16 +1,14 @@
-import math
 import numpy as np
 import pydash as _
-import requests
 import sqlalchemy as sa
 from time import sleep
 
-import env
 from files.file_utils import get_file_path, open_txt_file
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 from files.s3_utils import s3_get_file_url, s3_upload_file
-from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
+from models.assemblyai import assemblyai_transcribe
+from models.gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
 
 async def _index_audio_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_audio_process_content) started", document_id)
@@ -20,29 +18,11 @@ async def _index_audio_process_content(session, document_id: int) -> None:
     files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
     files = files_query.scalars()
     file = files.first()
-    # --- Start transcript processing with returned upload_url
-    transcript_response = requests.post(
-        "https://api.assemblyai.com/v2/transcript",
-        headers={ "authorization": env.env_get_assembly_ai_api_key(), "content-type": "application/json" },
-        json={ "audio_url": file.upload_url }
-    )
-    print("INFO (index_audio.py): transcript requested", transcript_response.json())
-    transcript_id = transcript_response.json()['id']
-    is_transcript_complete = False
-    transcript_response = None
-    while is_transcript_complete == False:
-        transcript_check_response = requests.get(
-            "https://api.assemblyai.com/v2/transcript/{transcript_id}".format(transcript_id=transcript_id),
-            headers={ "authorization": env.env_get_assembly_ai_api_key() },
-        )
-        print("INFO (index_audio.py): transcript check", transcript_check_response.json()['id'], transcript_check_response.json()['status'])
-        if transcript_check_response.json()['status'] == 'completed':
-            is_transcript_complete = True
-            transcript_response = transcript_check_response.json()
-        sleep(3)
+    # --- process file for transcript
+    transcript_response = assemblyai_transcribe(file.upload_url)
     # DOCUMENT CONTENT CREATION
-    document_text = transcript_response['text'].encode(encoding='ASCII',errors='ignore').decode() # rmv dangerous special characters
     # --- chunk audio text: document
+    document_text = transcript_response['text']
     document_text_chunks = tokenize_string(document_text, "max_size")
     document_content_text = list(map(lambda chunk: DocumentContent(
         document_id=document_id,
@@ -51,28 +31,7 @@ async def _index_audio_process_content(session, document_id: int) -> None:
     ), document_text_chunks))
     session.add_all(document_content_text)
     # --- chunk audio text: by sentence (w/ start/end times)
-    document_words = transcript_response['words']
-    sentences = []
-    sentence_milliseconds_start = None
-    sentence_milliseconds_end = None
-    sentence_text_fragments = []
-    for word in document_words:
-        if (sentence_milliseconds_start == None): sentence_milliseconds_start = word['start']
-        sentence_milliseconds_end = word['end']
-        sentence_text_fragments.append(word['text'])
-        # print("INFO (index_audio.py): word", word)
-        # --- if contains a period and word length is significant
-        if (_.has_substr(word['text'], ".") and len(word['text']) > 3 and len(" ".join(sentence_text_fragments)) > 36):
-            sentence = {
-                "text": " ".join(sentence_text_fragments),
-                "start_second": math.floor(sentence_milliseconds_start / 1000),
-                "end_second": math.floor(sentence_milliseconds_end / 1000),
-            }
-            print("INFO (index_audio.py): sentence", sentence)
-            sentences.append(sentence)
-            sentence_text_fragments = []
-            sentence_milliseconds_start = None
-            sentence_milliseconds_end = None
+    sentences = transcript_response['sentences']
     document_content_sentences = list(map(lambda sentence: DocumentContent(
         document_id=document_id,
         text=sentence['text'],

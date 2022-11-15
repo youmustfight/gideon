@@ -1,0 +1,5 @@
+In the fewest words, write what type of video content this is:
+
+<<SOURCE_TEXT>>
+
+TYPE OF VIDEO CONTENT:

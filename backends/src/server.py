@@ -11,19 +11,15 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 import env
-from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio, _index_audio_process_extractions
-from indexers.index_highlight import index_highlight
 from indexers.index_image import index_image, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_extractions
 from indexers.index_vectors import index_vectors
+from indexers.index_video import index_video, _index_video_process_extractions
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
-from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
 from queries.search_for_locations_across_image import search_for_locations_across_image
-from queries.search_highlights import search_highlights
-from queries.summarize_user import summarize_user
 from dbs.vectordb_pinecone import get_indexes
 
 
@@ -114,7 +110,7 @@ async def app_route_cases(request):
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 @auth_route
-async def app_route_case(request, case_id):
+async def app_route_case_get(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
@@ -125,7 +121,7 @@ async def app_route_case(request, case_id):
 
 @app.route('/v1/case/<case_id>', methods = ['PUT'])
 @auth_route
-async def app_route_case(request, case_id):
+async def app_route_case_put(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
@@ -138,7 +134,7 @@ async def app_route_case(request, case_id):
 
 @app.route('/v1/case', methods = ['POST'])
 @auth_route
-async def app_route_case(request):
+async def app_route_case_post(request):
     session = request.ctx.session
     async with session.begin():
         # --- get user for relation
@@ -160,15 +156,20 @@ async def app_route_document_get(request, document_id):
         query_document = await session.execute(
             sa.select(Document)
                 .options(
-                    selectinload(Document.content),
-                    selectinload(Document.files),
-                )
+                    selectinload(Document.content)
+                        .options(selectinload(DocumentContent.image_file)),
+                    selectinload(Document.files))
                 .where(Document.id == int(document_id))
         )
         document = query_document.scalars().first()
         # TODO: figure out how to more elegantly pull off serialized properties
+        def map_content(cn):
+            payload = cn.serialize()
+            if (cn.image_file != None):
+                payload['image_file'] = cn.image_file.serialize()
+            return payload
         document_json = document.serialize()
-        document_json['content'] = serialize_list(document.content)
+        document_json['content'] = list(map(map_content, document.content))
         document_json['files'] = serialize_list(document.files)
     return json({ 'status': 'success', "document": document_json })
 
@@ -224,6 +225,8 @@ async def app_route_document_summarize(request, document_id):
             await _index_image_process_extractions(session=session, document_id=document.id)
         if (document.type == "audio"):
             await _index_audio_process_extractions(session=session, document_id=document.id)
+        if (document.type == "video"):
+            await _index_video_process_extractions(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents', methods = ['GET'])
@@ -283,6 +286,18 @@ async def app_route_documents_index_audio(request):
         await index_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
 
+@app.route('/v1/documents/index/video', methods = ['POST'])
+@auth_route
+async def app_route_documents_index_video(request): 
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        # --- process file/embeddings
+        document_id = await index_video(session=session, pyfile=pyfile)
+        # --- queue indexing
+        await index_vectors(session=session, document_id=document_id)
+    return json({ 'status': 'success' })
+
 
 # HIGHLIGHTS
 @app.route('/v1/highlights', methods = ['GET'])
@@ -331,18 +346,25 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
-        # --- pdfs/transcripts
-        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
-        def serialize_location(location):
+        def serialize_location_text(location):
             return dict(
                 document=location['document'].serialize(),
                 document_content=location['document_content'].serialize(),
                 score=location['score']
             )
-        locations_across_text_serialized = list(map(serialize_location, locations_across_text))
-        # --- images
+        def serialize_location_image(location):
+            return dict(
+                document=location['document'].serialize(),
+                document_content=location['document_content'].serialize(),
+                image_file=location['image_file'].serialize(), # cannot for the life of me do a ternary/logic check for serializing this, so made 2 functions
+                score=location['score']
+            )
+        # --- pdfs/transcripts
+        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
+        locations_across_text_serialized = list(map(serialize_location_text, locations_across_text))
+        # --- images (including video frames)
         locations_across_image = await search_for_locations_across_image(session, request.json['query'])
-        locations_across_image_serialized = list(map(serialize_location, locations_across_image))
+        locations_across_image_serialized = list(map(serialize_location_image, locations_across_image))
         # --- combined
         locations = locations_across_image_serialized + locations_across_text_serialized
     return json({ 'status': 'success', "locations": locations })

@@ -3,7 +3,7 @@ import pickle
 import numpy
 import textwrap
 
-from files.s3_utils import s3_upload_bytes
+from files.s3_utils import s3_upload_file_bytes
 
 # TENSORS
 def write_tensor_to_bytearray(tensor):
@@ -15,7 +15,7 @@ def write_tensor_to_bytearray(tensor):
 def backup_tensor_to_s3(embedding_id, tensor):
     numpy_tensor_bytearray = write_tensor_to_bytearray(tensor)
     npy_file_key = f"embeddings/embedding_{embedding_id}.npy"
-    s3_upload_bytes(npy_file_key, numpy_tensor_bytearray)
+    s3_upload_file_bytes(npy_file_key, numpy_tensor_bytearray)
 
 # TOKENIZING
 def tokenize_string(text, strategy):
