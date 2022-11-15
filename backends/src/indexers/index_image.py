@@ -52,7 +52,7 @@ async def _index_image_process_embeddings(session, document_id) -> None:
         image_embedding_tensor = clip_image_embedding(s3_get_file_url(document_content_file.upload_key)) # returns numpy array [1,512]
         print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_tensor.shape', image_embedding_tensor.shape)
         image_embedding_vector = np.squeeze(image_embedding_tensor).tolist()
-        print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_vector', image_embedding_vector)
+        # print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_vector', image_embedding_vector)
         # --- creat embedding
         await session.execute(
             sa.insert(Embedding).values(
