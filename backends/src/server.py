@@ -11,19 +11,15 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 import env
-from files.file_utils import get_file_path, write_file
 from indexers.index_audio import index_audio, _index_audio_process_extractions
-from indexers.index_highlight import index_highlight
 from indexers.index_image import index_image, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_extractions
 from indexers.index_vectors import index_vectors
+from indexers.index_video import index_video, _index_video_process_extractions
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
-from queries.contrast_two_user_statements import contrast_two_user_statements
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
 from queries.search_for_locations_across_image import search_for_locations_across_image
-from queries.search_highlights import search_highlights
-from queries.summarize_user import summarize_user
 from dbs.vectordb_pinecone import get_indexes
 
 
@@ -114,7 +110,7 @@ async def app_route_cases(request):
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
 @auth_route
-async def app_route_case(request, case_id):
+async def app_route_case_get(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
@@ -125,7 +121,7 @@ async def app_route_case(request, case_id):
 
 @app.route('/v1/case/<case_id>', methods = ['PUT'])
 @auth_route
-async def app_route_case(request, case_id):
+async def app_route_case_put(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
@@ -138,7 +134,7 @@ async def app_route_case(request, case_id):
 
 @app.route('/v1/case', methods = ['POST'])
 @auth_route
-async def app_route_case(request):
+async def app_route_case_post(request):
     session = request.ctx.session
     async with session.begin():
         # --- get user for relation
@@ -331,14 +327,14 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
-        # --- pdfs/transcripts
-        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
         def serialize_location(location):
             return dict(
                 document=location['document'].serialize(),
                 document_content=location['document_content'].serialize(),
                 score=location['score']
             )
+        # --- pdfs/transcripts
+        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
         locations_across_text_serialized = list(map(serialize_location, locations_across_text))
         # --- images
         locations_across_image = await search_for_locations_across_image(session, request.json['query'])
