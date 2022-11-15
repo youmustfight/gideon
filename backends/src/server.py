@@ -156,9 +156,9 @@ async def app_route_document_get(request, document_id):
         query_document = await session.execute(
             sa.select(Document)
                 .options(
-                    selectinload(Document.content),
-                    selectinload(Document.files),
-                )
+                    selectinload(Document.content)
+                        .options(selectinload(DocumentContent.image_file)),
+                    selectinload(Document.files))
                 .where(Document.id == int(document_id))
         )
         document = query_document.scalars().first()
@@ -220,6 +220,8 @@ async def app_route_document_summarize(request, document_id):
             await _index_image_process_extractions(session=session, document_id=document.id)
         if (document.type == "audio"):
             await _index_audio_process_extractions(session=session, document_id=document.id)
+        if (document.type == "video"):
+            await _index_video_process_extractions(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents', methods = ['GET'])
@@ -275,6 +277,18 @@ async def app_route_documents_index_audio(request):
         pyfile = request.files['file'][0]
         # --- process file/embeddings
         document_id = await index_audio(session=session, pyfile=pyfile)
+        # --- queue indexing
+        await index_vectors(session=session, document_id=document_id)
+    return json({ 'status': 'success' })
+
+@app.route('/v1/documents/index/video', methods = ['POST'])
+@auth_route
+async def app_route_documents_index_video(request): 
+    session = request.ctx.session
+    async with session.begin():
+        pyfile = request.files['file'][0]
+        # --- process file/embeddings
+        document_id = await index_video(session=session, pyfile=pyfile)
         # --- queue indexing
         await index_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
