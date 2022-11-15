@@ -26,7 +26,7 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
             </Link>
           </>
         ) : null}
-        {location.document.type === "audio" ? (
+        {["audio", "video"].includes(location.document.type) ? (
           <>
             ,{" "}
             <Link

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
@@ -68,7 +69,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         if (!accum[dc.page_number]) accum[dc.page_number] = [];
         accum[dc.page_number].push(dc);
       }
-      if (doc.type === "audio") {
+      if (["audio", "video"].includes(doc.type)) {
         const minute = Math.floor(dc.start_second / 60);
         if (!accum[minute]) accum[minute] = [];
         accum[minute].push(dc);
@@ -95,10 +96,10 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           {/* <p>{doc.document_text_by_minute}</p> */}
           <p>
             {documentTextByGrouping[groupingNumber].map((documentContent) => (
-              <>
+              <Fragment key={documentContent.id}>
                 {" "}
                 <span>{documentContent.text}</span>
-              </>
+              </Fragment>
             ))}
           </p>
         </div>
@@ -208,7 +209,7 @@ export const ViewCaseDocument = () => {
       {document.type === "audio" ? (
         <>
           <div className="section-lead">
-            <h4>Audio Preview</h4>
+            <h4>Audio Player</h4>
           </div>
           <section>
             <audio
@@ -217,6 +218,18 @@ export const ViewCaseDocument = () => {
               type="audio/mpeg"
               style={{ width: "100%" }}
             ></audio>
+          </section>
+        </>
+      ) : null}
+
+      {/* VIDEO */}
+      {document.type === "video" ? (
+        <>
+          <div className="section-lead">
+            <h4>Video Player</h4>
+          </div>
+          <section>
+            <ReactPlayer width="100%" height="100%" controls url={document?.files?.[0]?.upload_url} />
           </section>
         </>
       ) : null}

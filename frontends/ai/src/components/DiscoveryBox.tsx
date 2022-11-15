@@ -128,11 +128,9 @@ export const DiscoveryBox = () => {
           </form>
 
           {/* VIDEO */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
-            <input type="file" name="file" accept=".mp4,.mov" disabled />
-            <button type="submit" disabled>
-              Upload Video
-            </button>
+          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("video")}>
+            <input type="file" name="file" accept=".mp4,.mov" />
+            <button type="submit">Upload Video</button>
           </form>
         </>
       ) : (
