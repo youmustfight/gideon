@@ -20,6 +20,7 @@ from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embed
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
 from queries.search_for_locations_across_image import search_for_locations_across_image
+from queries.summarize_timeline import summarize_timeline
 from dbs.vectordb_pinecone import get_indexes
 
 
@@ -392,6 +393,21 @@ async def app_route_query_info_locations(request):
 #     statement_two = summarize_user(user_two)
 #     answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
 #     return json({ 'status': 'success', "answer": answer })
+
+
+# TIMELINE
+@app.route('/v1/timeline', methods = ['POST'])
+@auth_route
+async def app_route_timeline(request):
+    session = request.ctx.session
+    async with session.begin():
+        documents = await session.execute(
+            sa.select(Document)
+                .options(subqueryload(Document.content), subqueryload(Document.files))
+        )
+        # TODO: support image, audio, video by storing their text descriptions
+        events = await summarize_timeline(documents)
+    return json({ 'status': 'success', 'events': events })
 
 
 # USERS

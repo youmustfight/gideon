@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { HighlightsBox } from "../../components/HighlightsBox";
+import { TimelineSummary } from "../../components/TimelineSummary";
 import { useHighlights } from "../../data/useHighlights";
 
 export const ViewCaseOverview = () => {
@@ -18,7 +19,13 @@ export const ViewCaseOverview = () => {
           <DiscoveryBox />
         </section>
 
-        {/* TODO: SUMMATION (timeline w/ summaries) */}
+        {/* SUMMATION (timeline w/ summaries) */}
+        <div className="section-lead">
+          <h4>Timeline Summary</h4>
+        </div>
+        <section>
+          <TimelineSummary />
+        </section>
 
         {/* TODO: MY DOCS */}
 

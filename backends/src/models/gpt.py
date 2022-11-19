@@ -73,7 +73,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
 def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk_size=6000, return_list=False, dedupe=False):
     print('INFO (GPT3): gpt_completion_repeated')
     chunks = textwrap.wrap(text_to_repeatedly_complete, text_chunk_size)
-    result = list();
+    result = list()
     for idx, chunk in enumerate(chunks):
         prompt = prompt_file.replace('<<SOURCE_TEXT>>', chunk)
         prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
@@ -115,7 +115,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
 def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
-    result = list();
+    result = list()
     for idx, chunk in enumerate(chunks):
         prompt = open_txt_file(get_file_path('./prompts/prompt_summary_detailed.txt')).replace('<<SOURCE_TEXT>>', chunk)
         prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
