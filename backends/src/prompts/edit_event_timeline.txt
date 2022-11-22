@@ -1,1 +1,1 @@
-Delete any line that does not have a date.
+Delete any line that does not mention a calendar date.
