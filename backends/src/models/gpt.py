@@ -1,9 +1,9 @@
-from env import env_get_open_ai_api_key
+import env
 from files.file_utils import get_file_path, open_txt_file
 from utils import filter_empty_strs
 import numpy
 import math
-import openai
+import requests
 import textwrap
 from time import time,sleep
 
@@ -14,10 +14,9 @@ from time import time,sleep
 ENGINE_COMPLETION = 'text-davinci-002' # 'text-ada-001' # 
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
 ENGINE_EMBEDDING = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
+OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
 
 def gpt_vars():
     return {
@@ -25,14 +24,21 @@ def gpt_vars():
         "ENGINE_EDIT": ENGINE_EDIT,
         "ENGINE_EMBEDDING": ENGINE_EMBEDDING,
         "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT,
+        "OPENAI_REQUEST_TIMEOUT": OPENAI_REQUEST_TIMEOUT,
         "OPENAI_THROTTLE": OPENAI_THROTTLE
     }
 
 def gpt_embedding(content, engine=ENGINE_EMBEDDING):
     print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
     try:
-        response = openai.Embedding.create(input=content,engine=engine,request_timeout=10) # OpenAI
-        vector = response['data'][0]['embedding']  # this is a normal list
+        # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
+        response = requests.post(
+            'https://api.openai.com/v1/embeddings',
+            headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
+            json={ 'model': engine, 'input': content }
+        )
+        vector = response.json()['data'][0]['embedding']
+        # Return
         # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
         # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
         vector_as_numpy_array = numpy.asarray(vector, dtype="float32")
@@ -45,24 +51,27 @@ def gpt_embedding(content, engine=ENGINE_EMBEDDING):
 
 # FUNCTIONS
 def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
-    max_retry = 2
+    max_retry = 3
     retry = 0
     while True:
         try:
             print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...')
-            # --- OpenAI
-            response = openai.Completion.create(
-                engine=engine,
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=top_p,
-                frequency_penalty=freq_pen,
-                presence_penalty=pres_pen,
-                stop=stop,
-                request_timeout=30,
+            # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
+            response = requests.post(
+                'https://api.openai.com/v1/completions',
+                headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
+                json={
+                    'model': engine,
+                    'prompt': prompt,
+                    'temperature': temperature,
+                    'max_tokens': max_tokens,
+                    'top_p': top_p,
+                    'frequency_penalty': freq_pen,
+                    'presence_penalty': pres_pen,
+                    'stop': stop
+                },
             )
-            text = response['choices'][0]['text'].strip()
+            text = response.json()['choices'][0]['text'].strip()
             print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...', text)
             return text
         except Exception as err:
@@ -91,21 +100,24 @@ def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk
     return '\n\n'.join(result)
 
 def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
-    max_retry = 2
+    max_retry = 3
     retry = 0
     while True:
         try:
             print(f'INFO (GPT3): gpt_edit: {input[0:80]}...')
             # --- OpenAI
-            response = openai.Edit.create(
-                engine=engine,
-                input=input,
-                instruction=instruction,
-                temperature=temperature,
-                top_p=top_p,
-                request_timeout=30
+            response = requests.post(
+                'https://api.openai.com/v1/edits',
+                headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
+                json={
+                    'model': engine,
+                    'input': input,
+                    'instruction': instruction,
+                    'temperature': temperature,
+                    'top_p': top_p
+                },
             )
-            text = response['choices'][0]['text'].strip()
+            text = response.json()['choices'][0]['text'].strip()
             return text
         except Exception as err:
             retry += 1
