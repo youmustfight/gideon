@@ -7,7 +7,7 @@ from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_url, s3_upload_file
-from indexers.index_helpers import extract_timeline_from_document_text
+from indexers.helpers.extract_timeline_from_document_text import extract_timeline_from_document_text
 from models.assemblyai import assemblyai_transcribe
 from models.gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
 

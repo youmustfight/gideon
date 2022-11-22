@@ -11,7 +11,7 @@ from dbs.vector_utils import tokenize_string
 import env
 from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
-from indexers.index_helpers import extract_timeline_from_document_text
+from indexers.helpers.extract_timeline_from_document_text import extract_timeline_from_document_text
 from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from utils import filter_empty_strs
 

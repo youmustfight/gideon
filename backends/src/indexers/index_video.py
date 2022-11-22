@@ -12,7 +12,7 @@ import env
 from files.file_utils import get_file_path, open_txt_file
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file, s3_upload_file_string
-from indexers.index_helpers import extract_timeline_from_document_text
+from indexers.helpers.extract_timeline_from_document_text import extract_timeline_from_document_text
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
