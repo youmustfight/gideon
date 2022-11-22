@@ -1,63 +1,61 @@
-import axios from "axios";
-import React, { useState } from "react";
+import { flatten, keyBy, orderBy } from "lodash";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
-import { TDocument, useDocuments } from "../data/useDocuments";
-import { getGideonApiUrl } from "../env";
+import { useDocuments } from "../data/useDocuments";
 
 export const TimelineSummary = () => {
-  const [events, setEvents] = useState([]);
-  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
-  const generateTimeline = (e) => {
-    e.preventDefault();
-    setEvents([]);
-    setIsLoadingTimeline(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/timeline`)
-      .then((res) => {
-        setEvents(res.data.events);
-        setIsLoadingTimeline(false);
-      });
-  };
-
+  const matches = useMatch("/case/:caseId/*");
+  const caseId = Number(matches?.params?.caseId);
+  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments();
+  const documentIdMap = keyBy(documents, "id");
   // RENDER
   return (
     <StyledTimelineSummary>
-        {events.length > 0 && (
-          <>
-            {events.map((event) => <p>{event}</p>)}
-            <br />
-          </>
-        )}
-        {isLoadingTimeline ? (
-          <h2>Loading...</h2>
-        ) : (
-          <button className='generate-timeline-btn' onClick={generateTimeline}>
-            Generate Timeline
-          </button>
-        )}
+      {!isSuccessDocuments ? (
+        <h2>Loading...</h2>
+      ) : (
+        <table>
+          {orderBy(
+            flatten((documents ?? []).map((d) => (d.document_events ?? [])?.map((e) => ({ ...e, documentId: d.id })))),
+            ["date"],
+            ["asc"]
+          ).map(({ date, documentId, event }) => (
+            <tr key={[documentId, date, event].join("-")}>
+              <td className="timeline-summary__td-date">
+                <b>{date}</b>
+              </td>
+              <td className="timeline-summary__td-doc">
+                <Link to={`/case/${caseId}/document/${documentId}`}>
+                  {documentIdMap[documentId].name?.slice(0, 24)}...
+                </Link>
+              </td>
+              <td className="timeline-summary__td-event">{event}</td>
+            </tr>
+          ))}
+        </table>
+      )}
     </StyledTimelineSummary>
   );
 };
 
 const StyledTimelineSummary = styled.div`
-  p {
-    font-size: 14px;
-    margin: 0;
-    margin-top: 4px;
+  font-size: 12px;
+  .timeline-summary__td-date {
+    font-weight: 900;
+    min-width: 72px;
   }
-  small {
-    margin: 4px 0;
-    font-size: 12px;
-  }
-  & > ul {
-    padding-left: 0 !important;
-    list-style-type: none !important;
-  }
-  li {
-    margin: 4px 0;
-    & > div {
-      padding: 4px;
+  .timeline-summary__td-doc {
+    min-width: 120px;
+    max-width: 120px;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+    opacity: 0.5;
+    &:hover {
+      opacity: 1;
     }
+  }
+  .timeline-summary__td-event {
+    padding: 4px;
   }
 `;

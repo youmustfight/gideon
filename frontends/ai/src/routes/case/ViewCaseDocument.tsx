@@ -1,8 +1,9 @@
+import { orderBy } from "lodash";
 import { Fragment, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
+import { reqDocumentEmbeddings, reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument } from "../../data/useDocuments";
 
@@ -23,14 +24,30 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
       <p>
         {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
-        {isFullyVisible ? (
-          <>
-            <br />
-            <br />
-            <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
-          </>
-        ) : null}
       </p>
+      {document.document_events?.length > 0 ? (
+        <>
+          <br />
+          <h2>Events/Timeline</h2>
+          <ul>
+            {orderBy(document.document_events, ["date"], ["asc"]).map(({ date, event }) => (
+              <li key={`${date}-${event}`}>
+                {date}: {event}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {isFullyVisible ? (
+        <>
+          <br />
+          <br />
+          <div style={{ display: "flex" }}>
+            <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
+            <button onClick={() => reqDocumentEmbeddings(document.id)}>Re-run Embeddings</button>
+          </div>
+        </>
+      ) : null}
     </StyledDocumentViewSummary>
   );
 };
@@ -41,6 +58,9 @@ const StyledDocumentViewSummary = styled.div`
   line-height: 115%;
   u {
     cursor: pointer;
+  }
+  h2 {
+    font-weight: 900;
   }
 `;
 
