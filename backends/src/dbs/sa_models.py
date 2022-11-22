@@ -1,5 +1,5 @@
 from pydash import to_list
-from sqlalchemy import Column, Integer, ForeignKey, String, Table, Text
+from sqlalchemy import JSON, Column, Integer, ForeignKey, String, Table, Text
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -97,6 +97,7 @@ class Document(BaseModel):
     # --- content -> extracted summaries/details
     status_processing_extractions = Column(String()) # queued, processing, completed, error
     document_description = Column(Text())
+    document_events = Column(JSON)
     document_summary = Column(Text())
     def serialize(self):
         return {
@@ -106,6 +107,7 @@ class Document(BaseModel):
             "status_processing_files": self.status_processing_files,
             "status_processing_embeddings": self.status_processing_embeddings,
             "document_description": self.document_description,
+            "document_events": self.document_events,
             "document_summary": self.document_summary,
         }
 
