@@ -11,16 +11,15 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 import env
-from indexers.index_audio import index_audio, _index_audio_process_extractions
-from indexers.index_image import index_image, _index_image_process_extractions
-from indexers.index_pdf import index_pdf, _index_pdf_process_extractions
+from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
+from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
+from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
 from indexers.index_vectors import index_vectors
-from indexers.index_video import index_video, _index_video_process_extractions
+from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.question_answer import question_answer
 from queries.search_for_locations_across_text import search_for_locations_across_text
 from queries.search_for_locations_across_image import search_for_locations_across_image
-from queries.summarize_timeline import summarize_timeline
 from dbs.vectordb_pinecone import get_indexes
 
 
@@ -212,9 +211,27 @@ async def app_route_document_delete(request, document_id):
             .where(Document.id == int(document_id)))
     return json({ 'status': 'success' })
 
-@app.route('/v1/document/<document_id>/summarize', methods = ['POST'])
+@app.route('/v1/document/<document_id>/embeddings', methods = ['POST'])
 @auth_route
-async def app_route_document_summarize(request, document_id):
+async def app_route_document_embeddings(request, document_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_document = await session.execute(
+            sa.select(Document).where(Document.id == int(document_id)))
+        document = query_document.scalars().first()
+        if (document.type == "pdf"):
+            await _index_pdf_process_embeddings(session=session, document_id=document.id)
+        if (document.type == "image"):
+            await _index_image_process_embeddings(session=session, document_id=document.id)
+        if (document.type == "audio"):
+            await _index_audio_process_embeddings(session=session, document_id=document.id)
+        if (document.type == "video"):
+            await _index_video_process_embeddings(session=session, document_id=document.id)
+    return json({ 'status': 'success' })
+
+@app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
+@auth_route
+async def app_route_document_extractions(request, document_id):
     session = request.ctx.session
     async with session.begin():
         query_document = await session.execute(
@@ -393,21 +410,6 @@ async def app_route_query_info_locations(request):
 #     statement_two = summarize_user(user_two)
 #     answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
 #     return json({ 'status': 'success', "answer": answer })
-
-
-# TIMELINE
-@app.route('/v1/timeline', methods = ['POST'])
-@auth_route
-async def app_route_timeline(request):
-    session = request.ctx.session
-    async with session.begin():
-        documents = await session.execute(
-            sa.select(Document)
-                .options(subqueryload(Document.content), subqueryload(Document.files))
-        )
-        # TODO: support image, audio, video by storing their text descriptions
-        events = await summarize_timeline(documents)
-    return json({ 'status': 'success', 'events': events })
 
 
 # USERS

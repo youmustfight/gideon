@@ -11,6 +11,7 @@ from dbs.vector_utils import tokenize_string
 import env
 from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from indexers.index_helpers import extract_timeline_from_document_text
 from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
 from utils import filter_empty_strs
 
@@ -108,7 +109,10 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content_query = await session.execute(
+        sa.select(DocumentContent)
+            .where(DocumentContent.document_id == document_id)
+            .where(DocumentContent.tokenizing_strategy == "max_size"))
     document_content = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content))
     # VARS
@@ -153,7 +157,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     #     print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws skipped because document text is too long')
     # # --- if a discovery document (ex: police report, testimony, motion)
     # if is_discovery_document == True:
-    # --- event timeline (split on linebreaks, could later do structured parsing prob of dates)
+    # --- event timeline v1 (split on linebreaks, could later do structured parsing prob of dates)
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): event_timeline')
     # if use_repeat_methods == True:
     #     event_timeline_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
@@ -163,6 +167,9 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     #     open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
     #     '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
     # ).split('\n'))
+    # --- event timeline v2
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): document_events')
+    document_events = await extract_timeline_from_document_text(document_content_text)
     # --- organizations mentioned
     # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_organizations')
     # if use_repeat_methods == True:
@@ -190,6 +197,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
     # --- SAVE
     document.document_description=document_description
+    document.document_events=document_events
     document.document_summary=document_summary
     document.status_processing_extractions = "completed"
     session.add(document)

@@ -3,10 +3,11 @@ import pydash as _
 import sqlalchemy as sa
 from time import sleep
 
-from files.file_utils import get_file_path, open_txt_file
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
+from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_url, s3_upload_file
+from indexers.index_helpers import extract_timeline_from_document_text
 from models.assemblyai import assemblyai_transcribe
 from models.gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
 
@@ -92,8 +93,12 @@ async def _index_audio_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_audio_process_extractions): document_summary')
     if len(document_summary) == 0 and len(document_content_text) < 250_000:
         document_summary = gpt_summarize(document_content_text, max_length=1500)
+    # --- events
+    print('INFO (index_pdf.py:_index_audio_process_extractions): document_events')
+    document_events = await extract_timeline_from_document_text(document_content_text)
     # SAVE
     document.document_description=document_description
+    document.document_events=document_events
     document.document_summary=document_summary
     document.status_processing_extractions = "completed"
     session.add(document)
