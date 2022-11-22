@@ -1,13 +1,7 @@
-import openai
 from env import env_get_open_ai_api_key
 from models.gpt import gpt_embedding
 from dbs.vector_utils import similarity
 # DEPRECATED: from gideon_search import filter_text_vectors_within_top_score_diff, search_similar_file_text_vectors, sort_scored_text_vectors
-
-# SETUP
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
-
 
 # SEARCH QUERY
 def search_highlights(query):

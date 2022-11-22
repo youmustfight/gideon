@@ -1,12 +1,5 @@
-import openai
 import pydash as _
-from env import env_get_open_ai_api_key
 from dbs.vectordb_pinecone import index_documents_sentences_query, get_embeddings_from_search_vectors
-
-# SETUP
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
-
 
 # SEARCH QUERY
 async def search_for_locations_across_text(session, text_query):
