@@ -68,7 +68,7 @@ const StyledViewCase = styled.div`
   section {
     box-shadow: rgb(0 0 0 / 4%) 0px 0 60px 0px;
     border-radius: 24px;
-    padding: 16px;
+    padding: 12px;
     margin: 10px 20px;
     &:first-of-type {
       margin-top: 0;

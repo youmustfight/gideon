@@ -30,6 +30,7 @@ export type TDocument = {
   status_processing_files?: boolean;
   status_processing_embeddings?: boolean;
   document_description?: string;
+  document_events?: { date: string; event: string }[];
   document_summary?: string;
   content?: TDocumentContent[];
   files?: TFile[];

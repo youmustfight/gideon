@@ -13,6 +13,7 @@ import env
 from files.file_utils import get_file_path, open_txt_file
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file, s3_upload_file_string
+from indexers.index_helpers import extract_timeline_from_document_text
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
@@ -146,7 +147,7 @@ async def _index_video_process_embeddings(session, document_id: int) -> None:
                     encoding_strategy="text",
                     vector_json=text_embedding_vector,
                 ))
-            sleep(1.2) # openai 60 reqs/min
+            sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
         # IMAGE
         elif (content.image_file_id != None):
             document_content_file_query = await session.execute(
@@ -195,8 +196,12 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_video_process_extractions): document_summary')
     if len(document_summary) == 0 and len(document_content_text) < 250_000:
         document_summary = gpt_summarize(document_content_text, max_length=1500)
+    # --- events
+    print('INFO (index_pdf.py:_index_video_process_extractions): document_events')
+    document_events = await extract_timeline_from_document_text(document_content_text)
     # SAVE
     document.document_description=document_description
+    document.document_events=document_events
     document.document_summary=document_summary
     document.status_processing_extractions = "completed"
     session.add(document)
