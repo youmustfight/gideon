@@ -44,11 +44,14 @@ async def extract_timeline_from_document_text(document_text):
     # create structured data of events
     events_objects = []
     for event in events:
-        colon_index = int(event.index(':'))
-        events_objects.append({
-            'date': event[colon_index-10:colon_index], # in case there's a bullet, just move back from colon
-            'event': event[colon_index+1:-1].strip()
-        })
+        if ':' in event:
+            colon_index = int(event.index(':'))
+            date = event[slice(colon_index - 10, colon_index)], # in case there's a bullet, just move back from colon
+            event = event[slice(colon_index + 1, -1)]
+            print('date', date)
+            print('event', event)
+            if (date != None and event != None and len(event.strip()) > 0):
+                events_objects.append({ 'date': date, 'event': event.strip() })
     print(f'INFO (extract_timeline_from_document_text): events_objects\n', events_objects)
 
     # TODO: order into chronological order
