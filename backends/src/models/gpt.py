@@ -14,6 +14,7 @@ from time import time,sleep
 ENGINE_COMPLETION = 'text-davinci-002' # 'text-ada-001' # 
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
 ENGINE_EMBEDDING = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
+OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0
 # --- OpenAI
 openai.api_key = env_get_open_ai_api_key()
@@ -23,7 +24,8 @@ def gpt_vars():
         "ENGINE_COMPLETION": ENGINE_COMPLETION,
         "ENGINE_EDIT": ENGINE_EDIT,
         "ENGINE_EMBEDDING": ENGINE_EMBEDDING,
-        "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT
+        "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT,
+        "OPENAI_THROTTLE": OPENAI_THROTTLE
     }
 
 def gpt_embedding(content, engine=ENGINE_EMBEDDING):
@@ -68,7 +70,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
             if retry >= max_retry:
                 return "Error (GTP3 Completion): %s" % err
             print('Error (GPT3):', err)
-            sleep(1)
+            sleep(gpt_vars()['OPENAI_THROTTLE'])
 
 def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk_size=6000, return_list=False, dedupe=False):
     print('INFO (GPT3): gpt_completion_repeated')
@@ -93,7 +95,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
     retry = 0
     while True:
         try:
-            print('INFO (GPT3): gpt_edit')
+            print(f'INFO (GPT3): gpt_edit: {input[0:80]}...')
             # --- OpenAI
             response = openai.Edit.create(
                 engine=engine,
@@ -110,7 +112,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
             if retry >= max_retry:
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, instruction, input)
-            sleep(1)
+            sleep(gpt_vars()['OPENAI_THROTTLE'])
 
 def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))

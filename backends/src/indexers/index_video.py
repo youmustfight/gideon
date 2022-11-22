@@ -146,7 +146,7 @@ async def _index_video_process_embeddings(session, document_id: int) -> None:
                     encoding_strategy="text",
                     vector_json=text_embedding_vector,
                 ))
-            sleep(1.2) # openai 60 reqs/min
+            sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
         # IMAGE
         elif (content.image_file_id != None):
             document_content_file_query = await session.execute(

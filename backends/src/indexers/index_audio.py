@@ -65,7 +65,7 @@ async def _index_audio_process_embeddings(session, document_id: int) -> None:
                 encoding_strategy="text",
                 vector_json=text_embedding_vector,
             ))
-        sleep(1.2) # openai 60 reqs/min
+        sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
