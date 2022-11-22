@@ -1,7 +1,6 @@
 import cv2
 import math
 import numpy as np
-import openai
 from patchify import patchify
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
@@ -17,11 +16,6 @@ from indexers.index_helpers import extract_timeline_from_document_text
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
-
-# SETUP
-# --- OpenAI
-openai.api_key = env.env_get_open_ai_api_key()
-
 
 async def _index_video_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_audio_process_content) started", document_id)

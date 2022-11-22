@@ -1,5 +1,4 @@
 import json
-import openai
 import sqlalchemy as sa
 import numpy as np
 from sqlalchemy.orm import joinedload
@@ -10,10 +9,6 @@ import env
 from files.file_utils import get_file_path
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from models.clip import clip_classifications, clip_image_embedding, clip_vars
-
-# SETUP
-# --- OpenAI
-openai.api_key = env.env_get_open_ai_api_key()
 
 async def _index_image_process_content(session, document_id) -> None:
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))

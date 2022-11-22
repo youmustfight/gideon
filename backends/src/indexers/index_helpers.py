@@ -1,12 +1,7 @@
-import openai
 import textwrap
 from env import env_get_open_ai_api_key
 from files.file_utils import get_file_path, open_txt_file
 from models.gpt import gpt_completion, gpt_edit, gpt_vars
-
-# SETUP
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
 
 # EXTRACT TIMELINE
 async def extract_timeline_from_document_text(document_text):

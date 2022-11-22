@@ -1,10 +1,5 @@
 from env import env_get_open_ai_api_key
 from models.gpt import gpt_summarize
-import openai
-
-# SETUP
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
 
 # ANSWER A QUESTION
 def summarize_user(user):

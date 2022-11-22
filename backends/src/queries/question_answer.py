@@ -1,12 +1,7 @@
-import openai
 from env import env_get_open_ai_api_key
 from models.gpt import gpt_completion, gpt_embedding, gpt_summarize
 from files.file_utils import get_file_path, open_txt_file
 from dbs.vectordb_pinecone import index_documents_text_query, get_document_content_from_search_vectors
-
-# SETUP
-# --- OpenAI
-openai.api_key = env_get_open_ai_api_key()
 
 # QUERY
 async def question_answer(session, query):
