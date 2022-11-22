@@ -14,7 +14,7 @@ import env
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
 from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
-from indexers.helpers.index_document_content_vectors import index_document_content_vectors
+from indexers.utils.index_document_content_vectors import index_document_content_vectors
 from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from queries.question_answer import question_answer
