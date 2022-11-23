@@ -1,7 +1,0 @@
-Using the following two statements by two people, describe only how their positions differ:
-
-STATEMENT by <<USER_ONE>>: <<STATEMENT_ONE>>
-
-STATEMENT by <<USER_TWO>>: <<STATEMENT_TWO>>
-
-DIFFERENCE DESCRIPTION: 

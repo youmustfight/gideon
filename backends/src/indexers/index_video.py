@@ -17,6 +17,7 @@ from indexers.utils.extract_document_summary import extract_document_summary
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
+from models.gpt_prompts import gpt_prompt_video_type
 
 async def _index_video_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_audio_process_content) started", document_id)
@@ -182,7 +183,7 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
     # --- classification/description
     print('INFO (index_pdf.py:_index_video_process_extractions): document_description')
     document.document_description = gpt_completion(
-        open_txt_file(get_file_path('./prompts/prompt_video_type.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
+        gpt_prompt_video_type.replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
         max_tokens=75)
     # --- summary
     print('INFO (index_pdf.py:_index_video_process_extractions): document_summary')

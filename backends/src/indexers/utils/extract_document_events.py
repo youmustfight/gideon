@@ -1,7 +1,7 @@
 import textwrap
-from env import env_get_open_ai_api_key
 from files.file_utils import get_file_path, open_txt_file
 from models.gpt import gpt_completion, gpt_edit, gpt_vars
+from models.gpt_prompts import gpt_prompt_timeline, gpt_prompt_edit_event_timeline, gpt_prompt_edit_event_timeline_structure
 
 # EXTRACT TIMELINE
 async def extract_document_events(document_text):
@@ -12,18 +12,18 @@ async def extract_document_events(document_text):
     chunks = textwrap.wrap(document_text, 11000)
     for chunk in chunks:
         # --- set up prompt
-        prompt = open_txt_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>', chunk)
+        prompt = gpt_prompt_timeline.replace('<<SOURCE_TEXT>>', chunk)
         # --- extract timeline
         print('INFO (extract_document_events.py): prompt\n\n', prompt)
         timeline_completion = gpt_completion(
             prompt, max_tokens=500, engine=gpt_vars()['ENGINE_COMPLETION'])
         # --- delelte lines without dates
         timeline_completion_with_dates = gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
+            gpt_prompt_edit_event_timeline,
             timeline_completion)
         # --- reformat specifically for ISO strings
         timeline_completion_with_dates_as_iso = gpt_edit(
-            open_txt_file(get_file_path('./prompts/edit_event_timeline_structure.txt')),
+            gpt_prompt_edit_event_timeline_structure,
             timeline_completion_with_dates)
         # --- append
         completion_event_responses.append(timeline_completion_with_dates_as_iso)

@@ -1,7 +1,0 @@
-Use the following passage to give a detailed answer to the question:
-
-QUESTION: Who is <<NAME>>? What was their involvement?
-
-PASSAGE: <<SOURCE_TEXT>>
-
-DETAILED ANSWER:

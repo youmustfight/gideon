@@ -1,11 +1,11 @@
 import env
-from files.file_utils import get_file_path, open_txt_file
+from models.gpt_prompts import gpt_prompt_summary_detailed
 from utils import filter_empty_strs
 import numpy
 import math
 import requests
 import textwrap
-from time import time,sleep
+from time import sleep
 
 # SETUP
 # --- engines
@@ -83,25 +83,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
             print('Error (GPT3):', err)
             sleep(gpt_vars()['OPENAI_THROTTLE'])
 
-def gpt_completion_repeated(prompt_file, text_to_repeatedly_complete, text_chunk_size=6000, return_list=False, dedupe=False):
-    print('INFO (GPT3): gpt_completion_repeated')
-    chunks = textwrap.wrap(text_to_repeatedly_complete, text_chunk_size)
-    result = list()
-    for idx, chunk in enumerate(chunks):
-        prompt = prompt_file.replace('<<SOURCE_TEXT>>', chunk)
-        prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
-        summary = gpt_completion(prompt, max_tokens=4000-math.floor(text_chunk_size / 3)) # 1 token = 3~4 characters
-        print('\n', idx + 1, 'of', len(chunks), ' - ', summary, '\n')
-        for split in summary.split("\n"):
-            result.append(split)
-    # --- TODO: allow dedupe edit at end
-    # if dedupe == True:
-    # --- return as list or string 
-    if return_list == True:
-        return filter_empty_strs(result)
-    return '\n\n'.join(result)
-
-def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
+def gpt_edit(prompt, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 3
     retry = 0
     while True:
@@ -114,7 +96,7 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
                 json={
                     'model': engine,
                     'input': input,
-                    'instruction': instruction,
+                    'instruction': prompt,
                     'temperature': temperature,
                     'top_p': top_p
                 },
@@ -127,16 +109,16 @@ def gpt_edit(instruction, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEF
             retry += 1
             if retry >= max_retry:
                 return "Error (GTP3 Edit): %s" % err
-            print('Error (GPT3):', err, instruction, input)
+            print('Error (GPT3):', err, prompt, input)
             sleep(gpt_vars()['OPENAI_THROTTLE'])
 
-def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000, prompt_type='detailed'):
+def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list()
     for idx, chunk in enumerate(chunks):
-        # prompt_type = 'detailed' or 'concise' because of txt file reference
-        prompt = open_txt_file(get_file_path(f'./prompts/prompt_summary_{prompt_type}.txt')).replace('<<SOURCE_TEXT>>', chunk)
+        # use_prompt should be text files
+        prompt = use_prompt.replace('<<SOURCE_TEXT>>', chunk)
         prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
         # TEST: not sure if we should limit token length
         # max_tokens_from_length = math.floor(max_length / 3) # read online that a token is 3~4 characters

@@ -1,6 +1,5 @@
-from env import env_get_open_ai_api_key
-from models.gpt import gpt_completion, gpt_embedding, gpt_summarize
-from files.file_utils import get_file_path, open_txt_file
+from models.gpt import gpt_completion, gpt_summarize
+from models.gpt_prompts import gpt_prompt_answer_question
 from dbs.vectordb_pinecone import index_documents_text_query, get_document_content_from_search_vectors
 
 # QUERY
@@ -17,7 +16,7 @@ async def question_answer(session, query):
         answers = []
         # --- 3a. get answer from high similarity vectors
         for idx, dc in enumerate(document_content):
-            prompt = open_txt_file(get_file_path('./prompts/prompt_answer_question.txt')).replace('<<PASSAGE>>', dc.text).replace('<<QUESTION>>', query)
+            prompt = gpt_prompt_answer_question.replace('<<PASSAGE>>', dc.text).replace('<<QUESTION>>', query)
             answer = gpt_completion(prompt,max_tokens=150)
             print(f'INFO (question_answer.py): answer #{idx+1} = {answer}')
             answers.append(answer)

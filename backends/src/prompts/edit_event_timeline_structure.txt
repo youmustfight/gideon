@@ -1,1 +1,0 @@
-Remove bullet points and start each line with the mentioned calendar date as ISO
