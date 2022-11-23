@@ -3,7 +3,7 @@ from sqlalchemy.orm import joinedload
 from dbs.vectordb_pinecone import index_documents_sentences_add, index_documents_text_add, index_clip_image_add
 from dbs.sa_models import Document, DocumentContent, Embedding
 
-async def index_vectors(session, document_id):
+async def index_document_content_vectors(session, document_id):
     # FETCH
     query_embeddings = await session.execute(
         sa.select(Embedding).options(

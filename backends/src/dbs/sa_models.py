@@ -99,6 +99,10 @@ class Document(BaseModel):
     document_description = Column(Text())
     document_events = Column(JSON)
     document_summary = Column(Text())
+    document_summary_one_liner = Column(Text())
+    # TEMPORARY for citing slavery experiment
+    document_citing_slavery_summary = Column(Text()) 
+    document_citing_slavery_summary_one_liner = Column(Text()) 
     def serialize(self):
         return {
             "id": self.id,
@@ -109,6 +113,7 @@ class Document(BaseModel):
             "document_description": self.document_description,
             "document_events": self.document_events,
             "document_summary": self.document_summary,
+            "document_summary_one_liner": self.document_summary_one_liner,
         }
 
 class DocumentContent(BaseModel):

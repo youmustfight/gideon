@@ -1,5 +1,0 @@
-Write a timeline of events for the following, with one event on each line:
-
-<<SOURCE_TEXT>>
-
-TIMELINE OF EVENTS:
