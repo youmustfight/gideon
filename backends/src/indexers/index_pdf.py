@@ -1,19 +1,19 @@
 import easyocr
 import io
 import numpy as np
-from pdf2image import convert_from_bytes, convert_from_path
+from pdf2image import convert_from_bytes
 import sqlalchemy as sa
 from time import sleep
 
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from dbs.vectordb_pinecone import index_documents_text_add, index_documents_sentences_add
 from dbs.vector_utils import tokenize_string
 import env
-from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
-from indexers.utils.extract_timeline_from_document_text import extract_timeline_from_document_text
-from models.gpt import gpt_completion, gpt_completion_repeated, gpt_edit, gpt_embedding, gpt_summarize, gpt_vars
-from utils import filter_empty_strs
+from indexers.utils.extract_document_type import exact_document_type
+from indexers.utils.extract_document_summary import extract_document_summary
+from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
+from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
+from models.gpt import gpt_embedding, gpt_vars
 
 # SETUP
 # --- OCR
@@ -86,7 +86,7 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
-    print('INFO (index_pdf.py:_index_pdf_process_embeddings): document content', document_content)
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): # of document content', len(document_content))
     # --- CREATE EMBEDDINGS (context is derived from relation)
     for content in list(document_content):
         text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
@@ -115,90 +115,30 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
             .where(DocumentContent.tokenizing_strategy == "max_size"))
     document_content = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content))
-    # VARS
-    # --- docs: summaries
-    document_description = ''
-    document_summary = ''
-    # --- docs: extractions
-    event_timeline = []
-    mentions_people = []
-    people = {}
     print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
     use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
     print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
     # EXTRACT
     # --- classification/description
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description')
-    if len(document_description) == 0:
-        document_description = gpt_completion(
-            open_txt_file(get_file_path('./prompts/prompt_document_type.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
-            max_tokens=75
-        )
-    else:
-        print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description exists')
+    document.document_description = exact_document_type(document_content_text)
     # --- summary
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
-    if len(document_summary) == 0 and len(document_content_text) < 250_000:
-        document_summary = gpt_summarize(document_content_text, max_length=4000)
+    if len(document_content_text) < 250_000:
+        document.document_summary = extract_document_summary(document_content_text)
+        document.document_summary_one_liner = extract_document_summary_one_liner(document_content_text)
+        # HACK: just putting this here for citing slavery/access case law test
+        document.document_citing_slavery_summary = extract_document_citing_slavery_summary(document_content_text)
     else:
-        print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary exists or document is too long')
-    # --- cases/laws mentioned
-    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws')
-    # if len(document_content_text) < 250_000:
-    #     if use_repeat_methods == True:
-    #         mentions_cases_laws_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
-    #     else:
-    #         mentions_cases_laws_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_cases_laws.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
-    #     mentions_cases_laws = filter_empty_strs(gpt_edit(
-    #         open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
-    #         '\n'.join(mentions_cases_laws_dirty) if use_repeat_methods == True else mentions_cases_laws_dirty # join linebreaks if we have a list
-    #     ).split('\n'))
-    # else:
-    #     print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_cases_laws skipped because document text is too long')
+        print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
+    # --- TODO: cases/laws mentioned
     # # --- if a discovery document (ex: police report, testimony, motion)
-    # if is_discovery_document == True:
-    # --- event timeline v1 (split on linebreaks, could later do structured parsing prob of dates)
-    # print('INFO (index_pdf.py:_index_pdf_process_extractions): event_timeline')
-    # if use_repeat_methods == True:
-    #     event_timeline_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
-    # else:
-    #     event_timeline_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_timeline.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
-    # event_timeline = filter_empty_strs(gpt_edit(
-    #     open_txt_file(get_file_path('./prompts/edit_event_timeline.txt')),
-    #     '\n'.join(event_timeline_dirty) if use_repeat_methods == True else event_timeline_dirty # join linebreaks if we have a list
-    # ).split('\n'))
     # --- event timeline v2
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_events')
-    document_events = await extract_timeline_from_document_text(document_content_text)
-    # --- organizations mentioned
-    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_organizations')
-    # if use_repeat_methods == True:
-    #     mentions_organizations_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
-    # else:
-    #     mentions_organizations_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_organizations.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
-    # mentions_organizations = filter_empty_strs(gpt_edit(
-    #     open_txt_file(get_file_path('./prompts/edit_clean_list.txt')),
-    #     '\n'.join(mentions_organizations_dirty) if use_repeat_methods == True else mentions_organizations_dirty # join linebreaks if we have a list
-    # ).split('\n'))
-    # --- people mentioned + context within document
-    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_people')
-    # if use_repeat_methods == True:
-    #     mentions_people_dirty = gpt_completion_repeated(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')),document_content_text,text_chunk_size=11_000,return_list=True)
-    # else:
-    #     mentions_people_dirty = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mentions_people.txt')).replace('<<SOURCE_TEXT>>',document_content_text))
-    # mentions_people = filter_empty_strs(gpt_edit(
-    #     open_txt_file(get_file_path('./prompts/edit_clean_names_list.txt')),
-    #     '\n'.join(mentions_people_dirty) if use_repeat_methods == True else mentions_people_dirty # join linebreaks if we have a list
-    # ).split('\n'))
-    # TODO: skipping follow ups on people bc it takes forever atm. faster dev cycle plz
-    # print('INFO (index_pdf.py:_index_pdf_process_extractions): mentions_people #{num_people}'.format(num_people=len(mentions_people)))
-    # for name in mentions_people:
-    #     # TODO: need to build a profile by sifting through the full doc, not just initial big chunk
-    #     people[name] = gpt_completion(open_txt_file(get_file_path('./prompts/prompt_mention_involvement.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]).replace('<<NAME>>',name), max_tokens=400)
+    # document.document_events = await extract_document_events(document_content_text)
+    # --- TODO: organizations mentioned
+    # --- TODO: people mentioned + context within document
     # --- SAVE
-    document.document_description=document_description
-    document.document_events=document_events
-    document.document_summary=document_summary
     document.status_processing_extractions = "completed"
     session.add(document)
 

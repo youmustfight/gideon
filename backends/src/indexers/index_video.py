@@ -12,7 +12,8 @@ import env
 from files.file_utils import get_file_path, open_txt_file
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file, s3_upload_file_string
-from indexers.utils.extract_timeline_from_document_text import extract_timeline_from_document_text
+from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_summary import extract_document_summary
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
@@ -178,25 +179,19 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
     document_content_text = " ".join(map(
         lambda content: content.text if content.tokenizing_strategy == "max_size" else "", document_content))
     # COMPILE/EXTRACT
-    document_description = ''
-    document_summary = ''
     # --- classification/description
     print('INFO (index_pdf.py:_index_video_process_extractions): document_description')
-    if len(document_description) == 0:
-        document_description = gpt_completion(
-            open_txt_file(get_file_path('./prompts/prompt_video_type.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
-            max_tokens=75)
+    document.document_description = gpt_completion(
+        open_txt_file(get_file_path('./prompts/prompt_video_type.txt')).replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
+        max_tokens=75)
     # --- summary
     print('INFO (index_pdf.py:_index_video_process_extractions): document_summary')
-    if len(document_summary) == 0 and len(document_content_text) < 250_000:
-        document_summary = gpt_summarize(document_content_text, max_length=1500)
+    if len(document_content_text) < 250_000:
+        document.document_summary = extract_document_summary(document_content_text)
     # --- events
     print('INFO (index_pdf.py:_index_video_process_extractions): document_events')
-    document_events = await extract_timeline_from_document_text(document_content_text)
+    document.document_events = await extract_document_events(document_content_text)
     # SAVE
-    document.document_description=document_description
-    document.document_events=document_events
-    document.document_summary=document_summary
     document.status_processing_extractions = "completed"
     session.add(document)
 
