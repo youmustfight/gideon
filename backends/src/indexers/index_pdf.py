@@ -126,9 +126,10 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
         document.document_summary = extract_document_summary(document_content_text)
-        document.document_summary_one_liner = extract_document_summary_one_liner(document_content_text)
+        document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
         # HACK: just putting this here for citing slavery/access case law test
         document.document_citing_slavery_summary = extract_document_citing_slavery_summary(document_content_text)
+        document.document_citing_slavery_summary_one_liner = extract_document_summary_one_liner(document.document_citing_slavery_summary)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
     # --- TODO: cases/laws mentioned

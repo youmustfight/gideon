@@ -15,6 +15,14 @@ Write a detailed summary of the following:
 DETAILED SUMMARY:
 """
 
+gpt_prompt_summary_one_liner = """
+In a single sentence, summarize the following passage.':
+
+PASSAGE: <<SOURCE_TEXT>>
+
+ONE SENTENCE SUMMARY:
+"""
+
 gpt_prompt_document_type = """
 In the fewest words, write what type of document this is called:
 
@@ -67,7 +75,7 @@ DIFFERENCE DESCRIPTION:
 
 # CITING SLAVERY
 gpt_prompt_citing_slavery_summary = """
-In the fewest words, summarize the context mentioning slaves in the following passage. If no mention of slavery exists, write '{ESCAPE_PHRASE}':
+In the fewest words, summarize the context mentioning slaves in the following passage. If no mention of slavery exists, write 'No mention of slavery':
 
 PASSAGE: <<SOURCE_TEXT>>
 

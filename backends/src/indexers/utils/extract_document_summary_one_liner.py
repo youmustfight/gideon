@@ -1,14 +1,12 @@
-import math
-from models.gpt import gpt_summarize
-from models.gpt_prompts import gpt_prompt_summary_concise
+from models.gpt import gpt_completion, gpt_vars
+from models.gpt_prompts import gpt_prompt_summary_one_liner
 
 def extract_document_summary_one_liner(document_text):
-  # summarize (change summary length based on document text)
-  document_text_length = len(document_text)
-  max_length = 250
-  print(f'INFO (extract_document_summary_one_liner): document_text_length', document_text_length)
-  print(f'INFO (extract_document_summary_one_liner): max_length', max_length)
-  summary = gpt_summarize(document_text, max_length=max_length, use_prompt=gpt_prompt_summary_concise)
+  # V2
+  one_liner = gpt_completion(
+      engine=gpt_vars()['ENGINE_COMPLETION'],
+      max_tokens=500,
+      prompt=gpt_prompt_summary_one_liner.replace('<<SOURCE_TEXT>>', document_text))
   
   # return
-  return summary
+  return one_liner

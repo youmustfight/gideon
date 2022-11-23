@@ -2,7 +2,7 @@ import textwrap
 from models.gpt import gpt_completion, gpt_summarize, gpt_vars
 from models.gpt_prompts import gpt_prompt_citing_slavery_summary
 
-ESCAPE_PHRASE = 'No mention of slavery.'
+ESCAPE_PHRASE = 'No mention of slavery'
 
 def extract_document_citing_slavery_summary(document_text):
   # summarize (change summary length based on document text)
