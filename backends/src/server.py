@@ -271,49 +271,49 @@ async def app_route_documents(request):
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_pdf(request):
+    # --- process file/pdf/embeddings
+    pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        pyfile = request.files['file'][0]
-        # --- process file/pdf/embeddings
         document_id = await index_pdf(session=session, pyfile=pyfile)
-        # --- queue indexing
-        await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue indexing
+    await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_image(request):
+    # --- process file/embeddings
+    pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        pyfile = request.files['file'][0]
-        # --- process file/embeddings
         document_id = await index_image(session=session, pyfile=pyfile)
-        # --- queue indexing
-        await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue indexing
+    await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_audio(request): 
+    # --- process file/embeddings
+    pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        pyfile = request.files['file'][0]
-        # --- process file/embeddings
         document_id = await index_audio(session=session, pyfile=pyfile)
-        # --- queue indexing
-        await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue indexing
+    await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/video', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_video(request): 
+    # --- process file/embeddings
+    pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        pyfile = request.files['file'][0]
-        # --- process file/embeddings
         document_id = await index_video(session=session, pyfile=pyfile)
-        # --- queue indexing
-        await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue indexing
+    await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
 
 
