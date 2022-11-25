@@ -1,0 +1,35 @@
+{
+  "name": "ai",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "build:production": "tsc && vite build",
+    "start:local": "vite",
+    "start": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "date-fns": "^2.29.3",
+    "lodash": "^4.17.21",
+    "react": "^17",
+    "react-dom": "^17",
+    "react-dropzone": "^14.2.2",
+    "react-player": "^2.11.0",
+    "react-query": "^3.39.2",
+    "react-router": "^6.4.1",
+    "react-router-dom": "^6.4.1",
+    "styled-components": "^5.3.5",
+    "zustand": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.185",
+    "@types/react": "^18.0.21",
+    "@types/react-dom": "^18.0.6",
+    "@types/styled-components": "^5.1.26",
+    "@vitejs/plugin-react": "^2.1.0",
+    "prettier": "^2.7.1",
+    "typescript": "^4.8.3",
+    "vite": "^3.1.4"
+  }
+}
