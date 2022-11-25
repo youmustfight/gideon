@@ -11,7 +11,7 @@ export const Gideon: React.FC = () => {
       </div>
       <div className="button-box">
         <a href="https://defender.gideon.foundation" target="_blank" rel="noreferer noopener">
-          <button>Public Defender Tool (MVP)</button>
+          <button>Document Assistant Tool for Nashua, New Hampshire Public Defenders (MVP)</button>
         </a>
         +
         <br />
@@ -37,6 +37,9 @@ const StyledGideon = styled.main`
   flex-direction: column;
   height: 100vh;
   width: 100vw;
+  & > div {
+    max-width: 100%;
+  }
   .intro-box {
     margin: 1em;
     text-align: center;
@@ -52,6 +55,7 @@ const StyledGideon = styled.main`
     text-align: center;
     button {
       margin: 8px 0;
+      width: 100%;
     }
   }
 `;
