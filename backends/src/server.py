@@ -317,6 +317,13 @@ async def app_route_documents_index_video(request):
     return json({ 'status': 'success' })
 
 
+# HEALTH
+@app.route('/health', methods = ['DELETE'])
+@auth_route
+def app_route_health(request):
+    return json({ 'status': 'success' })
+
+
 # HIGHLIGHTS
 @app.route('/v1/highlights', methods = ['GET'])
 @auth_route
