@@ -20,7 +20,7 @@ export const Gideon: React.FC = () => {
           target="_blank"
           rel="noreferer noopener"
         >
-          <button>Citing Slavery - CaseLaw Search/Summaries (Proof of Concept)</button>
+          <button>Caselaw Summaries for Citing Slavery, Harvard Caselaw Access Project (Proof of Concept)</button>
         </a>
         =
         <br />
