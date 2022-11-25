@@ -13,6 +13,7 @@ from indexers.utils.extract_document_type import exact_document_type
 from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
+from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
 from models.gpt import gpt_embedding, gpt_vars
 
 # SETUP
@@ -129,7 +130,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
         document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
         # HACK: just putting this here for citing slavery/access case law test
         document.document_citing_slavery_summary = extract_document_citing_slavery_summary(document_content_text)
-        document.document_citing_slavery_summary_one_liner = extract_document_summary_one_liner(document.document_citing_slavery_summary)
+        document.document_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(document.document_citing_slavery_summary)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
     # --- TODO: cases/laws mentioned

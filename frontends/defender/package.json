@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
+    "build:production": "tsc && vite build",
     "start:local": "vite",
     "start": "vite preview"
   },

@@ -1,3 +1,6 @@
+# MISC/UTIL
+GPT_NULL_PHRASE = 'NO MENTION OF XYZ'
+
 # SUMMARIZTION
 gpt_prompt_summary_concise = """
 In the fewest words, summarize of the following passage:
@@ -74,13 +77,22 @@ DIFFERENCE DESCRIPTION:
 """
 
 # CITING SLAVERY
-gpt_prompt_citing_slavery_summary = """
-In the fewest words, summarize the context mentioning slaves in the following passage. If no mention of slavery exists, write 'No mention of slavery':
+gpt_prompt_citing_slavery_summary = f"""
+In the fewest words, summarize the context mentioning slaves in the following passage. If no mention of slavery exists, write '{GPT_NULL_PHRASE}':
 
 PASSAGE: <<SOURCE_TEXT>>
 
 SUMMARY:
 """
+
+gpt_prompt_citing_slavery_summary_one_liner = """
+In a single sentence, summarize the following passage without excluding any references to slaves or slavery:
+
+PASSAGE: <<SOURCE_TEXT>>
+
+ONE SENTENCE SUMMARY:
+"""
+
 
 # EDITING
 gpt_prompt_edit_event_timeline = """
