@@ -1,20 +1,40 @@
 version: "3.8"
 
 services:
-  ai:
+  defender:
     build:
-      context: ./frontends/ai
+      context: ./frontends/defender
     volumes:
-      - ./frontends/ai/src:/usr/src/ai/src
-      - ./frontends/ai/index.html:/usr/src/ai/index.html
-      - ./frontends/ai/package.json:/usr/src/ai/package.json
-      - ./frontends/ai/tsconfig.json:/usr/src/ai/tsconfig.json
-      - ./frontends/ai/tsconfig.node.json:/usr/src/ai/tsconfig.node.json
-      - ./frontends/ai/vite.config.json:/usr/src/ai/vite.config.json
-      - ./frontends/ai/yarn.lock:/usr/src/ai/yarn.lock
-      - /usr/src/ai/node_modules
+      - ./frontends/defender/src:/usr/src/defender/src
+      - ./frontends/defender/index.html:/usr/src/defender/index.html
+      - ./frontends/defender/package.json:/usr/src/defender/package.json
+      - ./frontends/defender/tsconfig.json:/usr/src/defender/tsconfig.json
+      - ./frontends/defender/tsconfig.node.json:/usr/src/defender/tsconfig.node.json
+      - ./frontends/defender/vite.config.json:/usr/src/defender/vite.config.json
+      - ./frontends/defender/yarn.lock:/usr/src/defender/yarn.lock
+      - /usr/src/defender/node_modules
     ports:
       - "1111:1111"
+    depends_on:
+      - api
+    command: "npm run start:local"
+    env_file:
+      - ./.env
+
+  frontdoor:
+    build:
+      context: ./frontends/frontdoor
+    volumes:
+      - ./frontends/frontdoor/src:/usr/src/frontdoor/src
+      - ./frontends/frontdoor/index.html:/usr/src/frontdoor/index.html
+      - ./frontends/frontdoor/package.json:/usr/src/frontdoor/package.json
+      - ./frontends/frontdoor/tsconfig.json:/usr/src/frontdoor/tsconfig.json
+      - ./frontends/frontdoor/tsconfig.node.json:/usr/src/frontdoor/tsconfig.node.json
+      - ./frontends/frontdoor/vite.config.json:/usr/src/frontdoor/vite.config.json
+      - ./frontends/frontdoor/yarn.lock:/usr/src/frontdoor/yarn.lock
+      - /usr/src/frontdoor/node_modules
+    ports:
+      - "1110:1110"
     depends_on:
       - api
     command: "npm run start:local"

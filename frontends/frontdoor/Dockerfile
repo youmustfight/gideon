@@ -1,6 +1,6 @@
 FROM node:16.14.2
 
-WORKDIR /usr/src/ai
+WORKDIR /usr/src/frontdoor
 
 # TODO: Install packages with yarn from npm registry (yarn needs .npmrc for auth)
 COPY package.json yarn.lock ./
