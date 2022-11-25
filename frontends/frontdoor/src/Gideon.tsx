@@ -24,7 +24,7 @@ export const Gideon: React.FC = () => {
         </a>
         =
         <br />
-        <button disabled>Co-Pilot Motion Writing (Future)</button>
+        <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
       </div>
     </StyledGideon>
   );
