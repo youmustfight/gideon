@@ -29,8 +29,10 @@ export const CaseDriver: React.FC = () => {
   };
   // --- case creation post navigation
   const caseCreationHelper = async () => {
-    const cse = await caseCreate({ userId: user?.id });
-    navigate(`/case/${cse.id}`);
+    if (user) {
+      const cse = await caseCreate({ userId: user.id });
+      navigate(`/case/${cse.id}`);
+    }
   };
 
   // RENDER

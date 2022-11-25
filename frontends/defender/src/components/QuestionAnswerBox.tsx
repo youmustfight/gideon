@@ -28,7 +28,7 @@ const StyledAnswerLocationBox = styled.div`
   }
 `;
 
-const StyledAnswerLocationBoxImage = styled.div`
+const StyledAnswerLocationBoxImage = styled.div<{ imageSrc: string }>`
   width: 100%;
   max-width: 120px;
   min-height: 60px;
@@ -64,10 +64,10 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
               ,{" "}
               <Link
                 to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
-                  location.document_content.start_second / 60
+                  location.document_content.start_second ?? 0 / 60
                 )}`}
               >
-                minute {Math.floor(location.document_content.start_second / 60)}
+                minute {Math.floor(location.document_content.start_second ?? 0 / 60)}
               </Link>
             </>
           ) : null}
@@ -87,6 +87,7 @@ export const QuestionAnswerBox = () => {
   const [isAnswerPending, setIsAnswerPending] = useState(false);
   // --- q1 : Ask Question
   const [answerQuestion, setAnswerQuestion] = useState("");
+  // @ts-ignore
   const handleQuestion = (e) => {
     e.preventDefault();
     setAnswer(null);
@@ -100,6 +101,7 @@ export const QuestionAnswerBox = () => {
   };
   // --- q2 : Search for Detail
   const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
+  // @ts-ignore
   const handleSearchForPage = (e) => {
     e.preventDefault();
     setAnswer(null);
@@ -116,6 +118,7 @@ export const QuestionAnswerBox = () => {
   };
   // --- q3 : Search Highlights
   const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
+  // @ts-ignore
   const handleHighlightSearch = (e) => {
     e.preventDefault();
     setAnswer(null);
@@ -125,6 +128,7 @@ export const QuestionAnswerBox = () => {
         query: highlightSearchQuery,
       })
       .then((res) => {
+        // @ts-ignore
         setAnswer({ highlights: res.data.highlights });
         setIsAnswerPending(false);
       });
@@ -263,13 +267,13 @@ export const QuestionAnswerBox = () => {
                 </ul>
               ) : null}
               {/* HIGHLIGHTS */}
-              {answer?.highlights ? (
+              {/* {answer?.highlights ? (
                 <ul>
                   {answer?.highlights?.map((highlight) => (
                     <HighlightBox highlight={highlight} />
                   ))}
                 </ul>
-              ) : null}
+              ) : null} */}
               {/* CLEAR RESULTS */}
               <button className="reset-answer" onClick={() => setAnswer(null)}>
                 Clear Results

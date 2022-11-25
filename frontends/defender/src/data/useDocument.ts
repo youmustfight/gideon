@@ -4,7 +4,7 @@ import { getGideonApiUrl } from "../env";
 import { TDocument } from "./useDocuments";
 
 // Filters for user via forUser
-const reqDocumentGet = async (documentId: number | string): Promise<TDocument[]> =>
+const reqDocumentGet = async (documentId: number | string): Promise<TDocument> =>
   axios.get(`${getGideonApiUrl()}/v1/document/${documentId}`).then((res) => res.data.document);
 
 export const reqDocumentEmbeddings = async (documentId: number | string): Promise<TDocument[]> =>
@@ -14,7 +14,7 @@ export const reqDocumentSummarize = async (documentId: number | string): Promise
   axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/extractions`).then((res) => res.data.document);
 
 export const useDocument = (documentId: number | string) => {
-  return useQuery<TDocument[]>(["document", documentId], async () => reqDocumentGet(documentId), {
+  return useQuery<TDocument>(["document", documentId], async () => reqDocumentGet(documentId), {
     refetchInterval: 1000 * 60,
   });
 };

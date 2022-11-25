@@ -12,7 +12,7 @@ const DocumentPreviewAudio = styled.audio`
   max-width: 120px;
   width: 120px;
 `;
-const DocumentPreviewImage = styled.div`
+const DocumentPreviewImage = styled.div<{ imageSrc: string }>`
   min-width: 120px;
   max-width: 120px;
   width: 120px;
@@ -29,12 +29,13 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
   const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
+  const minuteCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.end_second)))));
   return (
     <div className="discovery-box__document">
       <div style={{ flexGrow: 1 }}>
         <small>
           <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
-          {document?.type === "audio" ? <> ({document?.document_text_by_minute?.length} minutes)</> : null}
+          {document?.type === "audio" ? <> ({minuteCount} minutes)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
         {["audio", "pdf", "video"].includes(document.type) ? (
@@ -49,7 +50,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
                 </div>
                 <div className="discovery-box__document__expanded">
                   <p>
-                    <u>Mentions</u>: {document.mentions_people?.filter((p) => p.length < 100)?.join(", ")}
+                    <u>Mentions</u>: TODO
                   </p>
                   <p>
                     <u>Summary</u>: {document.document_summary}
@@ -71,9 +72,13 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
           </p>
         ) : null}
       </div>
-      {["image"].includes(document.type) ? <DocumentPreviewImage imageSrc={document.files[0].upload_url} /> : null}
-      {["audio"].includes(document.type) ? <DocumentPreviewAudio src={document.files[0].upload_url} controls /> : null}
-      {["video"].includes(document.type) ? (
+      {["image"].includes(document.type) && document.files?.[0] ? (
+        <DocumentPreviewImage imageSrc={document.files[0].upload_url} />
+      ) : null}
+      {["audio"].includes(document.type) && document.files?.[0] ? (
+        <DocumentPreviewAudio src={document.files[0].upload_url} controls />
+      ) : null}
+      {["video"].includes(document.type) && document.files?.[0] ? (
         <ReactPlayer width="120px" height="" url={document.files[0].upload_url} controls={false} />
       ) : null}
     </div>
@@ -84,6 +89,7 @@ export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments();
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
   const [isAddingFile, setIsAddingFile] = useState(false);
+  // @ts-ignore
   const onSubmitFile = (type: "audio" | "image" | "pdf" | "video") => (e) => {
     e.preventDefault();
     if (e.target.file?.files?.[0]) {

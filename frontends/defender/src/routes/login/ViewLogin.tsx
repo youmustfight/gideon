@@ -9,6 +9,7 @@ export const ViewLogin = () => {
   const { mutateAsync: userLogin } = useUserLogin();
   const [loginEmail, setLoginEmail] = useState("gideon@gideon.com");
   const [loginPassword, setLoginPassword] = useState("foundation");
+  // @ts-ignore
   const handleLogin = (e) => {
     e.preventDefault();
     userLogin({ email: loginEmail, password: loginPassword });

@@ -7,7 +7,7 @@ import { reqDocumentEmbeddings, reqDocumentSummarize, useDocument } from "../../
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument } from "../../data/useDocuments";
 
-const DocumentViewImage = styled.div`
+const DocumentViewImage = styled.div<{ imageSrc: string }>`
   width: 100%;
   min-height: 480px;
   background-position: center;
@@ -25,7 +25,7 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
-      {document.document_events?.length > 0 ? (
+      {document.document_events && document.document_events?.length > 0 ? (
         <>
           <br />
           <h2>Events/Timeline</h2>
@@ -82,16 +82,21 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
     });
   }, [hash]);
-  const documentTextByGrouping = doc.content.reduce((accum, dc) => {
+  const documentTextByGrouping: Record<string, any[]> = (doc.content || []).reduce((accum, dc) => {
     // don't push document content that is max chunks. that doesn't consider page
     if (dc.tokenizing_strategy === "sentence") {
       if (doc.type === "pdf") {
+        // @ts-ignore
         if (!accum[dc.page_number]) accum[dc.page_number] = [];
+        // @ts-ignore
         accum[dc.page_number].push(dc);
       }
       if (["audio", "video"].includes(doc.type)) {
+        // @ts-ignore
         const minute = Math.floor(dc.start_second / 60);
+        // @ts-ignore
         if (!accum[minute]) accum[minute] = [];
+        // @ts-ignore
         accum[minute].push(dc);
       }
     }
@@ -158,6 +163,7 @@ const StyledDocumentViewTranscript = styled.div`
 
 export const ViewCaseDocument = () => {
   const navigate = useNavigate();
+  // @ts-ignore
   const { caseId, documentId } = useMatch("/case/:caseId/document/:documentId")?.params;
   const { data: document } = useDocument(documentId);
   // --- highlights
@@ -220,7 +226,7 @@ export const ViewCaseDocument = () => {
             <h4>Highlights</h4>
           </div>
           <section>
-            <HighlightsBox filename={document.filename} />
+            <HighlightsBox filename={document.name} />
           </section>
         </>
       ) : null} */}
@@ -232,12 +238,7 @@ export const ViewCaseDocument = () => {
             <h4>Audio Player</h4>
           </div>
           <section>
-            <audio
-              src={document?.files?.[0]?.upload_url ?? ""}
-              controls
-              type="audio/mpeg"
-              style={{ width: "100%" }}
-            ></audio>
+            <audio src={document?.files?.[0]?.upload_url ?? ""} controls style={{ width: "100%" }}></audio>
           </section>
         </>
       ) : null}
@@ -267,7 +268,7 @@ export const ViewCaseDocument = () => {
       )}
 
       {/* IMAGE TEXT BY PAGE/MINUTE */}
-      {document.type === "image" && (
+      {document.type === "image" && document.files?.[0] && (
         <section>
           <DocumentViewImage imageSrc={document.files[0].upload_url} />
         </section>

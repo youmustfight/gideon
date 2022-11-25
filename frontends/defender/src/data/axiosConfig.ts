@@ -9,6 +9,7 @@ axios.defaults.baseURL = Env.getGideonApiUrl();
 axios.interceptors.request.use((config) => {
   const apiToken = localStorage.getItem(LOCAL_STORAGE_KEY_API_TOKEN);
   if (apiToken) {
+    // @ts-ignore
     config.headers.Authorization = apiToken;
   }
   return config;

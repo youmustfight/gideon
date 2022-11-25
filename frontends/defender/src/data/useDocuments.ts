@@ -10,6 +10,10 @@ export type TDocumentContent = {
   text: string;
   tokenizing_strategy: string;
   page_number: string;
+  // image_file_id
+  patch_size?: number;
+  start_second?: number;
+  end_second?: number;
 };
 
 export type TFile = {
@@ -26,7 +30,7 @@ export type TDocument = {
   // v2 (now with a database/orm)
   id: number;
   name?: string;
-  type?: string;
+  type: "audio" | "image" | "pdf" | "video";
   status_processing_files?: boolean;
   status_processing_embeddings?: boolean;
   document_description?: string;
@@ -59,6 +63,7 @@ export type TQueryLocation = {
   score: number;
   document: TDocument;
   document_content: TDocumentContent;
+  image_file?: TFile;
 };
 
 // Filters for user via forUser
