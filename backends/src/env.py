@@ -37,9 +37,7 @@ def env_get_database_app_host():
 def env_get_database_app_port():
     return _env_getter('DATABASE_APP_PORT')
 def env_get_database_app_url(driver="asyncpg"):
-    url = f"postgresql+{driver}://{env_get_database_app_user_name()}:{env_get_database_app_user_password()}@{env_get_database_app_host()}:{env_get_database_app_port()}/{env_get_database_app_name()}"
-    print(url)
-    return url
+    return f"postgresql+{driver}://{env_get_database_app_user_name()}:{env_get_database_app_user_password()}@{env_get_database_app_host()}:{env_get_database_app_port()}/{env_get_database_app_name()}"
 def env_get_database_pinecone_api_key():
     return _env_getter('DATABASE_PINECONE_API_KEY')
 def env_get_database_pinecone_environment():
@@ -48,9 +46,13 @@ def env_get_database_pinecone_environment():
 # GIDEON
 def env_get_gideon_api_url():
     return _env_getter('GIDEON_API_URL')
+def env_get_gideon_api_host() -> str:
+    return _env_getter('GIDEON_API_HOST')
+def env_get_gideon_api_port() -> int:
+    return int(_env_getter('GIDEON_API_PORT'))
 
 # HARDWARE
-def env_is_gpu_available():
+def env_is_gpu_available() -> bool:
     is_gpu_available = _env_getter('IS_GPU_AVAILABLE') == 'true'
     print(f'INFO (env.py:env_is_gpu_available): is_gpu_available : {is_gpu_available}')
     return is_gpu_available
@@ -63,7 +65,10 @@ def env_get_open_ai_api_key():
 # INITIALIZE (V2)
 def set_secrets_on_env():
     print("INFO (set_secrets_on_env): start") # just has docker/python env vars
-    session = boto3.session.Session()
+    session = boto3.session.Session(
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+    )
     client = session.client(service_name='secretsmanager', region_name=os.environ.get('AWS_REGION'))
     try:
         get_secret_value_response = client.get_secret_value(SecretId=os.environ.get('TARGET_ENV'))
