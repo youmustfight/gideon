@@ -16,16 +16,19 @@ export const Gideon: React.FC = () => {
         </a>
         +
         <br />
+        <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
+        +
+        <br />
         <a
           href="https://docs.google.com/spreadsheets/d/1WLqK9HIzQvvuz7Tq_TtEkI85PEwsQhWnnnQF4ZbOl0Q"
           target="_blank"
           rel="noreferer noopener"
         >
-          <button>Caselaw Summaries for Citing Slavery, Harvard Caselaw Access Project (Proof of Concept)</button>
+          <button>Caselaw Search & Understanding for Citing Slavery, Harvard CAP (Proof of Concept)</button>
         </a>
         =
         <br />
-        <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
+        <button disabled>AI Engine & Interface that Reflects Society's Codified Values</button>
       </div>
     </StyledGideon>
   );
