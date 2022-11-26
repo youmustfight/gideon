@@ -443,14 +443,16 @@ async def app_route_users(request):
 
 
 # RUN
-if __name__ == "__main__":
+def start_api():
+    port = 3000
+    print(f'Starting Server at port: {port}')
     # INIT WORKERS
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # HACK: If I don't force single_process, OCR totally hangs
     app.run(
         host='0.0.0.0',
-        port=3000,
+        port=port,
         access_log=False,
         auto_reload=False,
         single_process=True,

@@ -56,6 +56,7 @@ services:
     environment:
       - DATABASE_APP_HOST=database_app # within docker network, we use service name
       - PYTHONUNBUFFERED=1 # for getting print() pushed
+      - TARGET_ENV=local
 
   database_app:
     image: postgres:14.5
