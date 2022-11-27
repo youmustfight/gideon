@@ -97,15 +97,13 @@ async def app_route_cases(request):
     session = request.ctx.session
     async with session.begin():
         cases_json = []
-        first_param_key, first_param_value = request.query_string.split('=') 
-        if first_param_key == "user_id":
-            query_user = await session.execute(
-                sa.select(User)
-                    .options(selectinload(User.cases))
-                    .where(User.id == int(first_param_value))
-            )
-            user = query_user.scalar_one_or_none()
-            cases_json = serialize_list(user.cases)
+        query_user = await session.execute(
+            sa.select(User)
+                .options(selectinload(User.cases))
+                .where(User.id == int(request.args.get('user_id')))
+        )
+        user = query_user.scalar_one_or_none()
+        cases_json = serialize_list(user.cases)
     return json({ 'status': 'success', "cases": cases_json })
 
 @app.route('/v1/case/<case_id>', methods = ['GET'])
@@ -356,6 +354,17 @@ def app_route_index_delete(request, index_name):
     index_to_clear.delete(deleteAll=True) # just deletes all vectors
     return json({ 'status': 'success' })
 
+@app.route('/v1/indexes/regenerate', methods = ['POST'])
+# @auth_route
+async def app_route_index_delete(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_document = await session.execute(
+            sa.select(Document).where(Document.case_id != None))
+        documents = query_document.scalars().all()
+        for document in documents:
+            await index_document_content_vectors(session=session, document_id=document.id)
+    return json({ 'status': 'success' })
 
 # QUERIES   
 @app.route('/v1/queries/document-query', methods = ['POST'])
