@@ -2,10 +2,10 @@ import pydash as _
 from dbs.vectordb_pinecone import index_documents_sentences_query, get_embeddings_from_search_vectors
 
 # SEARCH QUERY
-async def search_for_locations_across_text(session, text_query):
-    print(f"INFO (search_for_locations_across_text.py): query all documents via '{text_query}'")
+async def search_for_locations_across_text(session, query_text, case_id):
+    print(f"INFO (search_for_locations_across_text.py): query all documents via '{query_text}'")
     # 1. get similar vectors (TODO: allow for minimum string length so we don't skew short statements higher similarity)
-    search_text_vectors = index_documents_sentences_query(text_query)
+    search_text_vectors = index_documents_sentences_query(query_text, case_id)
     # 2. convert to DocumentContent
     embeddings = await get_embeddings_from_search_vectors(session, search_text_vectors)
     # 3. create "locations" array showing score + document content (TODO: move query+query result into db tables)

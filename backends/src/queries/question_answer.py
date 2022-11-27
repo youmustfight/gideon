@@ -3,10 +3,10 @@ from models.gpt_prompts import gpt_prompt_answer_question
 from dbs.vectordb_pinecone import index_documents_text_query, get_document_content_from_search_vectors
 
 # QUERY
-async def question_answer(session, query):
-    print(f'INFO (question_answer.py): querying with question "{query}"')
+async def question_answer(session, query_text, case_id):
+    print(f'INFO (question_answer.py): querying with question "{query_text}"')
     # 1. get similar vectors
-    search_text_vectors = await index_documents_text_query(query)
+    search_text_vectors = await index_documents_text_query(query_text, case_id)
     # 2. get embeddings/document content of those
     document_content = await get_document_content_from_search_vectors(session, search_text_vectors)
     print(f'INFO (question_answer.py): answering from {len(document_content)} document_content(s)...', document_content)
@@ -16,7 +16,7 @@ async def question_answer(session, query):
         answers = []
         # --- 3a. get answer from high similarity vectors
         for idx, dc in enumerate(document_content):
-            prompt = gpt_prompt_answer_question.replace('<<PASSAGE>>', dc.text).replace('<<QUESTION>>', query)
+            prompt = gpt_prompt_answer_question.replace('<<PASSAGE>>', dc.text).replace('<<QUESTION>>', query_text)
             answer = gpt_completion(prompt,max_tokens=150)
             print(f'INFO (question_answer.py): answer #{idx+1} = {answer}')
             answers.append(answer)

@@ -1,11 +1,11 @@
 import pydash as _
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors, index_clip_text_search
 
-async def search_for_locations_across_image(session, text_query):
-    print('INFO (search_for_locations_across_image.py): query images via multi-modal', text_query)
+async def search_for_locations_across_image(session, query_text, case_id):
+    print('INFO (search_for_locations_across_image.py): query images via multi-modal', query_text)
     # SEARCH
     # 1. search vectors via text
-    search_text_vectors = index_clip_text_search(text_query)
+    search_text_vectors = index_clip_text_search(query_text, case_id)
     # 2. convert to DocumentContent
     embeddings = await get_embeddings_from_search_vectors(session, search_text_vectors)
     # 3. create "locations" array showing score + document content (TODO: move query+query result into db tables)
