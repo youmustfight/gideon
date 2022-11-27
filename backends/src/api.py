@@ -255,6 +255,7 @@ async def app_route_documents(request):
         query_documents = await session.execute(
             sa.select(Document)
                 .options(subqueryload(Document.content), subqueryload(Document.files))
+                .where(Document.case_id == int(request.args.get('case_id')))
                 .order_by(sa.desc(Document.id)))
         documents = query_documents.scalars().all()
         # there's got to be a better way to deal w/ this
@@ -275,7 +276,7 @@ async def app_route_documents_index_pdf(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        document_id = await index_pdf(session=session, pyfile=pyfile)
+        document_id = await index_pdf(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -287,7 +288,7 @@ async def app_route_documents_index_image(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        document_id = await index_image(session=session, pyfile=pyfile)
+        document_id = await index_image(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -299,7 +300,7 @@ async def app_route_documents_index_audio(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        document_id = await index_audio(session=session, pyfile=pyfile)
+        document_id = await index_audio(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -311,7 +312,7 @@ async def app_route_documents_index_video(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     async with session.begin():
-        document_id = await index_video(session=session, pyfile=pyfile)
+        document_id = await index_video(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -362,7 +363,7 @@ def app_route_index_delete(request, index_name):
 async def app_route_question_answer(request):
     session = request.ctx.session
     async with session.begin():
-        answer = await question_answer(session, request.json['question'])
+        answer = await question_answer(session, query_text=request.json['question'], case_id=request.json['case_id'])
     return json({ 'status': 'success', "answer": answer })
 
 @app.route('/v1/queries/documents-locations', methods = ['POST'])
@@ -384,10 +385,10 @@ async def app_route_query_info_locations(request):
                 score=location['score']
             )
         # --- pdfs/transcripts
-        locations_across_text = await search_for_locations_across_text(session, request.json['query'])
+        locations_across_text = await search_for_locations_across_text(session, query_text=request.json['query'], case_id=request.json['case_id'])
         locations_across_text_serialized = list(map(serialize_location_text, locations_across_text))
         # --- images (including video frames)
-        locations_across_image = await search_for_locations_across_image(session, request.json['query'])
+        locations_across_image = await search_for_locations_across_image(session, query_text=request.json['query'], case_id=request.json['case_id'])
         locations_across_image_serialized = list(map(serialize_location_image, locations_across_image))
         # --- combined
         locations = locations_across_image_serialized + locations_across_text_serialized

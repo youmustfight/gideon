@@ -146,13 +146,13 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
 
 
 # INDEX_PDF
-async def index_pdf(session, pyfile) -> int:
+async def index_pdf(session, pyfile, case_id) -> int:
     print(f"INFO (index_pdf.py): indexing {pyfile.name} ({pyfile.type})")
     try:
         # SETUP DOCUMENT
         document_query = await session.execute(
             sa.insert(Document)
-                .values(name=pyfile.name, status_processing_files="queued", type="pdf")
+                .values(name=pyfile.name, status_processing_files="queued", type="pdf", case_id=case_id)
                 .returning(Document.id)) # can't seem to return anything except id
         document_id = document_query.scalar_one_or_none()
         print(f"INFO (index_pdf.py): index_document id {document_id}")

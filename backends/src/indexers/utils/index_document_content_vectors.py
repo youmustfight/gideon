@@ -5,6 +5,8 @@ from dbs.sa_models import Document, DocumentContent, Embedding
 
 async def index_document_content_vectors(session, document_id):
     # FETCH
+    query_document = await session.execute(
+        sa.select(Document).where(Document.id == document_id))
     query_embeddings = await session.execute(
         sa.select(Embedding).options(
             joinedload(Embedding.document_content).options(
@@ -12,6 +14,7 @@ async def index_document_content_vectors(session, document_id):
         )).where(Embedding.document_content.has(
             DocumentContent.document.has(
                 Document.id == int(document_id)))))
+    document = query_document.scalars().first()
     embeddings = query_embeddings.scalars().all()
     # INDEX
     for embedding in embeddings:
@@ -23,6 +26,7 @@ async def index_document_content_vectors(session, document_id):
                 embedding_id=em.id,
                 vector=em.vector_json,
                 metadata={
+                    "case_id": document.case_id,
                     "document_id": document_id,
                     "document_content_id": dc.id,
                     "string_length": len(dc.text)
@@ -33,6 +37,7 @@ async def index_document_content_vectors(session, document_id):
                 embedding_id=em.id,
                 vector=em.vector_json,
                 metadata={
+                    "case_id": document.case_id,
                     "document_id": document_id,
                     "document_content_id": dc.id,
                     "string_length": len(dc.text)
@@ -43,6 +48,7 @@ async def index_document_content_vectors(session, document_id):
                 embedding_id=em.id,
                 vector=em.vector_json,
                 metadata={
+                    "case_id": document.case_id,
                     "document_id": document_id,
                     "document_content_id": dc.id,
                 })
