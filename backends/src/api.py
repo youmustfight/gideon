@@ -69,11 +69,14 @@ async def app_route_auth_login(request):
                 .where(User.email == request.json["email"])
         )
         user = query_user.scalar_one_or_none()
-        if (request.json['password'] != None and request.json['password'] == user.password):
+        if (user != None and request.json.get('password') == user.password):
             token = encode_token({ 'issued_at': datetime.now().timestamp(), 'user_id': user.id })
             return json({ 'status': 'success',  'token': token, 'user': user.serialize() })
         else:
-            return json({ 'status': 'error' })
+            return json({
+                'status': 'error',
+                'message': 'No user found.' if user == None else 'Bad password.',
+            }, status=400)
 
 @app.route('/v1/auth/user', methods = ['GET'])
 async def app_route_auth_user(request):
@@ -356,7 +359,7 @@ def app_route_index_delete(request, index_name):
 
 @app.route('/v1/indexes/regenerate', methods = ['POST'])
 # @auth_route
-async def app_route_index_delete(request):
+async def app_route_indexes_regenerate(request):
     session = request.ctx.session
     async with session.begin():
         query_document = await session.execute(

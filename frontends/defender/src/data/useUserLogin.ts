@@ -16,15 +16,20 @@ const reqUserLogin = async ({ email, password }: TUserLoginParams): Promise<{ to
 
 export const useUserLogin = () =>
   useMutation(
-    async ({ email, password }: TUserLoginParams): Promise<TUser> => {
-      const { token, user } = await reqUserLogin({ email, password });
-      localStorage.setItem(LOCAL_STORAGE_KEY_API_TOKEN, token);
-      return user;
+    async ({ email, password }: TUserLoginParams): Promise<TUser | null> => {
+      try {
+        const { token, user } = await reqUserLogin({ email, password });
+        localStorage.setItem(LOCAL_STORAGE_KEY_API_TOKEN, token);
+        return user;
+      } catch (err) {
+        // grab server response err text first, then see if it's JS error
+        throw err.response?.data?.message ?? err.message;
+      }
     },
     {
       mutationKey: ["user"],
       onSuccess: (user) => {
-        queryClient.setQueryData(["user"], user);
+        if (user) queryClient.setQueryData(["user"], user);
       },
     }
   );

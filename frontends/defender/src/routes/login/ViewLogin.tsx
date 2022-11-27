@@ -9,10 +9,13 @@ export const ViewLogin = () => {
   const { mutateAsync: userLogin } = useUserLogin();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState(null);
   // @ts-ignore
   const handleLogin = (e) => {
     e.preventDefault();
-    userLogin({ email: loginEmail, password: loginPassword });
+    userLogin({ email: loginEmail, password: loginPassword }).catch((err) => {
+      setLoginError(err);
+    });
   };
 
   return (
@@ -32,6 +35,7 @@ export const ViewLogin = () => {
               onChange={(e) => setLoginPassword(e.target.value)}
             />
             <button type="submit">Login</button>
+            {loginError && <div className="login-error">{loginError}</div>}
           </form>
           <br />
           <p>
@@ -80,5 +84,10 @@ const StyledViewLogin = styled.div`
       margin: 20px 0;
       opacity: 0.5;
     }
+  }
+  .login-error {
+    font-size: 12px;
+    text-align: center;
+    margin: 8px 4px 0;
   }
 `;
