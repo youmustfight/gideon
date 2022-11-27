@@ -2,7 +2,8 @@
 .env.json
 
 # file system
-.log
+yarn-error.log
+*.log
 .DS_Store
 
 # backends

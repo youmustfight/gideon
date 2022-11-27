@@ -1,27 +1,20 @@
-/* eslint-disable prettier/prettier */
-
-function get(global: string, which: string, isOptional = false) {
-  if (!isOptional && !global && !process.env[which]) {
-    throw new Error(`${which} is a required environment variable`);
-  }
-  return global || process.env[which]!;
-}
-
-// environment context
-export const getNodeEnv = () => get(NODE_ENV, "NODE_ENV");
-export const isNodeTesting = () => {
-  return getNodeEnv() === "testing" || getNodeEnv() === "test" || getNodeEnv() === "debug";
+// environment
+export const getTargetEnv = (): string => {
+  return import.meta.env.VITE_TARGET_ENV;
 };
-export const isNodeProduction = () => {
-  return getNodeEnv() === "production" || getNodeEnv() === "prod";
+export const isTargetTesting = (): boolean => {
+  return getTargetEnv() === "testing" || getTargetEnv() === "test" || getTargetEnv() === "debug";
 };
-export const isNodeDevelopment = () => {
-  return getNodeEnv() === "development" || getNodeEnv() === "dev";
+export const isTargetProduction = (): boolean => {
+  return getTargetEnv() === "production" || getTargetEnv() === "prod";
 };
-export const isNodeLocal = () => {
-  return !isNodeProduction() && !isNodeDevelopment() && !isNodeTesting();
+export const isTargetDevelopment = (): boolean => {
+  return getTargetEnv() === "development" || getTargetEnv() === "dev";
 };
-
-// TODO: GIDEON
-// export const getGideonApiUrl = () => get(GIDEON_API_URL, "GIDEON_API_URL");
-export const getGideonApiUrl = () => "http://localhost:3000";
+export const isTargetLocal = (): boolean => {
+  return !isTargetProduction() && !isTargetDevelopment() && !isTargetTesting();
+};
+// vars
+export const getGideonApiUrl = (): string => {
+  return import.meta.env.VITE_GIDEON_API_URL;
+};

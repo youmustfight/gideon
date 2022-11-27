@@ -1,7 +1,6 @@
 import axios from "axios";
-import { useMutation, useQuery } from "react-query";
-import { getGideonApiUrl } from "../env";
-import { queryClient } from "./queryClient";
+import { useQuery } from "react-query";
+import * as Env from "../env";
 
 export type TUser = {
   id: number;
@@ -11,7 +10,7 @@ export type TUser = {
 
 // USER FETCH
 const reqUserGet = async (): Promise<TUser | null> =>
-  axios.get(`${getGideonApiUrl()}/v1/auth/user`).then((res) => res.data.user);
+  axios.get(`${Env.getGideonApiUrl()}/v1/auth/user`).then((res) => res.data.user);
 
 export const useUser = () => {
   return useQuery<TUser | null>(["user"], async () => reqUserGet(), {

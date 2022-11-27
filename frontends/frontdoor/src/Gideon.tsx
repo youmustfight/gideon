@@ -10,9 +10,13 @@ export const Gideon: React.FC = () => {
         <small>Legal Assistance for All</small>
       </div>
       <div className="button-box">
-        <a href="https://defender.gideon.foundation" target="_blank" rel="noreferer noopener">
+        {/* <a href="https://defender.gideon.foundation" target="_blank" rel="noreferer noopener"> */}
+        <a href="https://youtu.be/M2tMmsGhp6c" target="_blank" rel="noreferer noopener">
           <button>Document Assistant Tool for Nashua, New Hampshire Public Defenders (MVP)</button>
         </a>
+        +
+        <br />
+        <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
         +
         <br />
         <a
@@ -20,11 +24,11 @@ export const Gideon: React.FC = () => {
           target="_blank"
           rel="noreferer noopener"
         >
-          <button>Caselaw Summaries for Citing Slavery, Harvard Caselaw Access Project (Proof of Concept)</button>
+          <button>Caselaw Search & Understanding for Citing Slavery, Harvard CAP (Proof of Concept)</button>
         </a>
         =
         <br />
-        <button disabled>Co-Pilot Motion Writing (Future)</button>
+        <button disabled>AI Engine & Interface that Reflects Society's Codified Values</button>
       </div>
     </StyledGideon>
   );

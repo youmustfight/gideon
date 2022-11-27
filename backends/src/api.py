@@ -317,6 +317,12 @@ async def app_route_documents_index_video(request):
     return json({ 'status': 'success' })
 
 
+# HEALTH
+@app.route('/health', methods = ['GET'])
+def app_route_health(request):
+    return json({ 'status': 'success' })
+
+
 # HIGHLIGHTS
 @app.route('/v1/highlights', methods = ['GET'])
 @auth_route
@@ -436,14 +442,17 @@ async def app_route_users(request):
 
 
 # RUN
-if __name__ == "__main__":
+def start_api():
+    host = env.env_get_gideon_api_host()
+    port = env.env_get_gideon_api_port()
+    print(f'Starting Server at: {host}:{port}')
     # INIT WORKERS
     # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # HACK: If I don't force single_process, OCR totally hangs
     app.run(
-        host='0.0.0.0',
-        port=3000,
+        host=host,
+        port=port,
         access_log=False,
         auto_reload=False,
         single_process=True,

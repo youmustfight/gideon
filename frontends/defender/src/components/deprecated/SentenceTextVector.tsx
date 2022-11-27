@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useState } from "react";
 import styled from "styled-components";
 import { useHighlightStore } from "../../data/HighlightStore";
@@ -35,7 +37,7 @@ const SentenceTextVector = ({
     textVectorIndex > sentenceStartIndex;
   const wasHighlighted = highlights?.some(
     (hl) =>
-      hl.filename === document.filename &&
+      hl.filename === document.name &&
       textVectorIndex >= hl.document_text_vectors_by_sentence_start_index &&
       textVectorIndex <= hl.document_text_vectors_by_sentence_end_index
   );
@@ -65,7 +67,7 @@ const SentenceTextVector = ({
             e.preventDefault();
             if (sentenceStartIndex != null && sentenceEndIndex != null) {
               saveHighlightAndOpinion({
-                filename: document.filename,
+                filename: document.name,
                 user: currentUser,
                 document_text_vectors_by_sentence_start_index: sentenceStartIndex,
                 document_text_vectors_by_sentence_end_index: sentenceEndIndex,
