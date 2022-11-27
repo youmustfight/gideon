@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TQueryLocation } from "../data/useDocuments";
 import { TDocumentHighlight, useHighlights } from "../data/useHighlights";
+import { getGideonApiUrl } from "../env";
 import { AnswerLocationBox } from "./QuestionAnswerBox";
 
 export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight }) => {
@@ -17,7 +18,7 @@ export const HighlightBox: React.FC = (props: { highlight: TDocumentHighlight })
   const handleSearchLocationsLikeThis = () => {
     setIsSearchPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/vector-info-locations", {
+      .post(`${getGideonApiUrl()}/v1/queries/vector-info-locations`, {
         vector: props.highlight.highlight_text_vector,
       })
       .then((res) => {

@@ -6,6 +6,7 @@ import styled from "styled-components";
 import { useTeamStore } from "../data/TeamStore";
 import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
+import { getGideonApiUrl } from "../env";
 import { HighlightBox } from "./HighlightsBox";
 
 const StyledAnswerLocationBox = styled.div`
@@ -95,7 +96,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/document-query", {
+      .post(`${getGideonApiUrl()}/v1/queries/document-query`, {
         case_id: caseId,
         question: answerQuestion,
         index_type: "discovery",
@@ -113,7 +114,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/documents-locations", {
+      .post(`${getGideonApiUrl()}/v1/queries/documents-locations`, {
         case_id: caseId,
         query: infoLocationQuestion,
         index_type: "discovery",
@@ -131,7 +132,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/highlights-query", {
+      .post(`${getGideonApiUrl()}/v1/queries/highlights-query`, {
         case_id: caseId,
         query: highlightSearchQuery,
       })
@@ -147,7 +148,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/summarize-user", {
+      .post(`${getGideonApiUrl()}/v1/queries/summarize-user`, {
         case_id: caseId,
         user: userToSummarize,
       })
@@ -163,7 +164,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/contrast-users", {
+      .post(`${getGideonApiUrl()}/v1/queries/contrast-users`, {
         case_id: caseId,
         user_one: userOneToContrast,
         user_two: userTwoToContrast,
