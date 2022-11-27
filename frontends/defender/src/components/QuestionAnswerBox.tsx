@@ -80,6 +80,8 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
 };
 
 export const QuestionAnswerBox = () => {
+  const matches = useMatch("/case/:caseId/*")?.params;
+  const caseId = Number(matches?.caseId);
   const { data: highlights = [] } = useHighlights();
   const { users } = useTeamStore();
   // --- answers state
@@ -93,7 +95,11 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return axios
-      .post("http://localhost:3000/v1/queries/document-query", { question: answerQuestion, index_type: "discovery" })
+      .post("http://localhost:3000/v1/queries/document-query", {
+        case_id: caseId,
+        question: answerQuestion,
+        index_type: "discovery",
+      })
       .then((res) => {
         setAnswer({ answer: res.data.answer, locations: res.data.locations });
         setIsAnswerPending(false);
@@ -108,6 +114,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post("http://localhost:3000/v1/queries/documents-locations", {
+        case_id: caseId,
         query: infoLocationQuestion,
         index_type: "discovery",
       })
@@ -125,6 +132,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post("http://localhost:3000/v1/queries/highlights-query", {
+        case_id: caseId,
         query: highlightSearchQuery,
       })
       .then((res) => {
@@ -140,6 +148,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post("http://localhost:3000/v1/queries/summarize-user", {
+        case_id: caseId,
         user: userToSummarize,
       })
       .then((res) => {
@@ -155,6 +164,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post("http://localhost:3000/v1/queries/contrast-users", {
+        case_id: caseId,
         user_one: userOneToContrast,
         user_two: userTwoToContrast,
       })

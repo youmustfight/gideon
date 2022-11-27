@@ -7,8 +7,8 @@ import { useUserLogin } from "../../data/useUserLogin";
 export const ViewLogin = () => {
   const { data: user } = useUser();
   const { mutateAsync: userLogin } = useUserLogin();
-  const [loginEmail, setLoginEmail] = useState("gideon@gideon.com");
-  const [loginPassword, setLoginPassword] = useState("foundation");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   // @ts-ignore
   const handleLogin = (e) => {
     e.preventDefault();

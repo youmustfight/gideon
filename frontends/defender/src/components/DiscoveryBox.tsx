@@ -86,7 +86,9 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
 };
 
 export const DiscoveryBox = () => {
-  const { data: documents = [] } = useDocuments();
+  const matches = useMatch("/case/:caseId/*");
+  const caseId = Number(matches?.params?.caseId);
+  const { data: documents = [] } = useDocuments(caseId);
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
   const [isAddingFile, setIsAddingFile] = useState(false);
   // @ts-ignore
@@ -98,6 +100,7 @@ export const DiscoveryBox = () => {
       formData.append("file", e.target.file.files[0]);
       axios.post(`http://localhost:3000/v1/documents/index/${type}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        params: { case_id: caseId },
       });
       // --- clear file in input if successful
       e.target.file.value = "";

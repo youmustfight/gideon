@@ -67,11 +67,11 @@ export type TQueryLocation = {
 };
 
 // Filters for user via forUser
-const reqDocumentsGet = async (): Promise<TDocument[]> =>
-  axios.get(`${getGideonApiUrl()}/v1/documents`).then((res) => res.data.documents);
+const reqDocumentsGet = async (caseId: number): Promise<TDocument[]> =>
+  axios.get(`${getGideonApiUrl()}/v1/documents`, { params: { case_id: caseId } }).then((res) => res.data.documents);
 
-export const useDocuments = () => {
-  return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(), {
+export const useDocuments = (caseId: number) => {
+  return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(caseId), {
     refetchInterval: 1000 * 60,
   });
 };

@@ -6,7 +6,7 @@ import { useDocuments } from "../data/useDocuments";
 export const TimelineSummary = () => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
-  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments();
+  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments(caseId);
   const documentIdMap = keyBy(documents, "id");
   // RENDER
   return (
