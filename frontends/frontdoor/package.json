@@ -1,7 +1,6 @@
 {
   "name": "ai",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "build": "tsc && vite build",
     "build:production": "tsc && vite build",

@@ -125,7 +125,7 @@ function build_frontend_spa () {
   # Install in case of package updates
   yarn install
   # Build
-  NODE_ENV=$TARGET_ENV \
+  TARGET_ENV=$TARGET_ENV \
     AWS_REGION=$AWS_REGION \
     AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
     AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \

@@ -1,7 +1,7 @@
 import axios from "axios";
-import { useMutation, useQuery } from "react-query";
-import { getGideonApiUrl } from "../env";
+import { useMutation } from "react-query";
 import { LOCAL_STORAGE_KEY_API_TOKEN } from "./axiosConfig";
+import { getGideonApiUrl } from "../env";
 import { queryClient } from "./queryClient";
 import { TUser } from "./useUser";
 

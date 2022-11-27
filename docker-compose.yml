@@ -20,6 +20,10 @@ services:
     command: "npm run start:local"
     env_file:
       - ./.env
+    environment:
+      # HACK: find a way to autopull vars in setup
+      - VITE_TARGET_ENV=local
+      - VITE_GIDEON_API_URL=http://localhost:3000
 
   frontdoor:
     build:
@@ -40,6 +44,10 @@ services:
     command: "npm run start:local"
     env_file:
       - ./.env
+    environment:
+      # HACK: find a way to autopull vars in setup
+      - VITE_TARGET_ENV=local
+      - VITE_GIDEON_API_URL=http://localhost:3000
 
   api:
     build:
