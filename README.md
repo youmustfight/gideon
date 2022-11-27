@@ -12,10 +12,15 @@
 ### Run it Locally
 
 1. Create a file in the root of this repo called `.env`, and copy values from the gist, notion page, or whever it's being stored atm. It'll be minimal vars, the rest are fetched at runtime
-2. Spin up the frontend/backend from the root of this repo with `docker-compose up` (when api requirements change, rebuild the api with `docker-compose build api`)
-3. Once running, go to directory `databases/app` and run migrations with `alembic upgrade head`
-4. Then from the same directory, seed the database with a user/case via `python seed.py`
-5. You're good to go! Just go to `localhost:1111`, click through the login/case views, and start uploading files + querying!
+2. Before we spin up services, let's install some helper packages
+   1. Docker (for running all the services!): Check out docs [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+   2. JQ (for json manipulation in bash): `brew install jq`
+   3. AWS (for fetching secrets, deploying services): [View instructions here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+3. Spin up the frontend/backend from the root of this repo with `docker-compose up` (when api requirements change, rebuild the api with `docker-compose build api`)
+4. Once the cluster & database are running, go to root and run migrations with the command `bash manage.sh local migrate-app head`
+5. Check you've done your migrations correctly via CLI or a nice UI like [Postico](https://eggerapps.at/postico2/)!
+6. Then from the same directory, seed the database with the command `bash manage.sh local seed-app`
+7. You're good to go! Just go to `localhost:1111`, click through the login/case views, and start uploading files + querying!
 
 ### Production Deploys/Migrations
 
