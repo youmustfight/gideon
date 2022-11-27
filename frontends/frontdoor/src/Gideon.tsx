@@ -10,8 +10,7 @@ export const Gideon: React.FC = () => {
         <small>Legal Assistance for All</small>
       </div>
       <div className="button-box">
-        {/* <a href="https://defender.gideon.foundation" target="_blank" rel="noreferer noopener"> */}
-        <a href="https://youtu.be/M2tMmsGhp6c" target="_blank" rel="noreferer noopener">
+        <a href="https://defender.gideon.foundation" target="_blank" rel="noreferer noopener">
           <button>Document Assistant Tool for Nashua, New Hampshire Public Defenders (MVP)</button>
         </a>
         +
