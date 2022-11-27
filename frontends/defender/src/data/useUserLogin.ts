@@ -21,7 +21,7 @@ export const useUserLogin = () =>
         const { token, user } = await reqUserLogin({ email, password });
         localStorage.setItem(LOCAL_STORAGE_KEY_API_TOKEN, token);
         return user;
-      } catch (err) {
+      } catch (err: any) {
         // grab server response err text first, then see if it's JS error
         throw err.response?.data?.message ?? err.message;
       }
