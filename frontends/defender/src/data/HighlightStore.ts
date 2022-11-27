@@ -2,6 +2,7 @@ import axios from "axios";
 import createVanilla from "zustand/vanilla";
 import create from "zustand";
 import { TDocumentHighlight } from "./useHighlights";
+import { getGideonApiUrl } from "../env";
 
 type THighlightStore = {
   sentenceStartIndex: number | null;
@@ -26,7 +27,7 @@ export const highlightStore = createVanilla<THighlightStore>((set, get) => ({
   setHightlightNoteText: (hightlightNoteText) => set({ hightlightNoteText }),
   saveHighlightAndOpinion: async (payload) => {
     set({ highlightNoteSubmitted: true });
-    await axios.post("http://localhost:3000/v1/highlights", { highlight: payload });
+    await axios.post(`${getGideonApiUrl()}/v1/highlights`, { highlight: payload });
     set({ highlightNoteSubmitted: false, hightlightNoteText: "", sentenceStartIndex: null, sentenceEndIndex: null });
   },
 }));

@@ -6,6 +6,7 @@ import ReactPlayer from "react-player";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
+import { getGideonApiUrl } from "../env";
 
 const DocumentPreviewAudio = styled.audio`
   min-width: 120px;
@@ -98,7 +99,7 @@ export const DiscoveryBox = () => {
       // --- setup form data/submit
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
-      axios.post(`http://localhost:3000/v1/documents/index/${type}`, formData, {
+      axios.post(`${getGideonApiUrl()}/v1/documents/index/${type}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         params: { case_id: caseId },
       });
