@@ -264,7 +264,7 @@ OPTION_TWO=$4
 
 # Execute command
 case "${COMMAND}" in
-  backends_api)
+  api)
   confirm_command $COMMAND $OPTION_ONE
   build_api
   eval_aws
@@ -274,7 +274,7 @@ case "${COMMAND}" in
   confirm_finish
   exit 0
   ;;
-  backends_api_nginx)
+  api_nginx)
   confirm_command $COMMAND $OPTION_ONE
   build_api_nginx
   eval_aws
@@ -282,7 +282,7 @@ case "${COMMAND}" in
   confirm_finish
   exit 0
   ;;
-  frontends_defender)
+  defender)
   confirm_command $COMMAND $OPTION_ONE
   build_frontend_defender
   push_frontend_defender
@@ -290,7 +290,7 @@ case "${COMMAND}" in
   confirm_finish
   exit 0
   ;;
-  frontends_frontdoor)
+  frontdoor)
   confirm_command $COMMAND $OPTION_ONE
   build_frontend_frontdoor
   push_frontend_frontdoor

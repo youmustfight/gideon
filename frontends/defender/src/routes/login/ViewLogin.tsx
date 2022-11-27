@@ -7,8 +7,8 @@ import { useUserLogin } from "../../data/useUserLogin";
 export const ViewLogin = () => {
   const { data: user } = useUser();
   const { mutateAsync: userLogin } = useUserLogin();
-  const [loginEmail, setLoginEmail] = useState("gideon@gideon.com");
-  const [loginPassword, setLoginPassword] = useState("foundation");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   // @ts-ignore
   const handleLogin = (e) => {
     e.preventDefault();
@@ -19,25 +19,36 @@ export const ViewLogin = () => {
     <>
       {user && <Navigate to="/cases" replace={true} />}
       <StyledViewLogin>
-        <form onSubmit={handleLogin}>
-          <label htmlFor="login-email">Email</label>
-          <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-          <label htmlFor="login-password">Password</label>
-          <input
-            id="login-password"
-            type="password"
-            value={loginPassword}
-            onChange={(e) => setLoginPassword(e.target.value)}
-          />
-          <button type="submit">Login</button>
-        </form>
+        <div className="login-wrapper">
+          <h1>Gideon Login</h1>
+          <form onSubmit={handleLogin}>
+            <label htmlFor="login-email">Email</label>
+            <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+            <label htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+            />
+            <button type="submit">Login</button>
+          </form>
+          <br />
+          <p>
+            Welcome Justin, Elliot, Eugeue, and others! Login above or{" "}
+            <a href="https://youtu.be/M2tMmsGhp6c" target="_blank" rel="noreferer noopener">
+              click here to see an old demo
+            </a>
+            .
+          </p>
+        </div>
       </StyledViewLogin>
     </>
   );
 };
 
 const StyledViewLogin = styled.div`
-  form {
+  .login-wrapper {
     width: 100%;
     max-width: 240px;
     height: 400px;
@@ -51,6 +62,23 @@ const StyledViewLogin = styled.div`
     }
     button {
       width: 100%;
+    }
+    h1 {
+      font-weight: 900;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #ddd;
+    }
+    label {
+      font-size: 13px;
+    }
+    p {
+      font-size: 13px;
+    }
+    hr {
+      width: 100%;
+      margin: 20px 0;
+      opacity: 0.5;
     }
   }
 `;

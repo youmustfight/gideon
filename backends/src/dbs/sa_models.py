@@ -60,6 +60,7 @@ class Case(BaseModel):
     name = Column(Text())
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
+    documents = relationship("Document", back_populates="case")
     def serialize(self):
         return {
             "id": self.id,
@@ -83,6 +84,8 @@ class Organization(BaseModel):
 
 class Document(BaseModel):
     __tablename__ = "document"
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="documents")
     name = Column(Text())
     type = Column(String()) # pdf, image, audio, video (derive search modalities from this)
     # --- O>M for files
@@ -155,7 +158,7 @@ class Embedding(BaseModel):
     encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
     # --- post-encoding
     vector_json=Column(JSONB) # for storing raw values to easily access later
-    npy_url = Column(Text()) # save npy binary to S3? probably unnecessary for now for vector_json
+    npy_url = Column(Text()) # save npy binary to S3? probably unnecessary so now doing vector_json
     def serialize(self):
         return {
             "id": self.id,
