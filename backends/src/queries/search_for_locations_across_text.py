@@ -1,11 +1,15 @@
 import pydash as _
+import sqlalchemy as sa
+from dbs.sa_models import Case
 from dbs.vectordb_pinecone import index_documents_sentences_query, get_embeddings_from_search_vectors
 
 # SEARCH QUERY
 async def search_for_locations_across_text(session, query_text, case_id):
     print(f"INFO (search_for_locations_across_text.py): query all documents via '{query_text}'")
+    query_case = await session.execute(sa.select(Case).where(Case.id == int(case_id)))
+    case = query_case.scalar_one_or_none()
     # 1. get similar vectors (TODO: allow for minimum string length so we don't skew short statements higher similarity)
-    search_text_vectors = index_documents_sentences_query(query_text, case_id)
+    search_text_vectors = index_documents_sentences_query(query_text, case_uuid=case.uuid)
     # 2. convert to DocumentContent
     embeddings = await get_embeddings_from_search_vectors(session, search_text_vectors)
     # 3. create "locations" array showing score + document content (TODO: move query+query result into db tables)

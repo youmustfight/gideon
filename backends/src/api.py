@@ -375,7 +375,10 @@ async def app_route_indexes_regenerate(request):
 async def app_route_question_answer(request):
     session = request.ctx.session
     async with session.begin():
-        answer = await question_answer(session, query_text=request.json['question'], case_id=request.json['case_id'])
+        answer = await question_answer(
+            session,
+            query_text=request.json.get('question'),
+            case_id=request.json.get('case_id'))
     return json({ 'status': 'success', "answer": answer })
 
 @app.route('/v1/queries/documents-locations', methods = ['POST'])
@@ -397,10 +400,16 @@ async def app_route_query_info_locations(request):
                 score=location['score']
             )
         # --- pdfs/transcripts
-        locations_across_text = await search_for_locations_across_text(session, query_text=request.json['query'], case_id=request.json['case_id'])
+        locations_across_text = await search_for_locations_across_text(
+            session,
+            query_text=request.json.get('query'),
+            case_id=request.json.get('case_id'))
         locations_across_text_serialized = list(map(serialize_location_text, locations_across_text))
         # --- images (including video frames)
-        locations_across_image = await search_for_locations_across_image(session, query_text=request.json['query'], case_id=request.json['case_id'])
+        locations_across_image = await search_for_locations_across_image(
+            session,
+            query_text=request.json.get('query'),
+            case_id=request.json.get('case_id'))
         locations_across_image_serialized = list(map(serialize_location_image, locations_across_image))
         # --- combined
         locations = locations_across_image_serialized + locations_across_text_serialized

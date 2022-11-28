@@ -9,7 +9,8 @@ from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 import env
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
-from indexers.utils.extract_document_type import exact_document_type
+from indexers.utils.extract_document_type import extract_document_type
+from indexers.utils.extract_document_events import extract_document_events
 from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
@@ -122,7 +123,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # EXTRACT
     # --- classification/description
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description')
-    document.document_description = exact_document_type(document_content_text)
+    document.document_description = extract_document_type(document_content_text)
     # --- summary
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
@@ -137,7 +138,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # # --- if a discovery document (ex: police report, testimony, motion)
     # --- event timeline v2
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_events')
-    # document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events(document_content_text)
     # --- TODO: organizations mentioned
     # --- TODO: people mentioned + context within document
     # --- SAVE
