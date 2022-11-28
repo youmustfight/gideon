@@ -30,13 +30,15 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
   const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
-  const minuteCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.end_second)))));
+  const minuteCount = Math.floor(
+    Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.end_second))))) / 60
+  );
   return (
     <div className="discovery-box__document">
       <div style={{ flexGrow: 1 }}>
         <small>
           <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
-          {document?.type === "audio" ? <> ({minuteCount} minutes)</> : null}
+          {["audio", "video"].includes(document?.type) ? <> ({minuteCount} minutes)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
         {["audio", "pdf", "video"].includes(document.type) ? (
