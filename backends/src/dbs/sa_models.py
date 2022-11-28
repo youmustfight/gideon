@@ -1,7 +1,8 @@
 from pydash import to_list
-from sqlalchemy import JSON, Column, Integer, ForeignKey, String, Table, Text
+from sqlalchemy import JSON, Column, DateTime, Integer, ForeignKey, String, Table, Text
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+import uuid
 
 # BASE SETUP
 
@@ -41,9 +42,11 @@ case_user_junction = Table(
 
 class User(BaseModel):
     __tablename__ = "user"
+    id = Column(Integer, primary_key=True)
     name = Column(Text())
     email = Column(Text())
     password = Column(Text())
+    created_at = Column(DateTime(timezone=True))
     cases = relationship("Case", secondary=case_user_junction, back_populates="users")
     organizations = relationship("Organization", secondary=organization_user_junction, back_populates="users")
     def serialize(self):
@@ -57,6 +60,8 @@ class User(BaseModel):
 
 class Case(BaseModel):
     __tablename__ = "case"
+    id = Column(Integer, primary_key=True)
+    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
     name = Column(Text())
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
@@ -71,6 +76,7 @@ class Case(BaseModel):
 
 class Organization(BaseModel):
     __tablename__ = "organization"
+    id = Column(Integer, primary_key=True)
     name = Column(Text())
     cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
@@ -84,6 +90,7 @@ class Organization(BaseModel):
 
 class Document(BaseModel):
     __tablename__ = "document"
+    id = Column(Integer, primary_key=True)
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="documents")
     name = Column(Text())
@@ -121,6 +128,7 @@ class Document(BaseModel):
 
 class DocumentContent(BaseModel):
     __tablename__ = "documentcontent"
+    id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="content")
     embedding = relationship("Embedding", back_populates="document_content")
@@ -148,6 +156,7 @@ class DocumentContent(BaseModel):
 
 class Embedding(BaseModel):
     __tablename__ = "embedding"
+    id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="embeddings")
     document_content_id = Column(Integer, ForeignKey("documentcontent.id"))
@@ -171,6 +180,7 @@ class Embedding(BaseModel):
 
 class File(BaseModel):
     __tablename__ = "file"
+    id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="files")
     document_content_image_file = relationship("DocumentContent", back_populates="image_file")

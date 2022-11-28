@@ -14,13 +14,8 @@ pinecone.init(
   api_key=env.env_get_database_pinecone_api_key(),
   environment=env.env_get_database_pinecone_environment()
 )
-index_documents_clip_url = "documents-clip-768-8bb34d7.svc.us-west1-gcp.pinecone.io"
 index_documents_clip = pinecone.Index("documents-clip-768") # cosine
-# TODO: split these into namespaces? (https://www.pinecone.io/docs/namespaces/)
-# TODO: or actually, instead of namespacing on types of vectors, could do it for prod/dev/local/etc. enviornment names
-index_documents_text_url = "documents-text-12288-8bb34d7.svc.us-west1-gcp.pinecone.io"
 index_documents_text = pinecone.Index("documents-text-12288") # euclidian
-index_documents_sentences_url = "documents-sentences-12288-8bb34d7.svc.us-west1-gcp.pinecone.io"
 index_documents_sentences = pinecone.Index("documents-sentences-12288") # euclidian
 
 def get_indexes():
@@ -34,7 +29,7 @@ def get_indexes():
 # INDEX UPSERTS
 
 def index_documents_text_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_documents_text_add): start", embedding_id)
+    print("INFO (vectordb_pinecone:index_documents_text_add): start", embedding_id, metadata)
     pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
@@ -43,7 +38,7 @@ def index_documents_text_add(embedding_id, vector, metadata=None):
     print("INFO (vectordb_pinecone:index_documents_text_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
 
 def index_documents_sentences_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_documents_sentences_add): start", embedding_id)
+    print("INFO (vectordb_pinecone:index_documents_sentences_add): start", embedding_id, metadata)
     pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
@@ -52,7 +47,7 @@ def index_documents_sentences_add(embedding_id, vector, metadata=None):
     print("INFO (vectordb_pinecone:index_documents_sentences_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
 
 def index_clip_image_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_clip_image_add): start", embedding_id)
+    print("INFO (vectordb_pinecone:index_clip_image_add): start", embedding_id, metadata)
     pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
     # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
     if (metadata != None): pinecone_upsert_record[2].update(metadata)
@@ -63,15 +58,15 @@ def index_clip_image_add(embedding_id, vector, metadata=None):
 
 # INDEX QUERIES
   
-async def index_documents_text_query(query_text, case_id, top_k=12, score_limit=1.2, score_diff_percent=0.15):
+async def index_documents_text_query(query_text, case_uuid, top_k=12, score_limit=1.2, score_diff_percent=0.15):
     print(f'INFO (vectordb_pinecone:index_documents_text_query): query "{query_text}"')
     text_embedding_tensor = gpt_embedding(query_text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
     # USES EUCLIDIAN SO LOWER SCORE IS BETTER MATCH?????????
     query_filter = { "string_length": { "$gt": 480 } }
-    if (case_id != None):
-        query_filter.update({ "case_id": { "$eq": case_id } })
+    if (case_uuid != None):
+        query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
     query_results = get_indexes()["index_documents_text"].query(
         vector=text_embedding_vector,
         top_k=top_k,
@@ -89,15 +84,15 @@ async def index_documents_text_query(query_text, case_id, top_k=12, score_limit=
     print(f'INFO (vectordb_pinecone:index_documents_text_query): query "{query_text}"', matches)
     return matches
 
-def index_documents_sentences_query(query_text, case_id, top_k=12, score_limit=1.2, score_diff_percent=0.2):
+def index_documents_sentences_query(query_text, case_uuid, top_k=12, score_limit=1.2, score_diff_percent=0.2):
     print(f'INFO (vectordb_pinecone:index_documents_sentences_query): query "{query_text}"')
     text_embedding_tensor = gpt_embedding(query_text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
     # USES EUCLIDIAN SO LOWER SCORE IS BETTER MATCH?????????
     query_filter = { "string_length": { "$gt": 80 } }
-    if (case_id != None):
-        query_filter.update({ "case_id": { "$eq": case_id } })
+    if (case_uuid != None):
+        query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
     query_results = get_indexes()["index_documents_sentences"].query(
         vector=text_embedding_vector,
         top_k=top_k,
@@ -118,15 +113,15 @@ def index_documents_sentences_query(query_text, case_id, top_k=12, score_limit=1
 def index_clip_image_search(image_data):
     pass
 
-def index_clip_text_search(query_text, case_id, top_k=12, score_limit=0.1, score_diff_percent=0.1):
+def index_clip_text_search(query_text, case_uuid, top_k=12, score_limit=0.1, score_diff_percent=0.1):
     print(f'INFO (vectordb_pinecone:index_clip_text_search): query "{query_text}"')
     text_embedding_tensor = clip_text_embedding(query_text) # now returns as numpy array
     text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
     # --- query
     # USES COSINE SO HIGHER SCORE IS BETTER MATCH?????????
     query_filter = {}
-    if (case_id != None):
-        query_filter.update({ "case_id": { "$eq": case_id } })
+    if (case_uuid != None):
+        query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
     query_results = get_indexes()["index_documents_clip"].query(
         vector=text_embedding_vector,
         top_k=top_k,
@@ -143,6 +138,7 @@ def index_clip_text_search(query_text, case_id, top_k=12, score_limit=0.1, score
         matches = list(filter(lambda m: m['score'] > (highest_score - (highest_score * score_diff_percent)), matches))
     print(f'INFO (vectordb_pinecone:index_clip_text_search): query "{query_text}"', matches)
     return matches
+
 
 # INDEX VECTOR JOINS
 
