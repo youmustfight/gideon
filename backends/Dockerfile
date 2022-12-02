@@ -6,10 +6,6 @@ WORKDIR /usr/src/backends
 ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/wait-for-it.sh
 
-# Cache CLIP model...
-# RUN mkdir -p /.cache/clip
-# RUN wget -O /.cache/clip/ViT-L-14-336px.pt "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt"
-
 # Install linux packages
 RUN apt-get update
 RUN apt-get install \
@@ -20,6 +16,13 @@ RUN apt-get install \
 # Install python packages for app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+
+# Cache Transformer/Language Models
+# --- CLIP (can't get this to work)
+# RUN mkdir -p /.cache/clip
+# RUN wget -O /.cache/clip/ViT-L-14-336px.pt "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt"
+# --- spacy: NER (en_core_web_trf)
+RUN python -m spacy download en_core_web_trf
 
 # Copy src
 COPY . .

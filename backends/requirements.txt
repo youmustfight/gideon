@@ -18,6 +18,12 @@ rq==1.11.1
 sanic==22.9.1
 Sanic_Cors==2.2.0
 sentence-transformers==2.2.2
-sqlalchemy==1.4.43
+# "pip install spacy[transformers]"
+spacy==3.4.3
+spacy-alignments==0.8.6
+spacy-legacy==3.0.10
+spacy-loggers==1.0.3
+spacy-transformers==1.1.8
 # SQLAlchemy==2.0.0b1 # https://github.com/sqlalchemy/sqlalchemy/issues/8631
+sqlalchemy==1.4.43
 torch==1.12.1
