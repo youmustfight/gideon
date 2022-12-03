@@ -69,7 +69,7 @@ const StyledViewCase = styled.div`
     box-shadow: rgb(0 0 0 / 4%) 0px 0 60px 0px;
     border-radius: 24px;
     padding: 12px;
-    margin: 10px 20px;
+    margin: 10px 24px;
     &:first-of-type {
       margin-top: 0;
       box-shadow: none;
@@ -84,6 +84,9 @@ const StyledViewCase = styled.div`
         font-size: 13px;
         margin: 3px 0;
       }
+    }
+    &.no-shadow {
+      box-shadow: none;
     }
   }
   .section-people {

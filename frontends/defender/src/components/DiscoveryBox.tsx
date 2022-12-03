@@ -94,6 +94,7 @@ export const DiscoveryBox = () => {
   const { data: documents = [] } = useDocuments(caseId);
   const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
   const [isAddingFile, setIsAddingFile] = useState(false);
+  const isIndexingDisabled = documents?.some((d) => d.status_processing_content != "completed");
   // @ts-ignore
   const onSubmitFile = (type: "audio" | "image" | "pdf" | "video") => (e) => {
     e.preventDefault();
@@ -114,21 +115,8 @@ export const DiscoveryBox = () => {
   // RENDER
   return (
     <StyledDiscoveryBox>
-      <ul>
-        {documents.map((doc) => (
-          <li key={doc.id}>
-            <DocumentBox document={doc} />
-          </li>
-        ))}
-        {lastUploadedFileAt && isBefore(new Date(), subSeconds(lastUploadedFileAt, 15)) ? (
-          <li>
-            <div className="discovery-box__document processing">
-              <p>File processing. Will appear soon above...</p>
-            </div>
-          </li>
-        ) : null}
-      </ul>
-      {isAddingFile ? (
+      {/* UPLOAD */}
+      {isAddingFile && !isIndexingDisabled ? (
         <>
           {/* PDF */}
           <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
@@ -154,11 +142,32 @@ export const DiscoveryBox = () => {
             <button type="submit">Upload Video</button>
           </form>
         </>
-      ) : (
+      ) : null}
+      {!isAddingFile && !isIndexingDisabled ? (
         <button className="add-files-btn" onClick={() => setIsAddingFile(true)}>
           + Upload PDF, Image, Audio, Video
         </button>
+      ) : null}
+      {isIndexingDisabled && (
+        <div className="discovery-box__document processing">
+          <p>File "{documents?.find((d) => d.status_processing_content != "completed")?.name}" processing...</p>
+        </div>
       )}
+      {/* FILES */}
+      <ul>
+        {lastUploadedFileAt && isBefore(new Date(), subSeconds(lastUploadedFileAt, 15)) ? (
+          <li>
+            <div className="discovery-box__document processing">
+              <p>File processing. Will appear soon...</p>
+            </div>
+          </li>
+        ) : null}
+        {documents.map((doc) => (
+          <li key={doc.id}>
+            <DocumentBox document={doc} />
+          </li>
+        ))}
+      </ul>
     </StyledDiscoveryBox>
   );
 };
@@ -212,7 +221,7 @@ const StyledDiscoveryBox = styled.div`
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-top: 16px;
+    margin-bottom: 16px;
   }
   .add-files-btn {
     width: 100%;

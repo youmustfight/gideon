@@ -25,7 +25,6 @@ async def _index_image_process_content(session, document_id) -> None:
     )
     session.add(document_content)
     # 3. SAVE
-    document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document)
 
@@ -104,36 +103,15 @@ async def _index_image_process_extractions(session, document_id) -> None:
     session.add(document)
 
 
-async def index_image(session, pyfile, case_id) -> int:
-    print(f"INFO (index_image.py): indexing {pyfile.name} ({pyfile.type})")
+async def index_image(session, document_id) -> int:
+    print(f"INFO (index_image.py): indexing document #{document_id}")
     try:
-        # SETUP DOCUMENT
-        document_query = await session.execute(
-            sa.insert(Document)
-                .values(name=pyfile.name, status_processing_files="queued", type="image", case_id=case_id)
-                .returning(Document.id)) # can't seem to return anything except id
-        document_id = document_query.scalar_one_or_none()
-        print(f"INFO (index_image.py): index_document id {document_id}")
-        # SAVE & RELATE FILE
-        filename = pyfile.name
-        upload_key = pyfile.name # TODO: avoid collisions w/ unique prefix
-        # --- save to S3
-        s3_upload_file(upload_key, pyfile)
-        # --- create File()
-        input_s3_url = s3_get_file_url(filename)
-        session.add(File(
-            filename=pyfile.name,
-            mime_type=pyfile.type,
-            upload_key=upload_key,
-            upload_url=input_s3_url,
-            document_id=document_id
-        ))
         # PROCESS FILE & EMBEDDINGS
-        print(f"INFO (index_image.py): processing file", upload_key)
+        print(f"INFO (index_image.py): processing document #{document_id} content")
         await _index_image_process_content(session=session, document_id=document_id)
-        print(f"INFO (index_image.py): processing embeddings", upload_key)
+        print(f"INFO (index_image.py): processing document #{document_id} embeddings")
         await _index_image_process_embeddings(session=session, document_id=document_id)
-        print(f"INFO (index_image.py): processing extractions", upload_key)
+        print(f"INFO (index_image.py): processing document #{document_id} extractions")
         await _index_image_process_extractions(session=session, document_id=document_id)
         print(f"INFO (index_image.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)

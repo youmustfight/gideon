@@ -13,6 +13,7 @@ from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
 from dbs.vectordb_pinecone import get_indexes
 import env
+from indexers.utils.index_document_prep import index_document_prep
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
 from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
@@ -273,11 +274,15 @@ async def app_route_documents(request):
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_pdf(request):
-    # --- process file/pdf/embeddings
     pyfile = request.files['file'][0]
     session = request.ctx.session
+    case_id = int(request.args.get('case_id'))
+    # --- process file
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
+    await session.commit()
+    # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_pdf(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
+        document_id = await index_pdf(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -285,11 +290,15 @@ async def app_route_documents_index_pdf(request):
 @app.route('/v1/documents/index/image', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_image(request):
-    # --- process file/embeddings
     pyfile = request.files['file'][0]
     session = request.ctx.session
+    case_id = int(request.args.get('case_id'))
+    # --- process file
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
+    await session.commit()
+    # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_image(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
+        document_id = await index_image(session=session, pyfile=pyfile, case_id=case_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -297,11 +306,15 @@ async def app_route_documents_index_image(request):
 @app.route('/v1/documents/index/audio', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_audio(request): 
-    # --- process file/embeddings
     pyfile = request.files['file'][0]
     session = request.ctx.session
+    case_id = int(request.args.get('case_id'))
+    # --- process file
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
+    await session.commit()
+    # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_audio(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
+        document_id = await index_audio(session=session, pyfile=pyfile, case_id=case_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -309,11 +322,15 @@ async def app_route_documents_index_audio(request):
 @app.route('/v1/documents/index/video', methods = ['POST'])
 @auth_route
 async def app_route_documents_index_video(request): 
-    # --- process file/embeddings
     pyfile = request.files['file'][0]
     session = request.ctx.session
+    case_id = int(request.args.get('case_id'))
+    # --- process file
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
+    await session.commit()
+    # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_video(session=session, pyfile=pyfile, case_id=int(request.args.get('case_id')))
+        document_id = await index_video(session=session, pyfile=pyfile, case_id=case_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })

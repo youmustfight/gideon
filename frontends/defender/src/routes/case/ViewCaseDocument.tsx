@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentEmbeddings, reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument } from "../../data/useDocuments";
@@ -25,19 +26,6 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
-      {document.document_events && document.document_events?.length > 0 ? (
-        <>
-          <br />
-          <h2>Events/Timeline</h2>
-          <ul>
-            {orderBy(document.document_events, ["date"], ["asc"]).map(({ date, event }) => (
-              <li key={`${date}-${event}`}>
-                {date}: {event}
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
       {isFullyVisible ? (
         <>
           <br />
@@ -59,7 +47,9 @@ const StyledDocumentViewSummary = styled.div`
   u {
     cursor: pointer;
   }
-  h2 {
+  h2,
+  h4,
+  h6 {
     font-weight: 900;
   }
 `;
@@ -74,11 +64,14 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   //   setSentenceEndIndex(null);
   // }, []);
   useEffect(() => {
-    // --- scroll if we had an #anchor link param
     setTimeout(() => {
       if (hash !== "" && typeof document !== "undefined" && document?.querySelector != null) {
+        // --- scroll if we had an #anchor link param
         const element = document.querySelector(hash);
         if (element) element.scrollIntoView();
+      } else {
+        // --- otherwise scroll to top
+        window.scrollTo(0, 0);
       }
     });
   }, [hash]);
@@ -186,9 +179,10 @@ export const ViewCaseDocument = () => {
           <Link to={`/case/${caseId}`}>
             <button>←</button>
           </Link>{" "}
-          <span>{document?.name}</span>
+          <span>Back to Documents</span>
         </h4>
         <br />
+        <i>{document?.name}</i>
         <h2>{document?.document_description}</h2>
       </div>
       <section>
@@ -217,6 +211,18 @@ export const ViewCaseDocument = () => {
           </>
         ) : null} */}
       </section>
+
+      {/* EVENTS */}
+      {document.document_events && document.document_events?.length > 0 ? (
+        <>
+          <div className="section-lead">
+            <h4>Timeline/Events</h4>
+          </div>
+          <section className="no-shadow">
+            <TimelineSummary documentId={document.id} />
+          </section>
+        </>
+      ) : null}
 
       {/* HIGHLIGHTS */}
       {/* TODO */}

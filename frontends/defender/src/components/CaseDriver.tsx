@@ -42,7 +42,7 @@ export const CaseDriver: React.FC = () => {
         <>
           <div>
             <button onClick={() => navigate("/cases")}>⬅</button>
-            <label htmlFor="case-selector">Case Name</label>
+            <label htmlFor="case-selector">Cases</label>
             <input value={cse.name} onChange={(e) => caseUpdate({ id: cse.id, name: e.target.value })} />
           </div>
         </>
