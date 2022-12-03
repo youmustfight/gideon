@@ -81,7 +81,6 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         session.add_all(document_content_text)
         print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
     # 4. SAVE
-    document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
 

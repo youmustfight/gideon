@@ -278,8 +278,8 @@ async def app_route_documents_index_pdf(request):
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
     # --- process file
-    async with session.begin():
-        document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
+    await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_pdf(session=session, document_id=document_id)
@@ -294,8 +294,8 @@ async def app_route_documents_index_image(request):
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
     # --- process file
-    async with session.begin():
-        document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
+    await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_image(session=session, pyfile=pyfile, case_id=case_id)
@@ -310,8 +310,8 @@ async def app_route_documents_index_audio(request):
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
     # --- process file
-    async with session.begin():
-        document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
+    await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_audio(session=session, pyfile=pyfile, case_id=case_id)
@@ -326,8 +326,8 @@ async def app_route_documents_index_video(request):
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
     # --- process file
-    async with session.begin():
-        document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
+    await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_video(session=session, pyfile=pyfile, case_id=case_id)

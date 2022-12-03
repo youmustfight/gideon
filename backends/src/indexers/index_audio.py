@@ -43,7 +43,6 @@ async def _index_audio_process_content(session, document_id: int) -> None:
     ), sentences))
     session.add_all(document_content_sentences)
     # SAVE
-    document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document)
 

@@ -25,7 +25,6 @@ async def _index_image_process_content(session, document_id) -> None:
     )
     session.add(document_content)
     # 3. SAVE
-    document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document)
 

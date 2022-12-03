@@ -28,5 +28,9 @@ async def index_document_prep(session, pyfile, case_id, type):
         upload_url=s3_get_file_url(filename),
         document_id=document_id
     ))
+    # UPDATE PROCESSING STATUS (kind of silly bc of above queued and an err will rollback either)
+    await session.execute(sa.update(Document)
+        .where(Document.id == int(document_id))
+        .values(status_processing_files="completed"))
     # RETURN DOCUMENT
     return document_id

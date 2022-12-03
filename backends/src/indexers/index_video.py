@@ -117,7 +117,6 @@ async def _index_video_process_content(session, document_id: int) -> None:
             #             )
             #         )    
     # SAVE
-    document.status_processing_files = "completed"
     document.status_processing_content = "completed"
     session.add(document)
 
