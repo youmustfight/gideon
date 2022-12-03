@@ -31,8 +31,10 @@ export type TDocument = {
   id: number;
   name?: string;
   type: "audio" | "image" | "pdf" | "video";
-  status_processing_files?: boolean;
-  status_processing_embeddings?: boolean;
+  status_processing_files?: "queued" | "completed";
+  status_processing_content?: "queued" | "completed";
+  status_processing_embeddings?: "queued" | "completed";
+  status_processing_extractions?: "queued" | "completed";
   document_description?: string;
   document_events?: { date: string; event: string }[];
   document_summary?: string;

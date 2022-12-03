@@ -3,35 +3,39 @@ import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { useDocuments } from "../data/useDocuments";
 
-export const TimelineSummary = () => {
+export const TimelineSummary: React.FC<{ documentId?: number }> = ({ documentId }) => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
   const { data: documents, isSuccess: isSuccessDocuments } = useDocuments(caseId);
   const documentIdMap = keyBy(documents, "id");
+
   // RENDER
+  const timelineEvents = orderBy(
+    flatten((documents ?? []).map((d) => (d.document_events ?? [])?.map((e) => ({ ...e, documentId: d.id })))),
+    ["date"],
+    ["asc"]
+  ).filter((e) => (documentId ? e.documentId === documentId : true));
   return (
     <StyledTimelineSummary>
       {!isSuccessDocuments ? (
         <h2>Loading...</h2>
       ) : (
         <table>
-          {orderBy(
-            flatten((documents ?? []).map((d) => (d.document_events ?? [])?.map((e) => ({ ...e, documentId: d.id })))),
-            ["date"],
-            ["asc"]
-          ).map(({ date, documentId, event }) => (
-            <tr key={[documentId, date, event].join("-")}>
-              <td className="timeline-summary__td-date">
-                <b>{date}</b>
-              </td>
-              <td className="timeline-summary__td-doc">
-                <Link to={`/case/${caseId}/document/${documentId}`}>
-                  {documentIdMap[documentId].name?.slice(0, 24)}...
-                </Link>
-              </td>
-              <td className="timeline-summary__td-event">{event}</td>
-            </tr>
-          ))}
+          <tbody>
+            {timelineEvents.map(({ date, documentId, event }) => (
+              <tr key={[documentId, date, event].join("-")}>
+                <td className="timeline-summary__td-date">
+                  <b>{date}</b>
+                </td>
+                <td className="timeline-summary__td-doc">
+                  <Link to={`/case/${caseId}/document/${documentId}`}>
+                    {documentIdMap[documentId].name?.slice(0, 24)}...
+                  </Link>
+                </td>
+                <td className="timeline-summary__td-event">{event}</td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       )}
     </StyledTimelineSummary>
