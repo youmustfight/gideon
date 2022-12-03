@@ -11,9 +11,9 @@ from time import sleep
 # --- engines
 # https://beta.openai.com/docs/models/gpt-3
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
-ENGINE_COMPLETION = 'text-davinci-002' # 'text-ada-001' # 
+ENGINE_COMPLETION = 'text-davinci-003' # 'text-ada-001'
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
-ENGINE_EMBEDDING = 'text-similarity-davinci-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001' 
+ENGINE_EMBEDDING = 'text-similarity-davinci-001' # 'text-similarity-curie-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001'
 OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0

@@ -1,5 +1,4 @@
 import textwrap
-from files.file_utils import get_file_path, open_txt_file
 from models.gpt import gpt_completion, gpt_edit, gpt_vars
 from models.gpt_prompts import gpt_prompt_timeline, gpt_prompt_edit_event_timeline, gpt_prompt_edit_event_timeline_structure
 
@@ -11,12 +10,11 @@ async def extract_document_events(document_text):
     # build timelines for each chunk of text (expecting)
     chunks = textwrap.wrap(document_text, 11000)
     for chunk in chunks:
-        # --- set up prompt
-        prompt = gpt_prompt_timeline.replace('<<SOURCE_TEXT>>', chunk)
         # --- extract timeline
-        print('INFO (extract_document_events.py): prompt\n\n', prompt)
+        prompt = gpt_prompt_timeline.replace('<<SOURCE_TEXT>>', chunk)
         timeline_completion = gpt_completion(
             prompt, max_tokens=500, engine=gpt_vars()['ENGINE_COMPLETION'])
+        # TODO: v2 extraction with ner
         # --- delelte lines without dates
         timeline_completion_with_dates = gpt_edit(
             gpt_prompt_edit_event_timeline,

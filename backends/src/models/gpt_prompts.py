@@ -1,5 +1,6 @@
 # MISC/UTIL
-GPT_NULL_PHRASE = 'NO MENTION OF XYZ'
+ # used spaces instead of _, but gtp completion would make it 'NO MENTION OF SLAVERY'
+GPT_NULL_PHRASE = 'NO_MENTION_OF_ABCXYZ'
 
 # SUMMARIZTION
 gpt_prompt_summary_concise = """
@@ -77,8 +78,11 @@ DIFFERENCE DESCRIPTION:
 """
 
 # CITING SLAVERY
+# V1 - can't remember
+# V2 - initial
+# V3 - added strictness, "no explicit mention of slaves or slavery occurs".
 gpt_prompt_citing_slavery_summary = f"""
-In the fewest words, summarize the context mentioning slaves in the following passage. If no mention of slavery exists, write '{GPT_NULL_PHRASE}':
+In the fewest words, summarize the context mentioning slaves in the following passage. If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}':
 
 PASSAGE: <<SOURCE_TEXT>>
 

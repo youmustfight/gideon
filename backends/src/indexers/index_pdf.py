@@ -10,7 +10,10 @@ from dbs.vector_utils import tokenize_string
 import env
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from indexers.utils.extract_document_type import extract_document_type
+from indexers.utils.extract_document_caselaw_mentions import extract_document_caselaw_mentions
 from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_organizations import extract_document_organizations
+from indexers.utils.extract_document_people import extract_document_people
 from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
@@ -135,12 +138,13 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
     # --- TODO: cases/laws mentioned
-    # # --- if a discovery document (ex: police report, testimony, motion)
+    await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
-    print('INFO (index_pdf.py:_index_pdf_process_extractions): document_events')
     document.document_events = await extract_document_events(document_content_text)
-    # --- TODO: organizations mentioned
-    # --- TODO: people mentioned + context within document
+    # --- organizations mentioned
+    await extract_document_organizations(document_content_text)
+    # --- people mentioned + context within document
+    await extract_document_people(document_content_text)
     # --- SAVE
     document.status_processing_extractions = "completed"
     session.add(document)
