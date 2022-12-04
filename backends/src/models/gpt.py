@@ -2,18 +2,20 @@ import env
 from models.gpt_prompts import gpt_prompt_summary_detailed
 from utils import filter_empty_strs
 import numpy
-import math
 import requests
 import textwrap
 from time import sleep
 
 # SETUP
+# we should stop differentiating between model/engine. it's not interchangable. cpt-text/text-davinci-003
 # --- engines
 # https://beta.openai.com/docs/models/gpt-3
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
+# https://openai.com/blog/introducing-text-and-code-embeddings/
+# https://beta.openai.com/docs/guides/embeddings/what-are-embeddings
 ENGINE_COMPLETION = 'text-davinci-003' # 'text-ada-001'
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
-ENGINE_EMBEDDING = 'text-similarity-davinci-001' # 'text-similarity-curie-001'  # 'text-similarity-ada-001' # 'text-similarity-babbage-001'
+ENGINE_EMBEDDING = 'text-similarity-ada-001'
 OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0
@@ -37,7 +39,8 @@ def gpt_embedding(content, engine=ENGINE_EMBEDDING):
             headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
             json={ 'model': engine, 'input': content }
         )
-        vector = response.json()['data'][0]['embedding']
+        response = response.json()
+        vector = response['data'][0]['embedding']
         # Return
         # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
         # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
