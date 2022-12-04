@@ -1,8 +1,28 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
-from dbs.vectordb_pinecone import index_documents_sentences_add, index_documents_text_add, index_clip_image_add
+from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_clip
 from dbs.sa_models import Document, DocumentContent, Embedding
 
+
+# HELPERS
+# --- sentences
+def upsert_text_384(vectors):
+    print(f'INFO (index_documents_text_sentence): upseting {len(vectors)} vectors')
+    if len(vectors) > 0:
+        pinecone_index_documents_text_384.upsert(vectors=vectors)
+# --- breadth/context
+def upsert_text_1024(vectors):
+    print(f'INFO (index_documents_text_sentence): upseting {len(vectors)} vectors')
+    if len(vectors) > 0:
+        pinecone_index_documents_text_1024.upsert(vectors=vectors)
+# --- images multi-modal
+def upsert_clip(vectors):
+    print(f'INFO (index_documents_image): upseting {len(vectors)} vectors')
+    if len(vectors) > 0:
+        pinecone_index_documents_clip.upsert(vectors=vectors)
+
+
+# RUNNER
 async def index_document_content_vectors(session, document_id):
     print('INFO (index_document_content_vectors.py): start')
     # FETCH DATA
@@ -21,7 +41,10 @@ async def index_document_content_vectors(session, document_id):
     embeddings = query_embeddings.scalars().all()
     case = document.case
 
-    # INDEX
+    # PREP
+    upserts_text_384 = []
+    upserts_text_1024 = []
+    upserts_clip = []
     for embedding in embeddings:
         em = embedding
         dc = embedding.document_content
@@ -33,21 +56,19 @@ async def index_document_content_vectors(session, document_id):
             "document_content_id": dc.id,
         }
         if (dc.text != None): metadata.update({ 'string_length': len(dc.text) })
-        # --- index content (max_size)
-        if (dc.tokenizing_strategy == "max_size"):
-            index_documents_text_add(
-                embedding_id=em.id,
-                vector=em.vector_json,
-                metadata=metadata)
+        # --- setup record
+        upsert_record = (str(em.id), em.vector_json, { "embedding_id": int(em.id) }.update(metadata))
         # --- index content (sentence)
         if (dc.tokenizing_strategy == "sentence"):
-            index_documents_sentences_add(
-                embedding_id=em.id,
-                vector=em.vector_json,
-                metadata=metadata)
+            upserts_text_384.append(upsert_record)
+        # --- index content (max_size)
+        if (dc.tokenizing_strategy == "max_size"):
+            upserts_text_1024.append(upsert_record)
         # --- index content (image)
         if (dc.image_file_id != None):
-            index_clip_image_add(
-                embedding_id=em.id,
-                vector=em.vector_json,
-                metadata=metadata)
+            upserts_clip.append(upsert_record)
+
+    # INDEX
+    upsert_text_384(upserts_text_384)
+    upsert_text_1024(upserts_text_1024)
+    upsert_clip(upserts_clip)
