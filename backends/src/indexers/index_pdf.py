@@ -11,7 +11,7 @@ import env
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from indexers.utils.extract_document_type import extract_document_type
 from indexers.utils.extract_document_caselaw_mentions import extract_document_caselaw_mentions
-from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_organizations import extract_document_organizations
 from indexers.utils.extract_document_people import extract_document_people
 from indexers.utils.extract_document_summary import extract_document_summary
@@ -19,6 +19,7 @@ from indexers.utils.extract_document_summary_one_liner import extract_document_s
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
 from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
 from models.gpt import gpt_embedding, gpt_vars
+from models.sentence import sentence_encode_embeddings, SENTENCE_MODEL_NAME
 
 # SETUP
 # --- OCR
@@ -89,19 +90,37 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
-    document_content = document_content_query.scalars().all()
+    document_content = list(document_content_query.scalars().all())
+    document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == "sentence", document_content))
+    document_content_maxed_size = list(filter(lambda c: c.tokenizing_strategy == "max_size", document_content))
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): # of document content', len(document_content))
-    # --- CREATE EMBEDDINGS (context is derived from relation)
-    for content in list(document_content):
+    # V2 CREATE EMBEDDINGS
+    # --- sentences (sentence-transformer = free, but very limited token length)
+    sentence_embeddings = sentence_encode_embeddings(list(map(lambda c: c.text, document_content_sentences)))
+    sentence_embeddings_as_models = []
+    for index, sentence_embedding_vector in enumerate(sentence_embeddings):
+        sentence_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_sentences[index].id,
+            encoded_model_type="sentence-transformers",
+            encoded_model_engine=SENTENCE_MODEL_NAME,
+            encoding_strategy="text",
+            vector_dimensions=len(sentence_embedding_vector),
+            vector_json=sentence_embedding_vector.tolist(), # converts ndarry -> list (but also makes serializable data)
+        ))
+    session.add_all(sentence_embeddings_as_models)
+    # --- max_size (gtp3 ada = very very cheap, and large token length)
+    for content in document_content_maxed_size:
         text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
         text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
         await session.execute(
             sa.insert(Embedding).values(
                 document_id=document_id,
                 document_content_id=content.id,
-                encoded_model="gpt3",
+                encoded_model_type="gpt3",
                 encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
                 encoding_strategy="text",
+                vector_dimensions=len(text_embedding_vector),
                 vector_json=text_embedding_vector,
             ))
         sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
@@ -139,7 +158,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # --- TODO: cases/laws mentioned
     await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
-    document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
     await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document

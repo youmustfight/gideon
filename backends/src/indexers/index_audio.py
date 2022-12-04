@@ -7,7 +7,7 @@ from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 from files.file_utils import get_file_path, open_txt_file
 from files.s3_utils import s3_get_file_url, s3_upload_file
-from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_events import extract_document_events_v1
 from models.assemblyai import assemblyai_transcribe
 from models.gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
 from models.gpt_prompts import gpt_prompt_document_type
@@ -92,7 +92,7 @@ async def _index_audio_process_extractions(session, document_id: int) -> None:
         document.document_summary = gpt_summarize(document_content_text, max_length=1500)
     # --- events
     print('INFO (index_pdf.py:_index_audio_process_extractions): document_events')
-    document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events_v1(document_content_text)
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

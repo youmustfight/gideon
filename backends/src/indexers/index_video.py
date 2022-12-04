@@ -12,7 +12,7 @@ import env
 from files.file_utils import get_file_path, open_txt_file
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file, s3_upload_file_string
-from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_summary import extract_document_summary
 from models.assemblyai import assemblyai_transcribe
 from models.clip import clip_image_embedding, clip_vars
@@ -190,7 +190,7 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
         document.document_summary = extract_document_summary(document_content_text)
     # --- events
     print('INFO (index_pdf.py:_index_video_process_extractions): document_events')
-    document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events_v1(document_content_text)
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

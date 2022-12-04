@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
-from dbs.vectordb_pinecone import get_indexes
+from dbs.vectordb_pinecone import pinecone_index_documents_clip, pinecone_index_documents_text_384, pinecone_index_documents_text_1024
 import env
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
@@ -194,9 +194,9 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
-            get_indexes()["index_documents_clip"].delete(ids=embeddings_ids_strs)
-            get_indexes()["index_documents_text"].delete(ids=embeddings_ids_strs)
-            get_indexes()["index_documents_sentences"].delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_clip.delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_text_384.delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_text_1024.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
         await session.execute(sa.delete(Embedding)

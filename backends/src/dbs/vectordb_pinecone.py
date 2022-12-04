@@ -14,50 +14,12 @@ pinecone.init(
   api_key=env.env_get_database_pinecone_api_key(),
   environment=env.env_get_database_pinecone_environment()
 )
-index_documents_clip = pinecone.Index("documents-clip-768") # cosine
-index_documents_text = pinecone.Index("documents-text-12288") # euclidian
-index_documents_sentences = pinecone.Index("documents-sentences-12288") # euclidian
-
-def get_indexes():
-    return {
-        "index_documents_clip": index_documents_clip,
-        "index_documents_text": index_documents_text,
-        "index_documents_sentences": index_documents_sentences,
-    }
-
-
-# INDEX UPSERTS
-
-def index_documents_text_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_documents_text_add): start", embedding_id, metadata)
-    pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
-    # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
-    if (metadata != None): pinecone_upsert_record[2].update(metadata)
-    # --- index upsert
-    get_indexes()["index_documents_text"].upsert(vectors=[pinecone_upsert_record])
-    print("INFO (vectordb_pinecone:index_documents_text_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
-
-def index_documents_sentences_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_documents_sentences_add): start", embedding_id, metadata)
-    pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
-    # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
-    if (metadata != None): pinecone_upsert_record[2].update(metadata)
-    # --- index upsert
-    get_indexes()["index_documents_sentences"].upsert(vectors=[pinecone_upsert_record])
-    print("INFO (vectordb_pinecone:index_documents_sentences_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
-
-def index_clip_image_add(embedding_id, vector, metadata=None):
-    print("INFO (vectordb_pinecone:index_clip_image_add): start", embedding_id, metadata)
-    pinecone_upsert_record = (str(embedding_id), vector, { "embedding_id": int(embedding_id) })
-    # --- append metadata (https://stackoverflow.com/questions/14839528/merge-two-objects-in-python)
-    if (metadata != None): pinecone_upsert_record[2].update(metadata)
-    # --- index upsert
-    get_indexes()["index_documents_clip"].upsert(vectors=[pinecone_upsert_record])
-    print("INFO (vectordb_pinecone:index_clip_image_add): upsert", [pinecone_upsert_record[0], pinecone_upsert_record[2]])
-
+pinecone_index_documents_clip = pinecone.Index("documents-clip-768") # cosine
+pinecone_index_documents_text_384 = pinecone.Index("documents-text-384") # cosine (prev euclidian bc higher dimensionality)
+pinecone_index_documents_text_1024 = pinecone.Index("documents-text-1024") # cosine (prev euclidian bc higher dimensionality)
 
 # INDEX QUERIES
-  
+
 async def index_documents_text_query(query_text, case_uuid, top_k=12, score_limit=1.2, score_diff_percent=0.15):
     print(f'INFO (vectordb_pinecone:index_documents_text_query): query "{query_text}"')
     text_embedding_tensor = gpt_embedding(query_text) # now returns as numpy array
@@ -67,7 +29,7 @@ async def index_documents_text_query(query_text, case_uuid, top_k=12, score_limi
     query_filter = { "string_length": { "$gt": 480 } }
     if (case_uuid != None):
         query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
-    query_results = get_indexes()["index_documents_text"].query(
+    query_results = pinecone_index_documents_text_1024.query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,
@@ -93,7 +55,7 @@ def index_documents_sentences_query(query_text, case_uuid, top_k=12, score_limit
     query_filter = { "string_length": { "$gt": 80 } }
     if (case_uuid != None):
         query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
-    query_results = get_indexes()["index_documents_sentences"].query(
+    query_results = pinecone_index_documents_text_384.query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,
@@ -122,7 +84,7 @@ def index_clip_text_search(query_text, case_uuid, top_k=12, score_limit=0.1, sco
     query_filter = {}
     if (case_uuid != None):
         query_filter.update({ "case_uuid": { "$eq": str(case_uuid) } })
-    query_results = get_indexes()["index_documents_clip"].query(
+    query_results = pinecone_index_documents_clip.query(
         vector=text_embedding_vector,
         top_k=top_k,
         include_values=False,

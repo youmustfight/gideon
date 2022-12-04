@@ -4,8 +4,6 @@ import numpy as np
 from sqlalchemy.orm import joinedload
 
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from dbs.vectordb_pinecone import index_clip_image_add
-import env
 from files.file_utils import get_file_path
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
 from models.clip import clip_classifications, clip_image_embedding, clip_vars
