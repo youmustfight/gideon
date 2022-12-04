@@ -164,10 +164,11 @@ class Embedding(BaseModel):
     document_content_id = Column(Integer, ForeignKey("documentcontent.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
     # --- encoding model/engine info
-    encoded_model = Column(Text()) # gpt3, clip
+    encoded_model_type = Column(Text()) # gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
     encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
     # --- post-encoding
+    vector_dimensions=Column(Integer())
     vector_json=Column(JSONB) # for storing raw values to easily access later
     npy_url = Column(Text()) # save npy binary to S3? probably unnecessary so now doing vector_json
     def serialize(self):
@@ -175,7 +176,7 @@ class Embedding(BaseModel):
             "id": self.id,
             "document_id": self.document_id,
             "document_content_id": self.document_content_id,
-            "encoded_model": self.encoded_model,
+            "encoded_model_type": self.encoded_model_type,
             "encoded_model_engine": self.encoded_model_engine,
             "encoding_strategy": self.encoding_strategy,
         }
