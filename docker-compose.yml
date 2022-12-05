@@ -54,6 +54,7 @@ services:
   api:
     build:
       context: ./backends
+    image: api-image
     volumes:
       - ./backends/src:/usr/src/backends/src
       - ./backends/requirements.txt:/usr/src/backends/requirements.txt
@@ -81,3 +82,14 @@ services:
     image: redis:6.2.7
     ports:
       - "6379:6379"
+  
+  worker:
+    image: api-image:latest
+    volumes:
+      - ./backends/src:/usr/src/backends/src
+      - ./backends/requirements.txt:/usr/src/backends/requirements.txt
+    depends_on:
+      - queue
+    command: python -u src/worker.py
+    links:
+      - queue
