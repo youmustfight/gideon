@@ -16,21 +16,8 @@ try:
     cursor = connection.cursor()
     # Executing a SQL query
     # --- user
-    insert_user_query = """ INSERT INTO "user" (name, email, password) VALUES ('gideon', 'gideon@gideon.com', 'foundation') """
+    insert_user_query = """ INSERT INTO "user" (name, email, password) VALUES ('gideon', 'gideon@gideon.foundation', 'gideon') """
     cursor.execute(insert_user_query)
-    connection.commit()
-    # --- case
-    insert_case_query = """ INSERT INTO "case" DEFAULT VALUES """
-    cursor.execute(insert_case_query)
-    connection.commit()
-    # --- user_case
-    cursor.execute(""" SELECT id FROM "case" ORDER BY id DESC LIMIT 1 """)
-    case_id = cursor.fetchone()[0]
-    cursor.execute(""" SELECT id FROM "user" ORDER BY id DESC LIMIT 1 """)
-    user_id = cursor.fetchone()[0]
-    print(f'Inserted IDs: case_id ({case_id}), user_id ({user_id})')
-    insert_case_user_query = f""" INSERT INTO "case_user" (case_id, user_id) VALUES ({case_id}, {user_id}) """
-    cursor.execute(insert_case_user_query)
     connection.commit()
 
 

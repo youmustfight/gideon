@@ -1,22 +1,20 @@
 import cv2
 import math
 import numpy as np
-from patchify import patchify
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 from time import sleep
 
+from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
-import env
-from files.file_utils import get_file_path, open_txt_file
 from files.opencv_utils import video_frames
-from files.s3_utils import s3_get_file_url, s3_upload_file, s3_upload_file_string
-from indexers.utils.extract_document_events import extract_document_events
+from files.s3_utils import s3_get_file_url, s3_upload_file_string
+from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_summary import extract_document_summary
 from models.assemblyai import assemblyai_transcribe
-from models.clip import clip_image_embedding, clip_vars
-from models.gpt import gpt_embedding, gpt_vars, gpt_completion, gpt_summarize
+from models.clip import clip_image_embedding
+from models.gpt import gpt_embedding, gpt_vars, gpt_completion
 from models.gpt_prompts import gpt_prompt_video_type
 
 async def _index_video_process_content(session, document_id: int) -> None:
@@ -89,8 +87,7 @@ async def _index_video_process_content(session, document_id: int) -> None:
                     start_second=start_second,
                 )
             )
-            # PATCHIFY
-            # TODO: re-enable this when we parallelize. this will take too long locally
+            # PATCHIFY # TODO: re-enable this when/if we need to parallelize. takes too long
             # patches = patchify(frame, patch_shape, patch_step) # don't squeeze, we want the matrix structure as is for saving files
             # for i in range(patches.shape[0]):
             #     for j in range(patches.shape[1]):
@@ -122,49 +119,63 @@ async def _index_video_process_content(session, document_id: int) -> None:
 
 async def _index_video_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_image_process_embeddings): start')
+    # SETUP
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_image_process_embeddings): document content', document_content)
-    # --- CREATE EMBEDDINGS (context is derived from relation)
-    for content in list(document_content):
-        # TEXT
-        if (content.text != None):
-            text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
-            text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
-            await session.execute(
-                sa.insert(Embedding).values(
-                    document_id=document_id,
-                    document_content_id=content.id,
-                    encoded_model="gpt3",
-                    encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-                    encoding_strategy="text",
-                    vector_json=text_embedding_vector,
-                ))
-            sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
-        # IMAGE
-        elif (content.image_file_id != None):
-            document_content_file_query = await session.execute(
-                sa.select(File)
-                    .options(joinedload(File.document_content_image_file))
-                    .where(File.document_content_image_file.any(DocumentContent.id == int(content.id))))
-            document_content_file = document_content_file_query.scalars().first()
-            # --- run through clip
-            image_embedding_tensor = clip_image_embedding(s3_get_file_url(document_content_file.upload_key)) # returns numpy array [1,512]
-            print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_tensor.shape', image_embedding_tensor.shape)
-            image_embedding_vector = np.squeeze(image_embedding_tensor).tolist()
-            print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_vector', image_embedding_vector)
-            # --- creat embedding
-            await session.execute(
-                sa.insert(Embedding).values(
-                    document_id=document_id,
-                    document_content_id=content.id,
-                    encoded_model="clip",
-                    encoded_model_engine=clip_vars()["CLIP_MODEL"],
-                    encoding_strategy="image",
-                    vector_json=image_embedding_vector,
-                ))
+    document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == "sentence", document_content))
+    document_content_maxed_size = list(filter(lambda c: c.tokenizing_strategy == "max_size", document_content))
+    document_content_images = list(filter(lambda c: c.image_file_id != None, document_content))
+    # CREATE EMBEDDINGS (context is derived from relation)
+    # --- agents
+    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
+    aiagent_max_size_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=document.case_id)
+    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
+    # --- sentences (batch processing to avoid rate limits/throttles)
+    sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))
+    sentence_embeddings_as_models = []
+    for index, embedding in enumerate(sentence_embeddings):
+        sentence_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_sentences[index].id,
+            encoded_model_engine=aiagent_sentence_embeder.model_name,
+            encoding_strategy="text",
+            vector_dimensions=len(embedding),
+            vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
+        ))
+    session.add_all(sentence_embeddings_as_models)
+    # --- max_size (batch processing to avoid rate limits/throttles)
+    maxed_size_embeddings = aiagent_max_size_embeder.encode_text(list(map(lambda c: c.text, document_content_maxed_size)))
+    maxed_size_embeddings_as_models = []
+    for index, embedding in enumerate(maxed_size_embeddings):
+        maxed_size_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_maxed_size[index].id,
+            encoded_model_engine=aiagent_max_size_embeder.model_name,
+            encoding_strategy="text",
+            vector_dimensions=len(embedding),
+            vector_json=embedding.tolist(),
+        ))
+    session.add_all(maxed_size_embeddings_as_models)
+    # --- images
+    image_embeddings_as_models = []
+    for content in document_content_images:
+        document_content_file_query = await session.execute(
+            sa.select(File)
+                .options(joinedload(File.document_content_image_file))
+                .where(File.document_content_image_file.any(DocumentContent.id == int(content.id))))
+        document_content_file = document_content_file_query.scalars().first()
+        image_embeddings = aiagent_image_embeder.encode_image(s3_get_file_url(document_content_file.upload_key))
+        image_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=content.id,
+            encoded_model_engine=aiagent_image_embeder.model_name,
+            encoding_strategy="image",
+            vector_json=image_embeddings[0].tolist(),
+        ))
+    session.add_all(image_embeddings_as_models)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
@@ -190,7 +201,7 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
         document.document_summary = extract_document_summary(document_content_text)
     # --- events
     print('INFO (index_pdf.py:_index_video_process_extractions): document_events')
-    document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events_v1(document_content_text)
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

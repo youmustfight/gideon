@@ -6,7 +6,7 @@ from files.s3_utils import s3_get_file_url, s3_upload_file
 async def index_document_prep(session, pyfile, case_id, type):
     # VALIDATE
     print(f"INFO (index_document_prep.py): type: '{type}'")
-    if type not in ['audio', 'pdf', 'video']:
+    if type not in ['audio', 'image', 'pdf', 'video']:
         raise f'Document type not allowed: {type}'
     # SAVE DOCUMENT
     document_query = await session.execute(

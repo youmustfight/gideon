@@ -1,24 +1,22 @@
 import easyocr
 import io
-import numpy as np
 from pdf2image import convert_from_bytes
 import sqlalchemy as sa
-from time import sleep
 
+from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 import env
-from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from files.s3_utils import s3_get_file_bytes
 from indexers.utils.extract_document_type import extract_document_type
 from indexers.utils.extract_document_caselaw_mentions import extract_document_caselaw_mentions
-from indexers.utils.extract_document_events import extract_document_events
+from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_organizations import extract_document_organizations
 from indexers.utils.extract_document_people import extract_document_people
 from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
 from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
-from models.gpt import gpt_embedding, gpt_vars
 
 # SETUP
 # --- OCR
@@ -86,25 +84,45 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
 
 async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
+    # SETUP
+    # --- documents
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
-    document_content = document_content_query.scalars().all()
+    document_content = list(document_content_query.scalars().all())
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): # of document content', len(document_content))
-    # --- CREATE EMBEDDINGS (context is derived from relation)
-    for content in list(document_content):
-        text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
-        text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
-        await session.execute(
-            sa.insert(Embedding).values(
-                document_id=document_id,
-                document_content_id=content.id,
-                encoded_model="gpt3",
-                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-                encoding_strategy="text",
-                vector_json=text_embedding_vector,
-            ))
-        sleep(gpt_vars()['OPENAI_THROTTLE']) # openai 60 reqs/min
+    document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == "sentence", document_content))
+    document_content_maxed_size = list(filter(lambda c: c.tokenizing_strategy == "max_size", document_content))
+    # V2 CREATE EMBEDDINGS
+    # --- session/agent
+    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
+    aiagent_max_size_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=document.case_id)
+    # --- sentences (sentence-transformer = free, but very limited token length)
+    sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))
+    sentence_embeddings_as_models = []
+    for index, embedding in enumerate(sentence_embeddings):
+        sentence_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_sentences[index].id,
+            encoded_model_engine=aiagent_sentence_embeder.model_name,
+            encoding_strategy="text",
+            vector_dimensions=len(embedding),
+            vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
+        ))
+    session.add_all(sentence_embeddings_as_models)
+    # --- max_size (gtp3 ada = very very cheap, and large token length)
+    maxed_size_embeddings = aiagent_max_size_embeder.encode_text(list(map(lambda c: c.text, document_content_maxed_size)))
+    maxed_size_embeddings_as_models = []
+    for index, embedding in enumerate(maxed_size_embeddings):
+        maxed_size_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_maxed_size[index].id,
+            encoded_model_engine=aiagent_max_size_embeder.model_name,
+            encoding_strategy="text",
+            vector_dimensions=len(embedding),
+            vector_json=embedding.tolist(),
+        ))
+    session.add_all(maxed_size_embeddings_as_models)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
@@ -132,14 +150,15 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
         document.document_summary = extract_document_summary(document_content_text)
         document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
         # HACK: just putting this here for citing slavery/access case law test
-        document.document_citing_slavery_summary = extract_document_citing_slavery_summary(document_content_text)
-        document.document_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(document.document_citing_slavery_summary)
+        if 'slave' in document_content_text:
+            document.document_citing_slavery_summary = extract_document_citing_slavery_summary(document_content_text)
+            document.document_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(document.document_citing_slavery_summary)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
     # --- TODO: cases/laws mentioned
     await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
-    document.document_events = await extract_document_events(document_content_text)
+    document.document_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
     await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document

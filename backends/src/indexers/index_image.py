@@ -3,12 +3,11 @@ import sqlalchemy as sa
 import numpy as np
 from sqlalchemy.orm import joinedload
 
+from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from dbs.vectordb_pinecone import index_clip_image_add
-import env
 from files.file_utils import get_file_path
 from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
-from models.clip import clip_classifications, clip_image_embedding, clip_vars
+from models.clip import clip_classifications
 
 async def _index_image_process_content(session, document_id) -> None:
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
@@ -30,12 +29,17 @@ async def _index_image_process_content(session, document_id) -> None:
 
 async def _index_image_process_embeddings(session, document_id) -> None:
     print('INFO (index_pdf.py:_index_image_process_embeddings): start')
+    # SETUP
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_image_process_embeddings): document content', document_content)
-    # --- CREATE EMBEDDINGS (context is derived from relation)
+    # CREATE EMBEDDINGS (context is derived from relation)
+    # --- agent
+    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
+    # --- images
+    image_embeddings_as_models = []
     for content in list(document_content):
         document_content_file_query = await session.execute(
             sa.select(File)
@@ -43,20 +47,15 @@ async def _index_image_process_embeddings(session, document_id) -> None:
                 .where(File.document_content_image_file.any(DocumentContent.id == int(content.id))))
         document_content_file = document_content_file_query.scalars().first()
         # --- run through clip
-        image_embedding_tensor = clip_image_embedding(s3_get_file_url(document_content_file.upload_key)) # returns numpy array [1,512]
-        print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_tensor.shape', image_embedding_tensor.shape)
-        image_embedding_vector = np.squeeze(image_embedding_tensor).tolist()
-        # print('INFO (index_pdf.py:_index_image_process_embeddings): document image_embedding_vector', image_embedding_vector)
-        # --- creat embedding
-        await session.execute(
-            sa.insert(Embedding).values(
-                document_id=document_id,
-                document_content_id=content.id,
-                encoded_model="clip",
-                encoded_model_engine=clip_vars()["CLIP_MODEL"],
-                encoding_strategy="image",
-                vector_json=image_embedding_vector,
-            ))
+        image_embeddings = aiagent_image_embeder.encode_image(s3_get_file_url(document_content_file.upload_key))
+        image_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=content.id,
+            encoded_model_engine=aiagent_image_embeder.model_name,
+            encoding_strategy="image",
+            vector_json=image_embeddings[0].tolist(),
+        ))
+    session.add_all(image_embeddings_as_models)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)

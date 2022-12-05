@@ -25,6 +25,10 @@ def env_get_aws_secret_access_key():
 def env_get_aws_s3_files_bucket():
     return _env_getter('AWS_S3_FILES_BUCKET')
 
+# CAP
+def env_get_caselaw_access_project():
+    return _env_getter('CASELAW_ACCESS_PROJECT_API_KEY')
+
 # DATABASE
 def env_get_database_app_user_name():
     return _env_getter('DATABASE_APP_USER_NAME')

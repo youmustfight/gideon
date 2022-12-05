@@ -66,6 +66,7 @@ class Case(BaseModel):
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
+    ai_action_locks = relationship("AIActionLock", back_populates="case")
     def serialize(self):
         return {
             "id": self.id,
@@ -164,10 +165,11 @@ class Embedding(BaseModel):
     document_content_id = Column(Integer, ForeignKey("documentcontent.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
     # --- encoding model/engine info
-    encoded_model = Column(Text()) # gpt3, clip
+    encoded_model_type = Column(Text()) # gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
     encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
     # --- post-encoding
+    vector_dimensions=Column(Integer())
     vector_json=Column(JSONB) # for storing raw values to easily access later
     npy_url = Column(Text()) # save npy binary to S3? probably unnecessary so now doing vector_json
     def serialize(self):
@@ -175,7 +177,7 @@ class Embedding(BaseModel):
             "id": self.id,
             "document_id": self.document_id,
             "document_content_id": self.document_content_id,
-            "encoded_model": self.encoded_model,
+            "encoded_model_type": self.encoded_model_type,
             "encoded_model_engine": self.encoded_model_engine,
             "encoding_strategy": self.encoding_strategy,
         }
@@ -204,3 +206,12 @@ class File(BaseModel):
             "upload_url": self.upload_url,
             "upload_thumbnail_url": self.upload_thumbnail_url,
         }
+
+class AIActionLock(BaseModel):
+    __tablename__ = "ai_action_lock"
+    action = Column(Text())
+    model_name = Column(Text())
+    params = Column(JSON())
+    case_id = Column(Integer, ForeignKey('case.id'))
+    case = relationship("Case", back_populates="ai_action_locks")
+    created_at = Column(DateTime(timezone=True))
