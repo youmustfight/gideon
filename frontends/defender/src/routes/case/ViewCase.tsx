@@ -1,3 +1,4 @@
+import axios from "axios";
 import React from "react";
 import { Routes, Route, Navigate } from "react-router";
 import { useMatch } from "react-router-dom";
@@ -18,12 +19,12 @@ export const ViewCase = () => {
     <>
       <CaseDriver />
       <StyledViewCase>
-        {/* --- AI inputs */}
+        {/* --- AI inputs --- */}
         <section>
           <QuestionAnswerBox />
         </section>
 
-        {/* CASE VIEWS */}
+        {/* --- CASE VIEWS ---  */}
         <Routes>
           {/* --- document inspection */}
           <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
@@ -32,6 +33,16 @@ export const ViewCase = () => {
           {/* --- default overview showing. TODO: figure out relative path version */}
           {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
         </Routes>
+
+        {/* --- ADMIN ---  */}
+        <hr />
+        <br />
+        <div className="section-lead">
+          <h4>ADMIN</h4>
+        </div>
+        <section className="section-admin">
+          <button onClick={() => axios.put(`/v1/case/${caseId}/ai_action_locks_reset`)}>Reset AI Action Locks</button>
+        </section>
       </StyledViewCase>
     </>
   );
@@ -93,5 +104,11 @@ const StyledViewCase = styled.div`
     span.person-pill {
       margin: 0 6px 0 0;
     }
+  }
+  .section-admin {
+    padding: 1em;
+    display: flex;
+    text-align: center;
+    flex-direction: column;
   }
 `;
