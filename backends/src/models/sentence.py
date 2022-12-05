@@ -1,6 +1,5 @@
 from sentence_transformers import SentenceTransformer
 
-
 # Sentence embeddings are more effective + cheaper than GTP3
 # https://medium.com/@nils_reimers/openai-gpt-3-text-embeddings-really-a-new-state-of-the-art-in-dense-text-embeddings-6571fe3ec9d9
 # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2

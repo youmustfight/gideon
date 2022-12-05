@@ -20,6 +20,7 @@ OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0
 
+# DEPRECATE THIS FOR AI_ACTION_LOCKS
 def gpt_vars():
     return {
         "ENGINE_COMPLETION": ENGINE_COMPLETION,
@@ -40,14 +41,9 @@ def gpt_embedding(content, engine=ENGINE_EMBEDDING):
             json={ 'model': engine, 'input': content }
         )
         response = response.json()
-        vector = response['data'][0]['embedding']
-        # Return
-        # to be work well w/ faiss, we should return embeddings in shape of #, dimensions
-        # re: float32 https://github.com/facebookresearch/faiss/issues/461#issuecomment-392259327
-        vector_as_numpy_array = numpy.asarray(vector, dtype="float32")
-        vector_shaped_for_consistency_with_faiss = numpy.expand_dims(vector_as_numpy_array, axis=0) # matching the matrix style of sentence-transformer clip encode returns, which works with faiss
-        print(f"INFO (GPT3): gpt_embedding [{engine}] finish", vector_shaped_for_consistency_with_faiss)
-        return vector_shaped_for_consistency_with_faiss
+        # v1 --- setup using faiss (was single embedding)
+        # v2 --- setup with easy to use np arrays in a list, handling batch embeddings
+        return list(map(lambda d: numpy.asarray(d['embedding'], dtype='float32'), response['data']))
     except Exception as err:
         print(f"ERROR (GPT3): gpt_embedding", err)
         raise err
