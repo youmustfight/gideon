@@ -8,10 +8,11 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
 
+from aia.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, Case, Document, DocumentContent, Embedding, File, User
-from dbs.vectordb_pinecone import pinecone_index_documents_clip, pinecone_index_documents_text_384, pinecone_index_documents_text_1024
+from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, Embedding, File, User
+from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_text_4096, pinecone_index_documents_clip_768, pinecone_index_documents_text_12288
 import env
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
@@ -20,8 +21,7 @@ from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_
 from indexers.utils.index_document_content_vectors import index_document_content_vectors
 from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
 from queries.question_answer import question_answer
-from queries.search_for_locations_across_text import search_for_locations_across_text
-from queries.search_for_locations_across_image import search_for_locations_across_image
+from queries.search_locations import search_locations
 
 
 # INIT
@@ -129,9 +129,22 @@ async def app_route_case_put(request, case_id):
         query_case = await session.execute(
             sa.select(Case).where(Case.id == int(case_id)))
         case = query_case.scalars().one()
-        # TODO: make this better lol
+        # TODO: make better lol
         case.name = request.json['case']['name']
         session.add(case)
+    return json({ 'status': 'success' })
+
+@app.route('/v1/case/<case_id>/ai_action_locks_reset', methods = ['PUT'])
+@auth_route
+async def app_route_case_put_action_locks(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        case_id = int(case_id)
+        # --- delete existing action locks
+        await session.execute(sa.delete(AIActionLock)
+            .where(AIActionLock.case_id == case_id))
+        # --- add new action locks
+        session.add_all(generate_ai_action_locks(case_id))
     return json({ 'status': 'success' })
 
 @app.route('/v1/case', methods = ['POST'])
@@ -143,9 +156,11 @@ async def app_route_case_post(request):
         query_user = await session.execute(sa.select(User).where(User.id == int(request.json['userId'])))
         user = query_user.scalars().one()
         # --- insert case w/ user (model mapping/definition knows how to insert w/ junction table)
-        case_to_insert = Case(users=[user])
+        case_to_insert = Case(
+            ai_action_locks=generate_ai_action_locks(),
+            users=[user]
+        )
         session.add(case_to_insert)
-        await session.flush()
     return json({ 'status': 'success', "case": { "id": case_to_insert.id } })
 
 
@@ -194,9 +209,11 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
-            pinecone_index_documents_clip.delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_clip_768.delete(ids=embeddings_ids_strs)
             pinecone_index_documents_text_384.delete(ids=embeddings_ids_strs)
             pinecone_index_documents_text_1024.delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_text_4096.delete(ids=embeddings_ids_strs)
+            pinecone_index_documents_text_12288.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
         await session.execute(sa.delete(Embedding)
@@ -342,28 +359,12 @@ def app_route_health(request):
     return json({ 'status': 'success' })
 
 
-# HIGHLIGHTS
+# HIGHLIGHTS (TODO: removed this concept, will re-introduce when desired)
 @app.route('/v1/highlights', methods = ['GET'])
 @auth_route
 async def app_route_highlights(request):
-    highlights = [] # get_highlights_json()
+    highlights = []
     return json({ 'status': 'success', "highlights": highlights })
-
-# @app.route('/v1/highlights', methods = ['POST'])
-# @auth_route
-# def app_route_highlight_create(request):
-#     highlight = request.json['highlight']
-#     # --- process highlight embedding + save
-#     highlight = index_highlight(
-#         filename=highlight['filename'],
-#         user=highlight['user'],
-#         document_text_vectors_by_sentence_start_index=highlight['document_text_vectors_by_sentence_start_index'],
-#         document_text_vectors_by_sentence_end_index=highlight['document_text_vectors_by_sentence_end_index'],
-#         highlight_text=highlight['highlight_text'],
-#         note_text=highlight['note_text']
-#     )
-#     # --- respond
-#     return json({ 'status': 'success' })
 
 
 # INDEXES
@@ -386,7 +387,8 @@ async def app_route_indexes_regenerate(request):
             await index_document_content_vectors(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
-# QUERIES   
+
+# QUERIES
 @app.route('/v1/queries/document-query', methods = ['POST'])
 @auth_route
 async def app_route_question_answer(request):
@@ -403,59 +405,22 @@ async def app_route_question_answer(request):
 async def app_route_query_info_locations(request):
     session = request.ctx.session
     async with session.begin():
-        def serialize_location_text(location):
-            return dict(
-                document=location['document'].serialize(),
-                document_content=location['document_content'].serialize(),
-                score=location['score']
-            )
-        def serialize_location_image(location):
-            return dict(
-                document=location['document'].serialize(),
-                document_content=location['document_content'].serialize(),
-                image_file=location['image_file'].serialize(), # cannot for the life of me do a ternary/logic check for serializing this, so made 2 functions
-                score=location['score']
-            )
-        # --- pdfs/transcripts
-        locations_across_text = await search_for_locations_across_text(
+        # Fetch
+        locations = await search_locations(
             session,
             query_text=request.json.get('query'),
             case_id=request.json.get('case_id'))
-        locations_across_text_serialized = list(map(serialize_location_text, locations_across_text))
-        # --- images (including video frames)
-        locations_across_image = await search_for_locations_across_image(
-            session,
-            query_text=request.json.get('query'),
-            case_id=request.json.get('case_id'))
-        locations_across_image_serialized = list(map(serialize_location_image, locations_across_image))
-        # --- combined
-        locations = locations_across_image_serialized + locations_across_text_serialized
+        # Serialize (TODO): make "Location" class rather than plain dict
+        def serialize_location(location):
+            serial = dict(
+                document=location.get('document').serialize(),
+                document_content=location.get('document_content').serialize(),
+                score=location.get('score'))
+            if (location.get('image_file') != None):
+                serial['image_file'] = location.get('image_file').serialize()
+            return serial
+        locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', "locations": locations })
-
-# @app.route('/v1/queries/highlights-query', methods = ['POST'])
-# @auth_route
-# def app_route_highlights_location(request):
-#     # TODO: refactor
-#     highlights = search_highlights(request.json['query'])
-#     return json({ 'status': 'success', "highlights": highlights })
-
-# @app.route('/v1/queries/summarize-user', methods = ['POST'])
-# @auth_route
-# def app_route_summarize_user(request):
-#     user = request.json['user']
-#     answer = summarize_user(user)
-#     return json({ 'status': 'success', "answer": answer })
-
-# @app.route('/v1/queries/contrast-users', methods = ['POST'])
-# @auth_route
-# def app_route_contrast_users(request):
-#     user_one = request.json['user_one']
-#     statement_one = summarize_user(user_one)
-#     user_two = request.json['user_two']
-#     statement_two = summarize_user(user_two)
-#     answer = contrast_two_user_statements(user_one, statement_one, user_two, statement_two)
-#     return json({ 'status': 'success', "answer": answer })
-
 
 # USERS
 @app.route('/v1/user/<user_id>', methods = ['GET'])
