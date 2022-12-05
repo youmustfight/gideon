@@ -65,10 +65,10 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
               ,{" "}
               <Link
                 to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
-                  location.document_content.start_second ?? 0 / 60
+                  (location.document_content.start_second ?? 0) / 60
                 )}`}
               >
-                minute {Math.floor(location.document_content.start_second ?? 0 / 60)}
+                minute {Math.floor((location.document_content.start_second ?? 0) / 60)}
               </Link>
             </>
           ) : null}

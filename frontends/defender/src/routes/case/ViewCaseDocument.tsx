@@ -256,7 +256,12 @@ export const ViewCaseDocument = () => {
             <h4>Video Player</h4>
           </div>
           <section>
-            <ReactPlayer width="100%" height="100%" controls url={document?.files?.[0]?.upload_url} />
+            <ReactPlayer
+              width="100%"
+              height="100%"
+              controls
+              url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
+            />
           </section>
         </>
       ) : null}

@@ -82,7 +82,12 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         <DocumentPreviewAudio src={document.files[0].upload_url} controls />
       ) : null}
       {["video"].includes(document.type) && document.files?.[0] ? (
-        <ReactPlayer width="120px" height="" url={document.files[0].upload_url} controls={false} />
+        <ReactPlayer
+          width="120px"
+          height=""
+          url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
+          controls={false}
+        />
       ) : null}
     </div>
   );
