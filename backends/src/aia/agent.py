@@ -4,7 +4,7 @@ import numpy as np
 from sqlalchemy.orm import joinedload, Session
 
 from dbs.sa_models import AIActionLock, Case
-from models.clip import clip_text_embedding
+from models.clip import clip_text_embedding, clip_image_embedding
 from models.gpt import gpt_embedding
 from models.sentence import sentence_encode_embeddings
 from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_text_4096, pinecone_index_documents_text_12288, pinecone_index_documents_clip_768
@@ -46,6 +46,8 @@ class AIActionAgent():
         self.model_name = model_name
         self._case = case
     def encode_text(self):
+        pass # defined by w/ each inheriting class
+    def encode_image(self):
         pass # defined by w/ each inheriting class
     def query_search_vectors(self, query_text, query_image=None, query_filters={}, top_k=12, score_max=1, score_min=0, score_min_diff_percent=None, score_max_diff_percent=None):
         # --- vector
@@ -94,6 +96,8 @@ class AIActionAgent_AllMiniLML6v2(AIActionAgent):
     def encode_text(self, sentences):
         embeddings_arr = sentence_encode_embeddings(sentences)
         return embeddings_arr
+    def encode_image(self):
+        pass
 
 class AIActionAgent_TextSimilarityAda001(AIActionAgent):
     def __init__(self, *args, **kwargs):
@@ -104,7 +108,8 @@ class AIActionAgent_TextSimilarityAda001(AIActionAgent):
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
-
+    def encode_image(self):
+        pass
 class AIActionAgent_TextSimilarityCurie001(AIActionAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -114,6 +119,8 @@ class AIActionAgent_TextSimilarityCurie001(AIActionAgent):
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
+    def encode_image(self):
+        pass
 
 class AIActionAgent_TextSimilarityDavinci001(AIActionAgent):
     def __init__(self, *args, **kwargs):
@@ -124,6 +131,8 @@ class AIActionAgent_TextSimilarityDavinci001(AIActionAgent):
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
+    def encode_image(self):
+        pass
 
 class AIActionAgent_ViTL14336px(AIActionAgent):
     def __init__(self, *args, **kwargs):
@@ -134,6 +143,9 @@ class AIActionAgent_ViTL14336px(AIActionAgent):
     def encode_text(self, text_statements):
         embeddings_arr = clip_text_embedding(text_statements) # now returns as numpy array
         return embeddings_arr
+    def encode_image(self, image_file_url):
+        embedding = clip_image_embedding(image_file_url)
+        return [embedding]
 
 
 # TODO: how the f can we just initialize a AIActionAgent class off the bat w/ this setup
