@@ -66,6 +66,7 @@ class Case(BaseModel):
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
+    ai_action_locks = relationship("AIActionLock", back_populates="case")
     def serialize(self):
         return {
             "id": self.id,
@@ -205,3 +206,12 @@ class File(BaseModel):
             "upload_url": self.upload_url,
             "upload_thumbnail_url": self.upload_thumbnail_url,
         }
+
+class AIActionLock(BaseModel):
+    __tablename__ = "ai_action_lock"
+    action = Column(Text())
+    model_name = Column(Text())
+    params = Column(JSON())
+    case_id = Column(Integer, ForeignKey('case.id'))
+    case = relationship("Case", back_populates="ai_action_locks")
+    created_at = Column(DateTime(timezone=True))
