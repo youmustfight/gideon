@@ -315,7 +315,7 @@ async def app_route_documents_index_image(request):
     await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_image(session=session, pyfile=pyfile, case_id=case_id)
+        document_id = await index_image(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -331,7 +331,7 @@ async def app_route_documents_index_audio(request):
     await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_audio(session=session, pyfile=pyfile, case_id=case_id)
+        document_id = await index_audio(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -347,7 +347,7 @@ async def app_route_documents_index_video(request):
     await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
-        document_id = await index_video(session=session, pyfile=pyfile, case_id=case_id)
+        document_id = await index_video(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
