@@ -21,7 +21,7 @@ async def question_answer(session, query_text, case_id):
     print(f'INFO (question_answer.py): answering from {len(document_content)} document_content(s)...', document_content)
 
     # V1 SYNC (75~180 sec)
-    # V2 ASYNC (40~60 sec)
+    # V2 ASYNC w/ PARALLEL PROCESSORS (not threads) (40~60 sec)
     @ray.remote
     def query_for_answer(passage_text, query_text):
         prompt = gpt_prompt_answer_question.replace('<<PASSAGE>>', passage_text).replace('<<QUESTION>>', query_text)

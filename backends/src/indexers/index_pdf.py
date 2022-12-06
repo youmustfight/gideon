@@ -19,36 +19,43 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_content) started", document_id)
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
+    
     # 1. STATUS
     files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
     file = files_query.scalars().first()
+    
     # 2. PDF OCR -> TEXT (SENTENCES) / IMAGES
     # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
     print(f"INFO (index_pdf.py:_index_pdf_process_content): fetching document's documentcontent")
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
+
+    # 3. DOCUMENT CONTENT CREATE
     if len(document_content) == 0:
-        # 3. DOCUMENT CONTENT CREATE
         print(f"INFO (index_pdf.py:_index_pdf_process_content): converting {file.filename} to pngs")
         pdf_image_files = split_file_pdf_to_pil(file)
-        # --- 3a. PER PAGE (get text)
+
+        # --- 3a. Process text for all pages
+        # HOLY F. On my laptop, doing a 38 page PDF took 5+ minutes. This takes seconds now bc its just async web requests
+        @ray.remote
+        def process_page_text(pdf_image_file):
+            return ocr_parse_image_text(pdf_image_file)
+        pages_text_futures = list(map(lambda file: process_page_text.remote(file), pdf_image_files))
+        pages_text = ray.get(pages_text_futures)
+
+        # --- 3b. Tokenize/process text by sentence
         document_content_sentences = []
-        for idx, pdf_image_file in enumerate(pdf_image_files): # FYI can't unpack err happens on pages, so we cast w/ enumerate to add in an index
-            page_number = idx + 1
-            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number}'.format(page_number=page_number), pdf_image_file)
-            page_ocr_text = ocr_parse_image_text(pdf_image_file)
-            # print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number} ocr = "{page_ocr_text}"'.format(page_number=page_number, page_ocr_text=page_ocr_text))
-            # --- for each page, break down into sentences for content array
-            page_ocr_text_sentences = tokenize_string(page_ocr_text, "sentence")
-            # --- prep document content for page
+        for idx, page_text in enumerate(pages_text):
+            page_ocr_text_sentences = tokenize_string(page_text, "sentence")
             document_content_sentences += list(map(lambda sentence: DocumentContent(
                 document_id=document_id,
-                page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
+                page_number=str(idx + 1), # wtf this was throwing this whole time but only when i commit right after did it show up?????
                 text=sentence,
                 tokenizing_strategy="sentence"
             ), page_ocr_text_sentences))
         session.add_all(document_content_sentences)
-        # --- 3b. PER CHUNK (get text in biggest slices for summarization methods later)
+
+        # --- 3c. Tokenize/process text by max_size (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
         document_text = " ".join(map(lambda content: content.text, document_content_sentences))
         document_text_chunks = tokenize_string(document_text, "max_size")
         document_content_text = list(map(lambda chunk: DocumentContent(
@@ -60,6 +67,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
     else:
         print(f"INFO (index_pdf.py:_index_pdf_process_content): already processed content for document #{document_id} (content count: {len(document_content)})")
+
     # 4. SAVE
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
