@@ -13,20 +13,19 @@ RUN apt-get install \
   poppler-utils \
   -y
 
+# Cache Transformer/Language Models
+# --- spacy: NER (en_core_web_trf)
+RUN pip install spacy && python -m spacy download en_core_web_trf
+# --- CLIP
+# RUN mkdir -p /.cache/clip
+# RUN wget -O /.cache/clip/ViT-L-14-336px.pt "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt"
+# --- transformers (https://github.com/UKPLab/sentence-transformers/issues/352#issuecomment-923033069)
+# --- transformers:sentence_transformer
+# RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")'
+
 # Install python packages for app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-
-# Cache Transformer/Language Models
-# --- CLIP (can't get this to work)
-# RUN mkdir -p /.cache/clip
-# RUN wget -O /.cache/clip/ViT-L-14-336px.pt "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt"
-# --- spacy: NER (en_core_web_trf)
-RUN python -m spacy download en_core_web_trf
-# --- transformers (https://github.com/UKPLab/sentence-transformers/issues/352#issuecomment-923033069)
-# --- transformers:donut
-# --- transformers:sentence_transformer
-# RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")'
 
 # Copy src
 COPY . .
