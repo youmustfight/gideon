@@ -80,7 +80,6 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
             if retry >= max_retry:
                 return "Error (GTP3 Completion): %s" % err
             print('Error (GPT3):', err)
-            sleep(gpt_vars()['OPENAI_THROTTLE'])
 
 def gpt_edit(prompt, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 3
@@ -109,7 +108,6 @@ def gpt_edit(prompt, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT,
             if retry >= max_retry:
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, prompt, input)
-            sleep(gpt_vars()['OPENAI_THROTTLE'])
 
 def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))

@@ -11,14 +11,6 @@ export const ViewCaseOverview = () => {
   return (
     <>
       <StyledViewCaseOverview>
-        {/* SUMMATION (timeline w/ summaries) */}
-        <div className="section-lead">
-          <h4>Timeline Summary</h4>
-        </div>
-        <section>
-          <TimelineSummary />
-        </section>
-
         {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
         <div className="section-lead">
           <h4>Discovery, Evidence, Exhibits</h4>
@@ -28,6 +20,14 @@ export const ViewCaseOverview = () => {
         </section>
 
         {/* TODO: MY DOCS */}
+
+        {/* SUMMATION (timeline w/ summaries) */}
+        <div className="section-lead">
+          <h4>Timeline Summary</h4>
+        </div>
+        <section>
+          <TimelineSummary />
+        </section>
 
         {/* HIGHLIGHTS/ANNOTATIONS */}
         {highlights?.length > 0 ? (

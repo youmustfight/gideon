@@ -1,13 +1,8 @@
-import easyocr
-import io
-from pdf2image import convert_from_bytes
+import ray
 import sqlalchemy as sa
-
 from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
-import env
-from files.s3_utils import s3_get_file_bytes
 from indexers.utils.extract_document_type import extract_document_type
 from indexers.utils.extract_document_caselaw_mentions import extract_document_caselaw_mentions
 from indexers.utils.extract_document_events import extract_document_events_v1
@@ -17,58 +12,45 @@ from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
 from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
+from models.ocr import ocr_parse_image_text, split_file_pdf_to_pil
 
-# SETUP
-# --- OCR
-reader = easyocr.Reader(['en'], gpu=env.env_is_gpu_available(), verbose=True) # don't think we'll have GPUs on AWS instances
 
 async def _index_pdf_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_content) started", document_id)
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    # 1. STATUS
     files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
-    files = files_query.scalars()
-    print(f"INFO (index_pdf.py:_index_pdf_process_content) ##TODO## files")
-    file = files.first()
-    file_bytes = s3_get_file_bytes(file.upload_key)
-    # 2. PDF OCR -> TEXT (SENTENCES) / IMAGES
-    # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
-    print(f"INFO (index_pdf.py:_index_pdf_process_content): fetching document's documentcontent")
+    file = files_query.scalars().first()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
-    document_content = document_content_query.scalars().all() # .all() will turn ScalarResult into a list()
-    print(f"INFO (index_pdf.py:_index_pdf_process_content): fetched document's documentcontent (length: {len(document_content)})")
+    document_content = document_content_query.scalars().all()
+
     if len(document_content) == 0:
-        # CONVERT (PDF -> Image[] for OCR) # https://github.com/Belval/pdf2image#whats-new
+        # 1. PDF OCR -> TEXT (SENTENCES) / IMAGES
         print(f"INFO (index_pdf.py:_index_pdf_process_content): converting {file.filename} to pngs")
-        pdf_image_files = convert_from_bytes(file_bytes, fmt='png') # TODO: always ensure max size to limit processing OCR demand? size=(1400, None)
-        print(f"INFO (index_pdf.py:_index_pdf_process_content): converted {file.filename} to ##TODO## pngs")
-        # 3. DOCUMENT CONTENT CREATE
-        # --- 3a. PER PAGE (get text)
+        pdf_image_files = split_file_pdf_to_pil(file)
+
+        # 2. DOCUMENT CONTENT CREATE
+        # --- 2a. Process text for all pages
+        # HOLY F. On my laptop, doing a 38 page PDF took 5+ minutes. This takes seconds now bc its just async web requests
+        @ray.remote
+        def process_page_text(pdf_image_file):
+            return ocr_parse_image_text(pdf_image_file)
+        pages_text_futures = list(map(lambda file: process_page_text.remote(file), pdf_image_files))
+        pages_text = ray.get(pages_text_futures)
+
+        # --- 2b. Tokenize/process text by sentence
         document_content_sentences = []
-        for idx, pdf_image_file in enumerate(pdf_image_files): # FYI can't unpack err happens on pages, so we cast w/ enumerate to add in an index
-            page_number = idx + 1
-            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number}'.format(page_number=page_number), pdf_image_file)
-            # --- ocr (confused as shit converting PIL.PngImagePlugin.PngImageFile to bytes)
-            img_byte_arr = io.BytesIO()
-            pdf_image_file.save(img_byte_arr, format='png')
-            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number} OCRing'.format(page_number=page_number), pdf_image_file)
-            page_ocr_str_array = reader.readtext(img_byte_arr.getvalue(), detail=0)
-            # --- compile all extracted text tokens into 1 big string so we can break down into sentences
-            page_ocr_text = ' '.join(page_ocr_str_array).encode(encoding='ASCII',errors='ignore').decode() # safe string
-            print('INFO (index_pdf.py:_index_pdf_process_content): page {page_number} ocr = "{page_ocr_text}"'.format(page_number=page_number, page_ocr_text=page_ocr_text))
-            # --- for each page, break down into sentences for content array
-            page_ocr_text_sentences = tokenize_string(page_ocr_text, "sentence")
-            print(f"INFO (index_pdf.py:_index_pdf_process_content): tokenized page {page_number}", page_ocr_text_sentences)
-            # --- prep document content for page
+        for idx, page_text in enumerate(pages_text):
+            page_ocr_text_sentences = tokenize_string(page_text, "sentence")
             document_content_sentences += list(map(lambda sentence: DocumentContent(
                 document_id=document_id,
-                page_number=str(page_number), # wtf this was throwing this whole time but only when i commit right after did it show up?????
+                page_number=str(idx + 1), # wtf this was throwing this whole time but only when i commit right after did it show up?????
                 text=sentence,
                 tokenizing_strategy="sentence"
             ), page_ocr_text_sentences))
         session.add_all(document_content_sentences)
-        # --- 3b. PER CHUNK (get text in biggest slices for summarization methods later)
+
+        # --- 2c. Tokenize/process text by max_size (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
         document_text = " ".join(map(lambda content: content.text, document_content_sentences))
         document_text_chunks = tokenize_string(document_text, "max_size")
         document_content_text = list(map(lambda chunk: DocumentContent(
@@ -78,7 +60,10 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         ), document_text_chunks))
         session.add_all(document_content_text)
         print(f"INFO (index_pdf.py:_index_pdf_process_content): Inserted new document content records")
-    # 4. SAVE
+    else:
+        print(f"INFO (index_pdf.py:_index_pdf_process_content): already processed content for document #{document_id} (content count: {len(document_content)})")
+
+    # 3. SAVE
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
 
@@ -134,9 +119,9 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     document_content_query = await session.execute(
         sa.select(DocumentContent)
             .where(DocumentContent.document_id == document_id)
-            .where(DocumentContent.tokenizing_strategy == "max_size"))
-    document_content = document_content_query.scalars()
-    document_content_text = " ".join(map(lambda content: content.text, document_content))
+            .where(DocumentContent.tokenizing_strategy == "sentence"))
+    document_content_sentences = document_content_query.scalars()
+    document_content_text = " ".join(map(lambda content: content.text, document_content_sentences))
     print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
     use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
     print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
@@ -155,14 +140,14 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
             document.document_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(document.document_citing_slavery_summary)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
-    # --- TODO: cases/laws mentioned
-    await extract_document_caselaw_mentions(document_content_text)
+    # --- cases/laws mentioned
+    #  TODO: await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
     document.document_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
-    await extract_document_organizations(document_content_text)
+    #  TODO: await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document
-    await extract_document_people(document_content_text)
+    #  TODO: await extract_document_people(document_content_text)
     # --- SAVE
     document.status_processing_extractions = "completed"
     session.add(document)
