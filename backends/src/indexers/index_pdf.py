@@ -19,23 +19,18 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_pdf_process_content) started", document_id)
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    
-    # 1. STATUS
     files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
     file = files_query.scalars().first()
-    
-    # 2. PDF OCR -> TEXT (SENTENCES) / IMAGES
-    # --- thinking up front we deconstruct into sentences bc it's easy to build up into other sizes/structures from that + meta data
-    print(f"INFO (index_pdf.py:_index_pdf_process_content): fetching document's documentcontent")
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
 
-    # 3. DOCUMENT CONTENT CREATE
     if len(document_content) == 0:
+        # 1. PDF OCR -> TEXT (SENTENCES) / IMAGES
         print(f"INFO (index_pdf.py:_index_pdf_process_content): converting {file.filename} to pngs")
         pdf_image_files = split_file_pdf_to_pil(file)
 
-        # --- 3a. Process text for all pages
+        # 2. DOCUMENT CONTENT CREATE
+        # --- 2a. Process text for all pages
         # HOLY F. On my laptop, doing a 38 page PDF took 5+ minutes. This takes seconds now bc its just async web requests
         @ray.remote
         def process_page_text(pdf_image_file):
@@ -43,7 +38,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
         pages_text_futures = list(map(lambda file: process_page_text.remote(file), pdf_image_files))
         pages_text = ray.get(pages_text_futures)
 
-        # --- 3b. Tokenize/process text by sentence
+        # --- 2b. Tokenize/process text by sentence
         document_content_sentences = []
         for idx, page_text in enumerate(pages_text):
             page_ocr_text_sentences = tokenize_string(page_text, "sentence")
@@ -55,7 +50,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
             ), page_ocr_text_sentences))
         session.add_all(document_content_sentences)
 
-        # --- 3c. Tokenize/process text by max_size (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
+        # --- 2c. Tokenize/process text by max_size (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
         document_text = " ".join(map(lambda content: content.text, document_content_sentences))
         document_text_chunks = tokenize_string(document_text, "max_size")
         document_content_text = list(map(lambda chunk: DocumentContent(
@@ -68,7 +63,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     else:
         print(f"INFO (index_pdf.py:_index_pdf_process_content): already processed content for document #{document_id} (content count: {len(document_content)})")
 
-    # 4. SAVE
+    # 3. SAVE
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
 
@@ -124,9 +119,9 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     document_content_query = await session.execute(
         sa.select(DocumentContent)
             .where(DocumentContent.document_id == document_id)
-            .where(DocumentContent.tokenizing_strategy == "max_size"))
-    document_content = document_content_query.scalars()
-    document_content_text = " ".join(map(lambda content: content.text, document_content))
+            .where(DocumentContent.tokenizing_strategy == "sentence"))
+    document_content_sentences = document_content_query.scalars()
+    document_content_text = " ".join(map(lambda content: content.text, document_content_sentences))
     print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
     use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
     print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
@@ -145,14 +140,14 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
             document.document_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(document.document_citing_slavery_summary)
     else:
         print('INFO (index_pdf.py:_index_pdf_process_extractions): document is too long')
-    # --- TODO: cases/laws mentioned
-    await extract_document_caselaw_mentions(document_content_text)
+    # --- cases/laws mentioned
+    #  TODO: await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
     document.document_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
-    await extract_document_organizations(document_content_text)
+    #  TODO: await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document
-    await extract_document_people(document_content_text)
+    #  TODO: await extract_document_people(document_content_text)
     # --- SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

@@ -40,6 +40,7 @@ session = boto3.session.Session(
 )
 textract_client = session.client(service_name='textract', region_name=os.environ.get('AWS_REGION'))
 def ocr_parse_image_text(pil_image):
+    print('INFO (ocr.py:ocr_parse_image_text) start')
     try:
         # --- convert image to bytes
         img_byte_arr = io.BytesIO()
@@ -50,14 +51,15 @@ def ocr_parse_image_text(pil_image):
             FeatureTypes=['FORMS'], # 'TABLES','QUERIES','SIGNATURES'
         )
     except Exception as err:
-        print("Couldn't detect text.", err)
+        print("ERROR (ocr.py:ocr_parse_image_text) Couldn't detect text.", err)
         raise
     else:
-        print("INFO Detected blocks count:", len(response['Blocks']))
-        # "LINE" blocks can be helpful for chunking by table rows for example
-        # "WORD" blocks can be helpful for just concat'ing all data
+        print(f'INFO (ocr.py:ocr_parse_image_text) Detected blocks count:', len(response['Blocks']))
+        # 'LINE' blocks can be helpful for chunking by table rows for example
+        # 'WORD' blocks can be helpful for just concat'ing all data
         blocks_words = list(filter(lambda block: block['BlockType'] == 'WORD', response['Blocks']))
-        words = map(lambda block: block['Text'], blocks_words)
-        words = " ".join(words) # word blocks will contain periods (ex: { ... Text: 'attacked.' ...})
+        words_arr = list(map(lambda block: block['Text'], blocks_words))
+        words = ' '.join(words_arr) # word blocks will contain periods (ex: { ... Text: 'attacked.' ...})
         # --- return
+        print(f'INFO (ocr.py:ocr_parse_image_text) Word count: {len(words_arr)}')
         return words
