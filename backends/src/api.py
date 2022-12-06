@@ -2,6 +2,7 @@ from contextvars import ContextVar
 from datetime import datetime
 import pinecone
 from sanic import Sanic
+from sanic.worker.loader import AppLoader
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
@@ -449,16 +450,16 @@ async def app_route_users(request):
 def start_api():
     host = env.env_get_gideon_api_host()
     port = env.env_get_gideon_api_port()
+    is_local = env.env_is_local()
     print(f'Starting Server at: {host}:{port}')
     # INIT WORKERS
-    # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
-    # HACK: If I don't force single_process, OCR totally hangs
-    app.run(
-        host=host,
-        port=port,
-        access_log=False,
-        auto_reload=False,
-        single_process=True,
-    )
+    # TODO: setup file watching to avoid hot-reload ack problem: https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/
+    loader = AppLoader("api:app")
+    app = loader.load()
+    if is_local:
+        app.prepare(host=host, port=port, auto_reload=False, single_process=True)
+    else:
+        app.prepare(host=host, port=port, auto_reload=False, dev=False, workers=2, single_process=False)
+    Sanic.serve(primary=app, app_loader=loader)
  

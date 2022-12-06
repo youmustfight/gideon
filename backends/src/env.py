@@ -55,11 +55,15 @@ def env_get_gideon_api_host() -> str:
 def env_get_gideon_api_port() -> int:
     return int(_env_getter('GIDEON_API_PORT'))
 
-# HARDWARE
+# HARDWARE/SYSTEM
 def env_is_gpu_available() -> bool:
     is_gpu_available = _env_getter('IS_GPU_AVAILABLE') == 'true'
     print(f'INFO (env.py:env_is_gpu_available): is_gpu_available : {is_gpu_available}')
     return is_gpu_available
+def env_is_local() -> bool:
+    return _env_getter('TARGET_ENV') == 'local'
+def env_is_production() -> bool:
+    return _env_getter('TARGET_ENV') == 'production'
 
 # OPENAI
 def env_get_open_ai_api_key():
