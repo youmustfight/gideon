@@ -22,8 +22,8 @@ export const TimelineSummary: React.FC<{ documentId?: number }> = ({ documentId 
       ) : (
         <table>
           <tbody>
-            {timelineEvents.map(({ date, documentId, event }) => (
-              <tr key={[documentId, date, event].join("-")}>
+            {timelineEvents.map(({ date, documentId, event }, index) => (
+              <tr key={[documentId, date, event, index].join("-")}>
                 <td className="timeline-summary__td-date">
                   <b>{date}</b>
                 </td>
