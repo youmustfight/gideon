@@ -83,7 +83,6 @@ const StyledViewCase = styled.div`
     margin: 10px 24px;
     &:first-of-type {
       margin-top: 0;
-      box-shadow: none;
     }
     &:last-of-type {
       margin-bottom: 0;
