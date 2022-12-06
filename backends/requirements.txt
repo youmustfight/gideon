@@ -2,6 +2,8 @@ aiofiles==22.1.0
 asyncpg==0.27.0
 boto3==1.24.89
 clip @ git+https://github.com/openai/CLIP.git@d50d76daa670286dd6cacf3bcd80b5e4823fc8e1
+# would rather use transformers pkg but spacy-transformers conflicts with newest versions
+donut-python==1.0.9
 easyocr==1.6.2
 faiss-cpu==1.7.2
 numpy==1.23.3
@@ -27,3 +29,4 @@ spacy-transformers==1.1.8
 # SQLAlchemy==2.0.0b1 # https://github.com/sqlalchemy/sqlalchemy/issues/8631
 sqlalchemy==1.4.43
 torch==1.12.1
+# transformers==4.25.1

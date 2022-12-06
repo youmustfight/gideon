@@ -17,6 +17,7 @@ from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
 from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
+from models.donut import donut_document_parser
 
 # SETUP
 # --- OCR
