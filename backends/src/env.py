@@ -47,6 +47,14 @@ def env_get_database_pinecone_api_key():
 def env_get_database_pinecone_environment():
     return _env_getter('DATABASE_PINECONE_ENVIRONMENT')
 
+# ENV
+def env_target_service() -> str: # 'api' or 'worker'
+    return _env_getter('TARGET_SERVICE')
+def env_is_local() -> bool:
+    return _env_getter('TARGET_ENV') == 'local'
+def env_is_production() -> bool:
+    return _env_getter('TARGET_ENV') == 'production'
+
 # GIDEON
 def env_get_gideon_api_url():
     return _env_getter('GIDEON_API_URL')
@@ -60,10 +68,6 @@ def env_is_gpu_available() -> bool:
     is_gpu_available = _env_getter('IS_GPU_AVAILABLE') == 'true'
     print(f'INFO (env.py:env_is_gpu_available): is_gpu_available : {is_gpu_available}')
     return is_gpu_available
-def env_is_local() -> bool:
-    return _env_getter('TARGET_ENV') == 'local'
-def env_is_production() -> bool:
-    return _env_getter('TARGET_ENV') == 'production'
 
 # OPENAI
 def env_get_open_ai_api_key():
