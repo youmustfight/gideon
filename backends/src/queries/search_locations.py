@@ -6,7 +6,6 @@ def map_vector_content(sv, all_embeddings):
     sv_embedding = _.find(all_embeddings, lambda e: e.id == int(sv['metadata']['embedding_id']))
     # --- some embeddings don't have attrs (could be bad data)
     if (hasattr(sv_embedding, 'document_content') and hasattr(sv_embedding.document_content, 'document')):
-        print(sv_embedding.document_content.image_file)
         location = dict(
             document=sv_embedding.document_content.document,
             document_content=sv_embedding.document_content,
