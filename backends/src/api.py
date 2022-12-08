@@ -2,28 +2,28 @@ from contextvars import ContextVar
 from datetime import datetime
 import pinecone
 from sanic import Sanic
-from sanic.worker.loader import AppLoader
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from aia.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, Embedding, File, User
+from dbs.sa_sessions import create_sqlalchemy_session
 from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_text_4096, pinecone_index_documents_clip_768, pinecone_index_documents_text_12288
 import env
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
 from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
-from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
-from indexers.utils.index_document_content_vectors import index_document_content_vectors
+from indexers.index_pdf import _index_pdf_process_embeddings, _index_pdf_process_extractions
 from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
+from indexers.processors.job_index_pdf import job_index_pdf
+from indexers.utils.index_document_content_vectors import index_document_content_vectors
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
-
+from queues import indexing_queue
 
 # INIT
 app = Sanic('api')
@@ -34,24 +34,10 @@ app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing ou
 # --- cors
 CORS(app)
 # --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
-sqlalchemy_bind = create_async_engine(
-    env.env_get_database_app_url(),
-    echo=True,
-    echo_pool='debug',
-    max_overflow=20,
-    pool_size=20,
-    pool_reset_on_return=None,
-)
-_sessionmaker = sessionmaker(
-    sqlalchemy_bind,
-    AsyncSession,
-    expire_on_commit=False,
-    future=True,
-)
 _base_model_session_ctx = ContextVar('session')
 @app.middleware('request')
 async def inject_session(request):
-    request.ctx.session = _sessionmaker()
+    request.ctx.session = create_sqlalchemy_session()
     request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
 @app.middleware('response')
 async def close_session(request, response):
@@ -450,16 +436,9 @@ async def app_route_users(request):
 def start_api():
     host = env.env_get_gideon_api_host()
     port = env.env_get_gideon_api_port()
-    is_local = env.env_is_local()
     print(f'Starting Server at: {host}:{port}')
     # INIT WORKERS
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # TODO: setup file watching to avoid hot-reload ack problem: https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/
-    loader = AppLoader("api:app")
-    app = loader.load()
-    if is_local:
-        app.prepare(host=host, port=port, auto_reload=False, single_process=True)
-    else:
-        app.prepare(host=host, port=port, auto_reload=False, dev=False, workers=2, single_process=False)
-    Sanic.serve(primary=app, app_loader=loader)
+    app.run(host=host, port=port, auto_reload=False, single_process=True)
  
