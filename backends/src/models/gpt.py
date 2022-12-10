@@ -54,7 +54,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
     retry = 0
     while True:
         try:
-            print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...')
+            print(f'INFO (GPT3): gpt_completion - {engine}: COMPLETE THE "{prompt[0:120]}"...'.replace('\n', ' '))
             # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
             response = requests.post(
                 'https://api.openai.com/v1/completions',
@@ -73,7 +73,7 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
             response = response.json()
             # print(response)
             text = response['choices'][0]['text'].strip()
-            print(f'INFO (GPT3): gpt_completion - {engine}: {prompt[0:240]}...', text)
+            print(f'INFO (GPT3): gpt_completion - {engine}: RESPONSE for "{prompt[0:120]}"...'.replace('\n', ' '), text)
             return text
         except Exception as err:
             retry += 1

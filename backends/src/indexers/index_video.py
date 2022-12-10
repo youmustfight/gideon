@@ -13,7 +13,6 @@ from files.s3_utils import s3_get_file_url, s3_upload_file_string
 from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_summary import extract_document_summary
 from models.assemblyai import assemblyai_transcribe
-from models.clip import clip_image_embedding
 from models.gpt import gpt_embedding, gpt_vars, gpt_completion
 from models.gpt_prompts import gpt_prompt_video_type
 
@@ -167,7 +166,7 @@ async def _index_video_process_embeddings(session, document_id: int) -> None:
                 .options(joinedload(File.document_content_image_file))
                 .where(File.document_content_image_file.any(DocumentContent.id == int(content.id))))
         document_content_file = document_content_file_query.scalars().first()
-        image_embeddings = aiagent_image_embeder.encode_image(s3_get_file_url(document_content_file.upload_key))
+        image_embeddings = aiagent_image_embeder.encode_image([s3_get_file_url(document_content_file.upload_key)])
         image_embeddings_as_models.append(Embedding(
             document_id=document_id,
             document_content_id=content.id,

@@ -1,12 +1,9 @@
-import json
 import sqlalchemy as sa
-import numpy as np
 from sqlalchemy.orm import joinedload
 
 from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from files.file_utils import get_file_path
-from files.s3_utils import s3_get_file_bytes, s3_get_file_url, s3_upload_file
+from files.s3_utils import s3_get_file_url
 from models.clip import clip_classifications
 
 async def _index_image_process_content(session, document_id) -> None:
@@ -47,7 +44,7 @@ async def _index_image_process_embeddings(session, document_id) -> None:
                 .where(File.document_content_image_file.any(DocumentContent.id == int(content.id))))
         document_content_file = document_content_file_query.scalars().first()
         # --- run through clip
-        image_embeddings = aiagent_image_embeder.encode_image(s3_get_file_url(document_content_file.upload_key))
+        image_embeddings = aiagent_image_embeder.encode_image([s3_get_file_url(document_content_file.upload_key)])
         image_embeddings_as_models.append(Embedding(
             document_id=document_id,
             document_content_id=content.id,

@@ -11,7 +11,9 @@ def split_file_pdf_to_pil(file: File):
     # get file data from s3
     file_bytes = s3_get_file_bytes(file.upload_key)
     # take those bytes and get back a list of PIL.PngImageFile (known as 'pillow images')
+    print('INFO (ocr.py:split_file_pdf_to_pil) splitting pdf to PNGs')
     pdf_image_files = convert_from_bytes(file_bytes, fmt='png')  # TODO: always ensure max size to limit processing OCR demand? size=(1400, None)
+    print(f'INFO (ocr.py:split_file_pdf_to_pil) split pdf to {len(pdf_image_files)} PNGs')
     return pdf_image_files
 
 
@@ -39,7 +41,7 @@ session = boto3.session.Session(
     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
 )
 textract_client = session.client(service_name='textract', region_name=os.environ.get('AWS_REGION'))
-def ocr_parse_image_text(pil_image):
+async def ocr_parse_image_text(pil_image):
     print('INFO (ocr.py:ocr_parse_image_text) start')
     try:
         # --- convert image to bytes

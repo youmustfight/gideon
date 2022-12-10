@@ -1,8 +1,9 @@
-import ray
+import asyncio
 from aia.agent import AI_ACTIONS, create_ai_action_agent
+from dbs.vectordb_pinecone import get_document_content_from_search_vectors
 from models.gpt import gpt_completion, gpt_summarize
 from models.gpt_prompts import gpt_prompt_answer_question
-from dbs.vectordb_pinecone import get_document_content_from_search_vectors
+
 
 # QUERY
 async def question_answer(session, query_text, case_id):
@@ -20,18 +21,29 @@ async def question_answer(session, query_text, case_id):
     document_content = await get_document_content_from_search_vectors(session, search_vectors)
     print(f'INFO (question_answer.py): answering from {len(document_content)} document_content(s)...', document_content)
 
-    # V1 SYNC (75~180 sec)
-    # V2 ASYNC w/ PARALLEL PROCESSORS (not threads) (40~60 sec)
-    @ray.remote
-    def query_for_answer(passage_text, query_text):
+    # 3. Query Question in Parts
+    # # V1 SYNC (75~180 sec)
+    # # V2 ASYNC w/ PARALLEL PROCESSORS USING RAY (not threads) (40~60 sec)
+    # @ray.remote
+    async def query_for_answer(passage_text, query_text):
         prompt = gpt_prompt_answer_question.replace('<<PASSAGE>>', passage_text).replace('<<QUESTION>>', query_text)
         answer = gpt_completion(prompt,max_tokens=150)
         return answer
-    # 3a. run parallelized
-    final_answer_futures = list(
-        map(lambda dc: query_for_answer.remote(dc.text, query_text), document_content))
-    results = ray.get(final_answer_futures)
-    # 3b. summarize
+    # final_answer_futures = list(
+    #     map(lambda dc: query_for_answer.remote(dc.text, query_text), document_content))
+    # # V3 ASYNC w/ PARALLEL JOBS USING RQ (locally at sync speed, but in prod can parallelize w/ multiple instances)
+    # final_answer_jobs = prompt_queue.enqueue_many(
+    #     map(lambda dc: Queue.prepare_data(func=job_query_for_answer, args=[dc.text, query_text]), document_content)
+    # )
+    # results = await_enqueued_results(final_answer_jobs)
+    # V4 ASYNCIO CONCURRENCY (~50 sec)
+    # --- tasks (only works bc they're async?)
+    coroutine_tasks = map(lambda dc: query_for_answer(dc.text, query_text), document_content)
+    print(f'INFO (question_answer.py): coroutines', coroutine_tasks)
+    # --- results
+    results = await asyncio.gather(*coroutine_tasks)
+
+    # 3b. Summarize Final
     final_answer = gpt_summarize('\n\n'.join(results), max_length=650)
 
     # 4. return answer/no answer

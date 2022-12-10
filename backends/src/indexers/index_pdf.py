@@ -1,18 +1,16 @@
-import ray
+import asyncio
+from rq import Queue
 import sqlalchemy as sa
 from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from dbs.vector_utils import tokenize_string
 from indexers.utils.extract_document_type import extract_document_type
-from indexers.utils.extract_document_caselaw_mentions import extract_document_caselaw_mentions
 from indexers.utils.extract_document_events import extract_document_events_v1
-from indexers.utils.extract_document_organizations import extract_document_organizations
-from indexers.utils.extract_document_people import extract_document_people
 from indexers.utils.extract_document_summary import extract_document_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.extract_document_citing_slavery_summary import extract_document_citing_slavery_summary
 from indexers.utils.extract_document_citing_slavery_summary_one_liner import extract_document_citing_slavery_summary_one_liner
-from models.ocr import ocr_parse_image_text, split_file_pdf_to_pil
+from models.ocr import split_file_pdf_to_pil, ocr_parse_image_text
 
 
 async def _index_pdf_process_content(session, document_id: int) -> None:
@@ -31,13 +29,26 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
 
         # 2. DOCUMENT CONTENT CREATE
         # --- 2a. Process text for all pages
-        # HOLY F. On my laptop, doing a 38 page PDF took 5+ minutes. This takes seconds now bc its just async web requests
-        @ray.remote
-        def process_page_text(pdf_image_file):
-            return ocr_parse_image_text(pdf_image_file)
-        pages_text_futures = list(map(lambda file: process_page_text.remote(file), pdf_image_files))
-        pages_text = ray.get(pages_text_futures)
-
+        # # # V2 ASYNC w/ PARALLEL PROCESSORS USING RAY (not threads)
+        # # HOLY F. On my laptop, doing a 38 page PDF took 5+ minutes. This takes seconds now bc its just async web requests
+        # @ray.remote
+        # def process_page_text(pdf_image_file):
+        #     return ocr_parse_image_text(pdf_image_file)
+        # pages_text_futures = list(map(lambda file: process_page_text.remote(file), pdf_image_files))
+        # pages_text = ray.get(pages_text_futures)
+        # # V3 ASYNC w/ PARALLEL JOBS USING RQ (at sync speed, but will get fast w/ multiple instances)
+        # page_text_jobs = indexing_queue.enqueue_many(
+        #     map(lambda file: Queue.prepare_data(func=job_ocr_parse_image_text, args=[file]), pdf_image_files)
+        # )
+        # pages_text = await_enqueued_results(page_text_jobs)
+        # V4 ASYNC COROUTINES
+        # --- tasks
+        pages_text_coroutines = map(lambda pdf_image_file: ocr_parse_image_text(pdf_image_file), pdf_image_files)
+        print(f'INFO (index_pdf.py:_index_pdf_process_content): coroutines', pages_text_coroutines)
+        # --- results
+        pages_text = await asyncio.gather(*pages_text_coroutines)
+        print(f'INFO (index_pdf.py:_index_pdf_process_content): pages_text', pages_text)
+        
         # --- 2b. Tokenize/process text by sentence
         document_content_sentences = []
         for idx, page_text in enumerate(pages_text):
@@ -66,6 +77,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
     # 3. SAVE
     document.status_processing_content = "completed"
     session.add(document) # if modifying a record/model, we can use add() to do an update
+    print('INFO (index_pdf.py:_index_pdf_process_content): done')
 
 async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): start')
@@ -83,6 +95,7 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
     aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
     aiagent_max_size_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=document.case_id)
     # --- sentences (sentence-transformer = free, but very limited token length)
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): encoding sentences...', document_content_sentences)
     sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))
     sentence_embeddings_as_models = []
     for index, embedding in enumerate(sentence_embeddings):
@@ -94,8 +107,10 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
         ))
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): encoded sentences...')
     session.add_all(sentence_embeddings_as_models)
     # --- max_size (gtp3 ada = very very cheap, and large token length)
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): encoding max_size...', document_content_maxed_size)
     maxed_size_embeddings = aiagent_max_size_embeder.encode_text(list(map(lambda c: c.text, document_content_maxed_size)))
     maxed_size_embeddings_as_models = []
     for index, embedding in enumerate(maxed_size_embeddings):
@@ -107,10 +122,12 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(),
         ))
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): encoded max_size...')
     session.add_all(maxed_size_embeddings_as_models)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
+    print('INFO (index_pdf.py:_index_pdf_process_embeddings): done')
 
 async def _index_pdf_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_pdf_process_extractions): start')
@@ -151,6 +168,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
     # --- SAVE
     document.status_processing_extractions = "completed"
     session.add(document)
+    print('INFO (index_pdf.py:_index_pdf_process_extractions): done')
 
 
 # INDEX_PDF

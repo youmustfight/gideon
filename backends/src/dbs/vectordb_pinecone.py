@@ -1,3 +1,4 @@
+from enum import Enum
 import env
 import pinecone
 import sqlalchemy as sa
@@ -9,14 +10,25 @@ pinecone.init(
   api_key=env.env_get_database_pinecone_api_key(),
   environment=env.env_get_database_pinecone_environment()
 )
-pinecone_index_documents_clip_768 = pinecone.Index("documents-clip-768") # cosine
-pinecone_index_documents_text_384 = pinecone.Index("documents-text-384") # cosine (prev euclidian bc higher dimensionality)
-pinecone_index_documents_text_1024 = pinecone.Index("documents-text-1024") # cosine (prev euclidian bc higher dimensionality)
-pinecone_index_documents_text_4096 = pinecone.Index("documents-text-4096") # euclidan bc higher dimensionality
-pinecone_index_documents_text_12288 = pinecone.Index("documents-text-12288") # euclidan bc higher dimensionality
+class VECTOR_INDEX_ID(Enum):
+    documents_clip_768 = 'documents-clip-768'
+    documents_text_384 = 'documents-text-384'
+    documents_text_1024 = 'documents-text-1024'
+    documents_text_4096 = 'documents-text-4096'
+    documents_text_12288 = 'documents-text-12288'
 
 
 # HELPERS
+# --- index fetching
+def get_vector_indexes():
+    return {
+        VECTOR_INDEX_ID.documents_clip_768.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_clip_768.value), # cosine
+        VECTOR_INDEX_ID.documents_text_384.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_384.value), # cosine (prev euclidian bc higher dimensionality)
+        VECTOR_INDEX_ID.documents_text_1024.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_1024.value), # cosine (prev euclidian bc higher dimensionality)
+        VECTOR_INDEX_ID.documents_text_4096.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_4096.value), # euclidan bc higher dimensionality
+        VECTOR_INDEX_ID.documents_text_12288.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_12288.value), # euclidan bc higher dimensionality
+    }
+
 # --- search vectors 2 embedding models
 async def get_embeddings_from_search_vectors(session, search_vectors):
     print(f'INFO (vectordb_pinecone.py:get_embeddings_from_search_vectors): search_vectors ', search_vectors)

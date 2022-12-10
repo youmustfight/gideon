@@ -1,3 +1,4 @@
+import asyncio
 from contextvars import ContextVar
 from datetime import datetime
 import pinecone
@@ -5,24 +6,25 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import joinedload, selectinload, subqueryload, sessionmaker
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from aia.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, Embedding, File, User
-from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_text_4096, pinecone_index_documents_clip_768, pinecone_index_documents_text_12288
+from dbs.sa_sessions import create_sqlalchemy_session
+from dbs.vectordb_pinecone import get_vector_indexes
 import env
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
 from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
 from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
-from indexers.utils.index_document_content_vectors import index_document_content_vectors
 from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
+from indexers.processors.job_index_pdf import job_index_pdf
+from indexers.utils.index_document_content_vectors import index_document_content_vectors
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
-
+from queues import indexing_queue
 
 # INIT
 app = Sanic('api')
@@ -33,24 +35,10 @@ app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing ou
 # --- cors
 CORS(app)
 # --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
-sqlalchemy_bind = create_async_engine(
-    env.env_get_database_app_url(),
-    echo=True,
-    echo_pool='debug',
-    max_overflow=20,
-    pool_size=20,
-    pool_reset_on_return=None,
-)
-_sessionmaker = sessionmaker(
-    sqlalchemy_bind,
-    AsyncSession,
-    expire_on_commit=False,
-    future=True,
-)
 _base_model_session_ctx = ContextVar('session')
 @app.middleware('request')
 async def inject_session(request):
-    request.ctx.session = _sessionmaker()
+    request.ctx.session = create_sqlalchemy_session()
     request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
 @app.middleware('response')
 async def close_session(request, response):
@@ -147,6 +135,18 @@ async def app_route_case_put_action_locks(request, case_id):
         session.add_all(generate_ai_action_locks(case_id))
     return json({ 'status': 'success' })
 
+@app.route('/v1/case/<case_id>/reprocess_all_data', methods = ['PUT'])
+@auth_route
+async def app_route_case_put_reprocess_all_data(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        case_id = int(case_id)
+        # --- for each document, delete document embeddings into pinecone db
+        # --- ... then delete document embeddings
+        # --- re-run embeddings
+        # --- ... then re-run upsert into pinecone db
+    return json({ 'status': 'success' })
+
 @app.route('/v1/case', methods = ['POST'])
 @auth_route
 async def app_route_case_post(request):
@@ -209,11 +209,10 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
-            pinecone_index_documents_clip_768.delete(ids=embeddings_ids_strs)
-            pinecone_index_documents_text_384.delete(ids=embeddings_ids_strs)
-            pinecone_index_documents_text_1024.delete(ids=embeddings_ids_strs)
-            pinecone_index_documents_text_4096.delete(ids=embeddings_ids_strs)
-            pinecone_index_documents_text_12288.delete(ids=embeddings_ids_strs)
+            print('INFO Deleting Embeddings: ', embeddings_ids_strs)
+            for index in get_vector_indexes().values():
+                print('INFO Deleting Embeddings on Index:', index)
+                index.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
         await session.execute(sa.delete(Embedding)
@@ -297,11 +296,14 @@ async def app_route_documents_index_pdf(request):
     # --- process file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
+    # V1 SYNC
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_pdf(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
+    # V2 JOB BASED
+    # indexing_queue.enqueue(job_index_pdf, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])
@@ -315,7 +317,12 @@ async def app_route_documents_index_image(request):
     await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
+        # V1 SYNC
         document_id = await index_image(session=session, document_id=document_id)
+        # V2 ASYNC COROUTINES (still blocks web requests)
+        # couroutine_tasks = map(lambda document_id: index_image(session=session, document_id=document_id), [document_id])
+        # document_id = await asyncio.gather(*couroutine_tasks)
+        # document_id = document_id[0]
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -451,14 +458,7 @@ def start_api():
     port = env.env_get_gideon_api_port()
     print(f'Starting Server at: {host}:{port}')
     # INIT WORKERS
-    # TODO: recognize env var for auto_reload so we only have it in local
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
-    # HACK: If I don't force single_process, OCR totally hangs
-    app.run(
-        host=host,
-        port=port,
-        access_log=False,
-        auto_reload=False,
-        single_process=True,
-    )
+    # TODO: setup file watching to avoid hot-reload ack problem: https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/
+    app.run(host=host, port=port, auto_reload=False) # cant do 2 workers, bc everything else bottlenecks
  
