@@ -1,3 +1,4 @@
+import asyncio
 from contextvars import ContextVar
 from datetime import datetime
 import pinecone
@@ -132,6 +133,18 @@ async def app_route_case_put_action_locks(request, case_id):
             .where(AIActionLock.case_id == case_id))
         # --- add new action locks
         session.add_all(generate_ai_action_locks(case_id))
+    return json({ 'status': 'success' })
+
+@app.route('/v1/case/<case_id>/reprocess_all_data', methods = ['PUT'])
+@auth_route
+async def app_route_case_put_reprocess_all_data(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        case_id = int(case_id)
+        # --- for each document, delete document embeddings into pinecone db
+        # --- ... then delete document embeddings
+        # --- re-run embeddings
+        # --- ... then re-run upsert into pinecone db
     return json({ 'status': 'success' })
 
 @app.route('/v1/case', methods = ['POST'])
@@ -283,11 +296,14 @@ async def app_route_documents_index_pdf(request):
     # --- process file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
+    # V1 SYNC
     # --- process embeddings/extractions
     async with session.begin():
         document_id = await index_pdf(session=session, document_id=document_id)
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
+    # V2 JOB BASED
+    # indexing_queue.enqueue(job_index_pdf, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])

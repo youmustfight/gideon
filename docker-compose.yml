@@ -26,30 +26,30 @@ services:
       - VITE_TARGET_ENV=local
       - VITE_GIDEON_API_URL=http://localhost:3000
 
-  frontdoor:
-    build:
-      context: ./frontends/frontdoor
-    volumes:
-      - ./frontends/frontdoor/src:/usr/src/frontdoor/src
-      - ./frontends/frontdoor/index.html:/usr/src/frontdoor/index.html
-      - ./frontends/frontdoor/package.json:/usr/src/frontdoor/package.json
-      - ./frontends/frontdoor/tsconfig.json:/usr/src/frontdoor/tsconfig.json
-      - ./frontends/frontdoor/tsconfig.node.json:/usr/src/frontdoor/tsconfig.node.json
-      - ./frontends/frontdoor/vite.config.json:/usr/src/frontdoor/vite.config.json
-      - ./frontends/frontdoor/yarn.lock:/usr/src/frontdoor/yarn.lock
-      - /usr/src/frontdoor/node_modules
-    ports:
-      - "1110:1110"
-    depends_on:
-      - api
-    command: "npm run start:local"
-    env_file:
-      - ./.env
-    environment:
-      # HACK: find a way to autopull vars in setup
-      - TARGET_ENV=local
-      - VITE_TARGET_ENV=local
-      - VITE_GIDEON_API_URL=http://localhost:3000
+  # frontdoor:
+  #   build:
+  #     context: ./frontends/frontdoor
+  #   volumes:
+  #     - ./frontends/frontdoor/src:/usr/src/frontdoor/src
+  #     - ./frontends/frontdoor/index.html:/usr/src/frontdoor/index.html
+  #     - ./frontends/frontdoor/package.json:/usr/src/frontdoor/package.json
+  #     - ./frontends/frontdoor/tsconfig.json:/usr/src/frontdoor/tsconfig.json
+  #     - ./frontends/frontdoor/tsconfig.node.json:/usr/src/frontdoor/tsconfig.node.json
+  #     - ./frontends/frontdoor/vite.config.json:/usr/src/frontdoor/vite.config.json
+  #     - ./frontends/frontdoor/yarn.lock:/usr/src/frontdoor/yarn.lock
+  #     - /usr/src/frontdoor/node_modules
+  #   ports:
+  #     - "1110:1110"
+  #   depends_on:
+  #     - api
+  #   command: "npm run start:local"
+  #   env_file:
+  #     - ./.env
+  #   environment:
+  #     # HACK: find a way to autopull vars in setup
+  #     - TARGET_ENV=local
+  #     - VITE_TARGET_ENV=local
+  #     - VITE_GIDEON_API_URL=http://localhost:3000
 
   api:
     build:
@@ -60,7 +60,6 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - worker
       - database_app
     env_file:
       - ./.env
@@ -70,21 +69,21 @@ services:
       - TARGET_ENV=local
       - TARGET_SERVICE=api
 
-  worker:
-    build:
-      context: ./backends
-    volumes:
-      - ./backends/src:/usr/src/backends/src
-      - ./backends/requirements.txt:/usr/src/backends/requirements.txt
-    depends_on:
-      - database_app
-    env_file:
-      - ./.env
-    environment:
-      - DATABASE_APP_HOST=database_app # within docker network, we use service name
-      - PYTHONUNBUFFERED=1 # for getting print() pushed
-      - TARGET_ENV=local
-      - TARGET_SERVICE=worker
+  # worker:
+  #   build:
+  #     context: ./backends
+  #   volumes:
+  #     - ./backends/src:/usr/src/backends/src
+  #     - ./backends/requirements.txt:/usr/src/backends/requirements.txt
+  #   depends_on:
+  #     - database_app
+  #   env_file:
+  #     - ./.env
+  #   environment:
+  #     - DATABASE_APP_HOST=database_app # within docker network, we use service name
+  #     - PYTHONUNBUFFERED=1 # for getting print() pushed
+  #     - TARGET_ENV=local
+  #     - TARGET_SERVICE=worker
 
   database_app:
     image: postgres:14.5
