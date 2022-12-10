@@ -68,6 +68,7 @@ services:
       - PYTHONUNBUFFERED=1 # for getting print() pushed
       - TARGET_ENV=local
       - TARGET_SERVICE=api
+    command: sh -c "watchmedo auto-restart --pattern="*.py" --directory="." --recursive -- python -u /usr/src/backends/src/start.py"
 
   # worker:
   #   build:

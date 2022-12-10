@@ -25,3 +25,4 @@ spacy-transformers==1.1.8
 sqlalchemy==1.4.43
 transformers==4.19.4
 torch==1.12.1
+watchdog==2.2.0
