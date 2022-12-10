@@ -1,4 +1,4 @@
-FROM python:3.10.8-slim
+FROM python:3.10.9-slim
 WORKDIR /usr/src/backends
 
 # "wait-for-it.sh" copy + /bin
@@ -31,7 +31,8 @@ RUN pip install -r requirements.txt
 # Copy src
 COPY . .
 
-# Secrets
+# Env
+# --- Secrets
 ARG AWS_REGION
 ENV AWS_REGION=$AWS_REGION
 ARG AWS_ACCESS_KEY_ID
@@ -42,6 +43,8 @@ ARG TARGET_ENV
 ENV TARGET_ENV=$TARGET_ENV
 ARG TARGET_SERVICE
 ENV TARGET_SERVICE=$TARGET_SERVICE
+# --- Configs
+ENV OMP_NUM_THREADS=1
 
 # Start
 EXPOSE 3000
