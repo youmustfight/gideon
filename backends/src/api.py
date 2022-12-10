@@ -457,8 +457,10 @@ def start_api():
     host = env.env_get_gideon_api_host()
     port = env.env_get_gideon_api_port()
     print(f'Starting Server at: {host}:{port}')
-    # INIT WORKERS
-    # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
-    # TODO: setup file watching to avoid hot-reload ack problem: https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/
-    app.run(host=host, port=port, auto_reload=False) # cant do 2 workers, bc everything else bottlenecks
+    # RUN API WORKERS
+    app.run(
+        host=host,
+        port=port,
+        auto_reload=False, # auto-reload only for dev. done via watchdog pkg in docker-compose file
+        workers=2) # whether 1 or 2 workers, sits at 3.8GB memory usage
  
