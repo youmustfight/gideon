@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload, Session
 import pinecone
 
 from dbs.sa_models import AIActionLock, Case
+from dbs.vectordb_pinecone import VECTOR_INDEX_ID
 from models.clip import clip_text_embedding, clip_image_embedding
 from models.gpt import gpt_embedding
 from models.sentence import sentence_encode_embeddings
@@ -40,7 +41,7 @@ class AIActionAgent():
     _model_distance_metric: str = None
     _model_embed_dimensions: int = None
     _params: dict = None
-    _vector_index_id: any = None
+    _vector_index_id: VECTOR_INDEX_ID = None
     def __init__(self, action: AI_ACTIONS, case, model_name):
         self.action = action
         self.model_name = model_name
@@ -50,7 +51,7 @@ class AIActionAgent():
     def encode_image(self):
         pass # defined by w/ each inheriting class
     def get_vector_index(self):
-        return pinecone.Index(self._vector_index_id)
+        return pinecone.Index(self._vector_index_id.value)
     def query_search_vectors(self, query_text, query_image=None, query_filters={}, top_k=12, score_max=1, score_min=0, score_min_diff_percent=None, score_max_diff_percent=None):
         # --- vector
         vectors = self.encode_text([query_text])
@@ -65,7 +66,7 @@ class AIActionAgent():
         if (self._case.uuid != None):
             filters.update({ "case_uuid": { "$eq": str(self._case.uuid) } })
         # --- query for vector
-        print(f'INFO (AIActionAgent:query_search_vectors): querying "{self.model_name}"', filters)
+        print(f'INFO (AIActionAgent:query_search_vectors): querying "{self.model_name}" on index "{self._vector_index_id}"', filters)
         query_results = self.get_vector_index().query(
             vector=vector,
             top_k=top_k,
@@ -94,7 +95,7 @@ class AIActionAgent_AllMiniLML6v2(AIActionAgent):
         super().__init__(*args, **kwargs)
         self._model_distance_metric = DISTANCE_METRIC.cosine
         self._model_embed_dimensions = 384
-        self._vector_index_id = 'documents_text_384'
+        self._vector_index_id = VECTOR_INDEX_ID.documents_text_384
     def encode_text(self, sentences):
         embeddings_arr = sentence_encode_embeddings(sentences)
         return embeddings_arr
@@ -106,7 +107,7 @@ class AIActionAgent_TextSimilarityAda001(AIActionAgent):
         super().__init__(*args, **kwargs)
         self._model_distance_metric = DISTANCE_METRIC.cosine
         self._model_embed_dimensions = 1024
-        self._vector_index_id = 'documents_text_1024'
+        self._vector_index_id = VECTOR_INDEX_ID.documents_text_1024
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
@@ -117,7 +118,7 @@ class AIActionAgent_TextSimilarityCurie001(AIActionAgent):
         super().__init__(*args, **kwargs)
         self._model_distance_metric = DISTANCE_METRIC.euclidian
         self._model_embed_dimensions = 4096
-        self._vector_index_id = 'documents_text_4096'
+        self._vector_index_id = VECTOR_INDEX_ID.documents_text_4096
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
@@ -129,7 +130,7 @@ class AIActionAgent_TextSimilarityDavinci001(AIActionAgent):
         super().__init__(*args, **kwargs)
         self._model_distance_metric = DISTANCE_METRIC.euclidian
         self._model_embed_dimensions = 12288
-        self._vector_index_id = 'documents_text_12288'
+        self._vector_index_id = VECTOR_INDEX_ID.documents_text_12288
     def encode_text(self, text_statements):
         embeddings_arr = gpt_embedding(text_statements, engine=self.model_name) # returns numpy array
         return embeddings_arr
@@ -141,7 +142,7 @@ class AIActionAgent_ViTL14336px(AIActionAgent):
         super().__init__(*args, **kwargs)
         self._model_distance_metric = DISTANCE_METRIC.cosine
         self._model_embed_dimensions = 768
-        self._vector_index_id = 'documents_clip_768'
+        self._vector_index_id = VECTOR_INDEX_ID.documents_clip_768
     def encode_text(self, text_statements):
         embeddings_arr = clip_text_embedding(text_statements) # now returns as numpy array
         return embeddings_arr

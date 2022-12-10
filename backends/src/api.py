@@ -196,11 +196,8 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
-            get_vector_indexes()['documents_clip_768'].delete(ids=embeddings_ids_strs)
-            get_vector_indexes()['documents_text_384'].delete(ids=embeddings_ids_strs)
-            get_vector_indexes()['documents_text_1024'].delete(ids=embeddings_ids_strs)
-            get_vector_indexes()['documents_text_4096'].delete(ids=embeddings_ids_strs)
-            get_vector_indexes()['documents_text_12288'].delete(ids=embeddings_ids_strs)
+            for index in get_vector_indexes().values():
+                index.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
         await session.execute(sa.delete(Embedding)
