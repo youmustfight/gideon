@@ -43,7 +43,7 @@ ARG TARGET_ENV
 ENV TARGET_ENV=$TARGET_ENV
 ARG TARGET_SERVICE
 ENV TARGET_SERVICE=$TARGET_SERVICE
-# --- Configs
+# --- Configs (pytorch num_threads related)
 ENV OMP_NUM_THREADS=1
 
 # Start
