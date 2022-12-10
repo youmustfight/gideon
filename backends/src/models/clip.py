@@ -19,7 +19,7 @@ def _image_file_urls_to_files(image_file_urls_arr):
 
 # --- embedding
 def clip_text_embedding(text_arr):
-    print('INFO (CLIP): clip_text_embedding: ', text_arr)
+    print('INFO (clip.py:clip_text_embedding): ', text_arr)
     with torch.no_grad():
         processed_text_arr = ViTL14_336_tokenizer(text=text_arr, padding=True, return_tensors="pt")
         text_embeddings = ViTL14_336_model.get_text_features(**processed_text_arr)
@@ -28,21 +28,21 @@ def clip_text_embedding(text_arr):
         return text_embeddings
 
 def clip_image_embedding(image_file_url_arr):
-    print(f'INFO (CLIP): clip_image_embedding:', image_file_url_arr)
+    print(f'INFO (clip.py:clip_image_embedding):', image_file_url_arr)
     with torch.no_grad():
         image_arr = _image_file_urls_to_files(image_file_url_arr)
-        print(f'INFO (CLIP): clip_image_embedding: image_arr', image_arr)
+        print(f'INFO (clip.py:clip_image_embedding): image_arr', image_arr)
         processed_image_mappings = ViTL14_336_processor(images=image_arr, return_tensors="pt")
-        print(f'INFO (CLIP): clip_image_embedding: processed_image_mappings', processed_image_mappings)
+        print(f'INFO (clip.py:clip_image_embedding): processed_image_mappings', processed_image_mappings)
         image_embedding = ViTL14_336_model.get_image_features(**processed_image_mappings)
-        print(f'INFO (CLIP): clip_image_embedding: image_embedding', image_embedding)
+        print(f'INFO (clip.py:clip_image_embedding): image_embedding', image_embedding)
         # convert to list of float32 np arrays to be consistent
         image_embeddings = list(map(lambda em: np.asarray(em, dtype='float32'), image_embedding))
         return image_embeddings
 
 # --- text<>image similarity (https://huggingface.co/docs/transformers/model_doc/clip#usage)
 def clip_classifications(image_file_urls, classifications, min_similarity=0.1):
-    print('INFO (CLIP): clip_classifications', classifications)
+    print('INFO (clip.py:clip_classifications)', classifications)
     # PREPROCESS
     # --- image embeddings
     image_files = _image_file_urls_to_files(image_file_urls)
@@ -65,5 +65,5 @@ def clip_classifications(image_file_urls, classifications, min_similarity=0.1):
                 image_predicts.append({ "classification": classifications[idx], "score": value })
         predictions.append(image_predicts)
 
-    print('INFO (CLIP): clip_classifications predictions:', predictions)
+    print('INFO (clip.py:clip_classifications) predictions:', predictions)
     return predictions

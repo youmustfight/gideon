@@ -82,7 +82,6 @@ async def _index_audio_process_embeddings(session, document_id: int) -> None:
             sa.insert(Embedding).values(
                 document_id=document_id,
                 document_content_id=content.id,
-                encoded_model="gpt3",
                 encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
                 encoding_strategy="text",
                 vector_json=text_embedding_vector,

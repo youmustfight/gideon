@@ -74,6 +74,6 @@ const reqDocumentsGet = async (caseId: number): Promise<TDocument[]> =>
 
 export const useDocuments = (caseId: number) => {
   return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(caseId), {
-    refetchInterval: 1000 * 60,
+    refetchInterval: 1000 * 15,
   });
 };
