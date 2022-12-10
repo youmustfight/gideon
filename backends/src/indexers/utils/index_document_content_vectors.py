@@ -1,7 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 from aia.agent import AI_ACTIONS, create_ai_action_agent
-from dbs.vectordb_pinecone import pinecone_index_documents_text_384, pinecone_index_documents_text_1024, pinecone_index_documents_clip_768
 from dbs.sa_models import Document, DocumentContent, Embedding
 
 
@@ -28,9 +27,9 @@ async def index_document_content_vectors(session, document_id):
     aigent_image_embeds = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=case.id)
     aigent_sentence_embeds = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=case.id)
     aigent_max_text_embeds = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=case.id)
-    upserts_image_index = aigent_image_embeds._pinecone_index
-    upserts_sentences_index = aigent_sentence_embeds._pinecone_index
-    upserts_max_text_index = aigent_max_text_embeds._pinecone_index
+    upserts_image_index = aigent_image_embeds.get_vector_index()
+    upserts_sentences_index = aigent_sentence_embeds.get_vector_index()
+    upserts_max_text_index = aigent_max_text_embeds.get_vector_index()
     # --- upserts
     upserts_image = []
     upserts_sentences = []

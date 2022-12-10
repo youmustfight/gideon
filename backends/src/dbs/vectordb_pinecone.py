@@ -9,11 +9,14 @@ pinecone.init(
   api_key=env.env_get_database_pinecone_api_key(),
   environment=env.env_get_database_pinecone_environment()
 )
-pinecone_index_documents_clip_768 = pinecone.Index("documents-clip-768") # cosine
-pinecone_index_documents_text_384 = pinecone.Index("documents-text-384") # cosine (prev euclidian bc higher dimensionality)
-pinecone_index_documents_text_1024 = pinecone.Index("documents-text-1024") # cosine (prev euclidian bc higher dimensionality)
-pinecone_index_documents_text_4096 = pinecone.Index("documents-text-4096") # euclidan bc higher dimensionality
-pinecone_index_documents_text_12288 = pinecone.Index("documents-text-12288") # euclidan bc higher dimensionality
+def get_vector_indexes():
+    return dict(
+        documents_clip_768 = pinecone.Index("documents-clip-768"), # cosine
+        documents_text_384 = pinecone.Index("documents-text-384"), # cosine (prev euclidian bc higher dimensionality)
+        documents_text_1024 = pinecone.Index("documents-text-1024"), # cosine (prev euclidian bc higher dimensionality)
+        documents_text_4096 = pinecone.Index("documents-text-4096"), # euclidan bc higher dimensionality
+        documents_text_12288 = pinecone.Index("documents-text-12288"), # euclidan bc higher dimensionality
+    )
 
 
 # HELPERS
