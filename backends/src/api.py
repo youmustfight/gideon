@@ -296,14 +296,14 @@ async def app_route_documents_index_pdf(request):
     # --- process file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
-    # V1 SYNC
-    # --- process embeddings/extractions
-    async with session.begin():
-        document_id = await index_pdf(session=session, document_id=document_id)
-    # --- queue indexing
-    await index_document_content_vectors(session=session, document_id=document_id)
+    # # V1 SYNC
+    # # --- process embeddings/extractions
+    # async with session.begin():
+    #     document_id = await index_pdf(session=session, document_id=document_id)
+    # # --- queue indexing
+    # await index_document_content_vectors(session=session, document_id=document_id)
     # V2 JOB BASED
-    # indexing_queue.enqueue(job_index_pdf, document_id)
+    indexing_queue.enqueue(job_index_pdf, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])
