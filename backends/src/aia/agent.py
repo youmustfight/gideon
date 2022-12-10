@@ -143,9 +143,9 @@ class AIActionAgent_ViTL14336px(AIActionAgent):
     def encode_text(self, text_statements):
         embeddings_arr = clip_text_embedding(text_statements) # now returns as numpy array
         return embeddings_arr
-    def encode_image(self, image_file_url):
-        embedding = clip_image_embedding(image_file_url)
-        return [embedding]
+    def encode_image(self, image_file_urls):
+        embeddings_arr = clip_image_embedding(image_file_urls)
+        return embeddings_arr
 
 
 # TODO: how the f can we just initialize a AIActionAgent class off the bat w/ this setup
