@@ -9,6 +9,6 @@ model = SentenceTransformer(SENTENCE_MODEL_NAME)
 
 def sentence_encode_embeddings(sentences):
     print('INFO (sentence.py:sentence_embeddings) start', sentences) # embeddings
-    embeddings = model.encode(sentences)
+    embeddings = model.encode(sentences, show_progress_bar=True)
     print('INFO (sentence.py:sentence_embeddings) embedded') # embeddings
     return embeddings

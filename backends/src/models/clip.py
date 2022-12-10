@@ -30,8 +30,11 @@ def clip_image_embedding(image_file_url_arr):
     print(f'INFO (CLIP): clip_image_embedding:', image_file_url_arr)
     with torch.no_grad():
         image_arr = _image_file_urls_to_files(image_file_url_arr)
+        print(f'INFO (CLIP): clip_image_embedding: image_arr', image_arr)
         processed_image_mappings = ViTL14_336_processor(images=image_arr, return_tensors="pt")
+        print(f'INFO (CLIP): clip_image_embedding: processed_image_mappings', processed_image_mappings)
         image_embedding = ViTL14_336_model.get_image_features(**processed_image_mappings)
+        print(f'INFO (CLIP): clip_image_embedding: image_embedding', image_embedding)
         # convert to list of float32 np arrays to be consistent
         image_embeddings = list(map(lambda em: np.asarray(em, dtype='float32'), image_embedding))
         return image_embeddings

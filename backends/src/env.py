@@ -76,7 +76,6 @@ def env_get_open_ai_api_key():
 
 # INITIALIZE (V2)
 def set_secrets_on_env():
-    print("INFO (set_secrets_on_env): start") # just has docker/python env vars
     session = boto3.session.Session(
         aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')

@@ -196,7 +196,9 @@ async def app_route_document_delete(request, document_id):
         embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
         # DELETE INDEX VECTORS (via embedidngs)
         if (len(embeddings_ids_strs) > 0):
+            print('INFO Deleting Embeddings: ', embeddings_ids_strs)
             for index in get_vector_indexes().values():
+                print('INFO Deleting Embeddings on Index:', index)
                 index.delete(ids=embeddings_ids_strs)
         # DELETE MODELS
         # --- embeddings
@@ -299,7 +301,12 @@ async def app_route_documents_index_image(request):
     await session.commit()
     # --- process embeddings/extractions
     async with session.begin():
+        # V1 SYNC
         document_id = await index_image(session=session, document_id=document_id)
+        # V2 ASYNC COROUTINES (still blocks web requests)
+        # couroutine_tasks = map(lambda document_id: index_image(session=session, document_id=document_id), [document_id])
+        # document_id = await asyncio.gather(*couroutine_tasks)
+        # document_id = document_id[0]
     # --- queue indexing
     await index_document_content_vectors(session=session, document_id=document_id)
     return json({ 'status': 'success' })
@@ -437,5 +444,5 @@ def start_api():
     # INIT WORKERS
     # TODO: maybe use this forever serve for prod https://github.com/sanic-org/sanic/blob/main/examples/run_async.py
     # TODO: setup file watching to avoid hot-reload ack problem: https://thepythoncorner.com/posts/2019-01-13-how-to-create-a-watchdog-in-python-to-look-for-filesystem-changes/
-    app.run(host=host, port=port, auto_reload=False, single_process=True)
+    app.run(host=host, port=port, auto_reload=False) # cant do 2 workers, bc everything else bottlenecks
  
