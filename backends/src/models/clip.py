@@ -5,10 +5,11 @@ from transformers import CLIPProcessor, CLIPTokenizer, CLIPModel
 import torch
 
 # SETUP
+CLIP_MODEL_NAME = 'openai/clip-vit-large-patch14-336'
 # --- model + preprocess for images
-ViTL14_336_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
-ViTL14_336_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14-336")
-ViTL14_336_tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14-336")
+ViTL14_336_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
+ViTL14_336_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
+ViTL14_336_tokenizer = CLIPTokenizer.from_pretrained(CLIP_MODEL_NAME)
 
 
 # METHODS
