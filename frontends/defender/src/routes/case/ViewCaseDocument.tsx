@@ -100,8 +100,8 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
     <StyledDocumentViewTranscript>
       {Object.keys(documentTextByGrouping)?.map((groupingNumber) => (
         <div
-          key={`source-text-${groupingNumber}`}
-          id={`source-text-${groupingNumber}`}
+          key={`text-batch-${groupingNumber}`}
+          id={`text-batch-${groupingNumber}`}
           className={hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(groupingNumber) ? "active" : ""}
         >
           <div className="document-transcript__header">
@@ -113,10 +113,18 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           {/* <p>{doc.document_text_by_minute}</p> */}
           <p>
             {documentTextByGrouping[groupingNumber].map((documentContent) => (
-              <Fragment key={documentContent.id}>
+              <span
+                key={documentContent.id}
+                id={`sentence-${documentContent.sentence_number}`}
+                className={
+                  hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(documentContent.sentence_number)
+                    ? "active"
+                    : ""
+                }
+              >
                 {" "}
-                <span>{documentContent.text}</span>
-              </Fragment>
+                {documentContent.text}
+              </span>
             ))}
           </p>
         </div>
@@ -130,7 +138,7 @@ const StyledDocumentViewTranscript = styled.div`
     margin: 8px 0;
     padding: 8px;
     border-radius: 4px;
-    &.active {
+    .active {
       background: #ffffcf;
     }
     h6 {
