@@ -8,6 +8,7 @@ import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
+import { formatHashForSentenceHighlight } from "./hashUtils";
 import { HighlightBox } from "./HighlightsBox";
 
 const StyledAnswerLocationBox = styled.div`
@@ -23,6 +24,8 @@ const StyledAnswerLocationBox = styled.div`
     flex-grow: 1;
     b {
       font-size: 12px;
+      display: flex;
+      justify-content: space-between;
     }
     p {
       margin: 8px 0 0;
@@ -51,28 +54,41 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
       <div className="answer-location-box__text">
         <b>
           <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
-          {location.document.type === "pdf" ? (
-            <>
-              ,{" "}
-              <Link
-                to={`/case/${caseId}/document/${location.document.id}#sentence-${location.document_content.sentence_number}`}
-              >
-                page {location.document_content.page_number}
-              </Link>
-            </>
-          ) : null}
-          {["audio", "video"].includes(location.document.type) ? (
-            <>
-              ,{" "}
-              <Link
-                to={`/case/${caseId}/document/${location.document.id}#sentence-${location.document_content.sentence_number}`}
-              >
-                at {formatSecondToTime(location.document_content.second_start ?? 0)}
-              </Link>
-            </>
-          ) : null}
+          <span>
+            {location.document.type === "pdf" ? (
+              <>
+                <Link
+                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    location.document_content.sentence_number ?? location.document_content.sentence_start,
+                    location.document_content.sentence_end
+                  )}`}
+                >
+                  {location.document_content.page_number
+                    ? `page ${location.document_content.page_number}`
+                    : `${formatHashForSentenceHighlight(
+                        location.document_content.sentence_number ?? location.document_content.sentence_start,
+                        location.document_content.sentence_end
+                      )}`}
+                </Link>
+              </>
+            ) : null}
+            {["audio", "video"].includes(location.document.type) ? (
+              <>
+                <Link
+                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    location.document_content.sentence_number ?? location.document_content.sentence_start,
+                    location.document_content.sentence_end
+                  )}`}
+                >
+                  {formatSecondToTime(location.document_content.second_start ?? 0)}
+                </Link>
+              </>
+            ) : null}
+          </span>
         </b>
-        {location.document_content.text ? <p>"...{location.document_content.text}..."</p> : null}
+        {location.document_content.text && location.document_content.tokenizing_strategy === "sentence" ? (
+          <p>"...{location.document_content.text}..."</p>
+        ) : null}
       </div>
       {location.image_file ? <StyledAnswerLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
     </StyledAnswerLocationBox>
@@ -227,18 +243,27 @@ export const QuestionAnswerBox = () => {
               {/* TEXT ANSWER */}
               {answer?.answer ? (
                 <p>
-                  <u>ANSWER:</u> {answer.answer}
+                  <u>ANSWER:</u>
+                  <br />
+                  <br />
+                  {answer.answer}
                 </p>
               ) : null}
               {/* LOCATIONS */}
               {answer?.locations ? (
-                <ul>
-                  {answer?.locations?.map((l) => (
-                    <li key={l.document_content.id}>
-                      <AnswerLocationBox location={l} />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <br />
+                  <p>
+                    <u>SOURCES:</u>
+                  </p>
+                  <ul>
+                    {answer?.locations?.map((l) => (
+                      <li key={l.document_content.id}>
+                        <AnswerLocationBox location={l} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : null}
               {/* HIGHLIGHTS */}
               {/* {answer?.highlights ? (

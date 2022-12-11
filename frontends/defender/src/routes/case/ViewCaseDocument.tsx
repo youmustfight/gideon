@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
@@ -66,7 +67,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
     setTimeout(() => {
       if (hash !== "" && typeof document !== "undefined" && document?.querySelector != null) {
         // --- scroll if we had an #anchor link param
-        const element = document.querySelector(hash);
+        const element = document.querySelector(`#${getHashHighlightingSentenceStart(hash)}`);
         if (element) element.scrollIntoView();
       } else {
         // --- otherwise scroll to top
@@ -99,11 +100,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   return (
     <StyledDocumentViewTranscript>
       {Object.keys(documentTextByGrouping)?.map((groupingNumber) => (
-        <div
-          key={`text-batch-${groupingNumber}`}
-          id={`text-batch-${groupingNumber}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(groupingNumber) ? "active" : ""}
-        >
+        <div key={`text-batch-${groupingNumber}`}>
           <div className="document-transcript__header">
             <h6>
               {doc.type === "pdf" ? "Page" : "▶️ Minute"} #{groupingNumber}:
@@ -114,13 +111,9 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           <p>
             {documentTextByGrouping[groupingNumber].map((documentContent) => (
               <span
-                key={documentContent.id}
-                id={`sentence-${documentContent.sentence_number}`}
-                className={
-                  hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(documentContent.sentence_number)
-                    ? "active"
-                    : ""
-                }
+                key={`S${documentContent.id}`}
+                id={`S${documentContent.sentence_number}`}
+                className={isHashHighlightingSentence(hash, documentContent.sentence_number) ? "active" : ""}
               >
                 {" "}
                 {documentContent.text}

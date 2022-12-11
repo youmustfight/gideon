@@ -163,7 +163,7 @@ export const DiscoveryBox = () => {
           {documents
             .filter((d) => d.status_processing_content != "completed")
             .map((d) => (
-              <div className="discovery-box__document processing">
+              <div key={d.id} className="discovery-box__document processing">
                 <p>
                   File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
                 </p>
