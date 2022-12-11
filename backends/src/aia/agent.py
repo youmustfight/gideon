@@ -14,8 +14,10 @@ from models.sentence import sentence_encode_embeddings
 class AI_ACTIONS(Enum):
     document_similarity_image_embed = 'document_similarity_image_embed'
     document_similarity_text_sentence_embed = 'document_similarity_text_sentence_embed'
+    document_similarity_text_sentences_20_embed = 'document_similarity_text_sentences_20_embed'
     document_similarity_text_max_size_embed = 'document_similarity_text_max_size_embed'
-    case_similarity_text_sentences_search = 'case_similarity_text_sentences_search'
+    case_similarity_text_sentence_search = 'case_similarity_text_sentence_search'
+    case_similarity_text_sentences_20_search = 'case_similarity_text_sentences_20_search'
     case_similarity_text_max_size_search = 'case_similarity_text_max_size_search'
     case_similarity_text_to_image_search = 'case_similarity_text_to_image_search'
 
