@@ -11,10 +11,14 @@ export type TDocumentContent = {
   text: string;
   tokenizing_strategy: string;
   page_number: string;
-  second_start?: number;
-  second_end?: number;
+  sentence_number?: number;
+  sentence_start?: number;
+  sentence_end?: number;
   // image
   image_patch_size?: number;
+  // audio/video
+  second_start?: number;
+  second_end?: number;
 };
 
 export type TFile = {

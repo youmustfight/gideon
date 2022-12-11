@@ -6,6 +6,7 @@ import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
 import { TDocument, useDocuments } from "../data/useDocuments";
 import { getGideonApiUrl } from "../env";
+import { formatSecondToTime } from "./formatSecondToTime";
 
 const DocumentPreviewAudio = styled.audio`
   min-width: 120px;
@@ -29,15 +30,15 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
   const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
-  const minuteCount = Math.floor(
-    Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.second_end))))) / 60
+  const timeText = formatSecondToTime(
+    Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.second_end)))))
   );
   return (
     <div className="discovery-box__document">
       <div style={{ flexGrow: 1 }}>
         <small>
           <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
-          {["audio", "video"].includes(document?.type) ? <> ({minuteCount} minutes)</> : null}
+          {["audio", "video"].includes(document?.type) ? <> ({timeText} min.)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
         {["audio", "pdf", "video"].includes(document.type) ? (

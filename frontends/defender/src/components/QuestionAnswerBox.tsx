@@ -7,6 +7,7 @@ import { useTeamStore } from "../data/TeamStore";
 import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { getGideonApiUrl } from "../env";
+import { formatSecondToTime } from "./formatSecondToTime";
 import { HighlightBox } from "./HighlightsBox";
 
 const StyledAnswerLocationBox = styled.div`
@@ -54,7 +55,7 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
             <>
               ,{" "}
               <Link
-                to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.page_number}`}
+                to={`/case/${caseId}/document/${location.document.id}#sentence-${location.document_content.sentence_number}`}
               >
                 page {location.document_content.page_number}
               </Link>
@@ -64,11 +65,9 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
             <>
               ,{" "}
               <Link
-                to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
-                  (location.document_content.second_start ?? 0) / 60
-                )}`}
+                to={`/case/${caseId}/document/${location.document.id}#sentence-${location.document_content.sentence_number}`}
               >
-                minute {Math.floor((location.document_content.second_start ?? 0) / 60)}
+                at {formatSecondToTime(location.document_content.second_start ?? 0)}
               </Link>
             </>
           ) : null}
