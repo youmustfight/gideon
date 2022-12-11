@@ -139,6 +139,9 @@ class DocumentContent(BaseModel):
     text = Column(Text())
     tokenizing_strategy = Column(String())
     page_number = Column(String())
+    sentence_number = Column(Integer())
+    sentence_start = Column(Integer())
+    sentence_end = Column(Integer())
     # --- image
     image_file_id = Column(Integer, ForeignKey("file.id"))
     image_file = relationship("File", back_populates="document_content_image_file")
