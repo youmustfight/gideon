@@ -1,9 +1,10 @@
 from time import sleep
 from redis import Redis
 from rq import Queue
+from env import env_queue_rq_host, env_queue_rq_port
 
 # CONNECTION
-redis_cxn = Redis(host='queue', port=6379)
+redis_cxn = Redis(host=env_queue_rq_host(), port=env_queue_rq_port())
 
 # QUEUES
 # --- common props? (https://python-rq.org/docs/#enqueueing-jobs)
