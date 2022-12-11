@@ -15,7 +15,6 @@ from time import sleep
 # https://beta.openai.com/docs/guides/embeddings/what-are-embeddings
 ENGINE_COMPLETION = 'text-davinci-003' # 'text-ada-001'
 ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
-ENGINE_EMBEDDING = 'text-similarity-ada-001'
 OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
 TEMPERATURE_DEFAULT = 0
@@ -25,13 +24,12 @@ def gpt_vars():
     return {
         "ENGINE_COMPLETION": ENGINE_COMPLETION,
         "ENGINE_EDIT": ENGINE_EDIT,
-        "ENGINE_EMBEDDING": ENGINE_EMBEDDING,
         "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT,
         "OPENAI_REQUEST_TIMEOUT": OPENAI_REQUEST_TIMEOUT,
         "OPENAI_THROTTLE": OPENAI_THROTTLE
     }
 
-def gpt_embedding(content, engine=ENGINE_EMBEDDING):
+def gpt_embedding(content, engine):
     print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
     try:
         # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
