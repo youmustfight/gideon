@@ -34,7 +34,7 @@ def gpt_embedding(content, engine):
         # v2 --- setup with easy to use np arrays in a list, handling batch embeddings
         return list(map(lambda d: numpy.asarray(d['embedding'], dtype='float32'), response['data']))
     except Exception as err:
-        print(f"ERROR (GPT3): gpt_embedding [{engine}] err = ", err, content)
+        print(f"ERROR (GPT3): gpt_embedding [{engine}] err = ", err, '\n', content)
         raise err
 
 # COMPLETION
@@ -68,7 +68,7 @@ def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE, temperature=GTP3
             retry += 1
             if retry >= max_retry:
                 return "Error (GTP3 Completion): %s" % err
-            print('Error (GPT3):', err)
+            print('Error (GPT3):', err, '\n', f'{prompt[0:120]}...')
 
 def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 3
