@@ -10,7 +10,7 @@ from queries.utils.search_vector_to_location import search_vector_to_location
 async def question_answer(session, query_text, case_id):
     print(f'INFO (question_answer.py): querying with question "{query_text}"')
     # 1. get similar vectors
-    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_max_size_search, case_id=case_id)
+    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentences_20_search, case_id=case_id)
     search_vectors = aigent_location_text_searcher.query_search_vectors(
         query_text,
         query_filters={ "string_length": { "$gt": 480 } },
@@ -34,11 +34,6 @@ async def question_answer(session, query_text, case_id):
     # final_answer_futures = list(
     #     map(lambda dc: query_for_answer.remote(dc.text, query_text), document_content))
     # # V3 ASYNC w/ PARALLEL JOBS USING RQ (locally at sync speed, but in prod can parallelize w/ multiple instances)
-    # final_answer_jobs = prompt_queue.enqueue_many(
-    #     map(lambda dc: Queue.prepare_data(func=job_query_for_answer, args=[dc.text, query_text]), document_content)
-    # )
-    # results = await_enqueued_results(final_answer_jobs)
-
     # V4 ASYNCIO CONCURRENCY (~50 sec)
     # --- tasks (only works bc they're async?)
     async def query_for_answer(passage_text, query_text):

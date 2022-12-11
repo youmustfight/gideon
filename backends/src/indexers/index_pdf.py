@@ -132,9 +132,7 @@ async def _index_pdf_process_extractions(session, document_id: int) -> None:
             .where(DocumentContent.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value))
     document_content_sentences = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content_sentences))
-    print('INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {length}'.format(length=len(document_content_text)))
-    use_repeat_methods = len(document_content_text) > 11_000 # 4097 tokens allowed, but a token represents 3 or 4 characters
-    print('INFO (index_pdf.py:_index_pdf_process_extractions): use_repeat_methods = {bool}'.format(bool=use_repeat_methods))
+    print(f'INFO (index_pdf.py:_index_pdf_process_extractions): len(document_text) = {len(document_content_text)}')
     # EXTRACT
     # --- classification/description
     print('INFO (index_pdf.py:_index_pdf_process_extractions): document_description')

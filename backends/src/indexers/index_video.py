@@ -149,7 +149,7 @@ async def _index_video_process_embeddings(session, document_id: int) -> None:
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agents
     aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
-    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=document.case_id)
+    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id)
     aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
     # --- sentences (batch processing to avoid rate limits/throttles)
     print('INFO (index_pdf.py:_index_video_process_embeddings): encoding sentences...', document_content_sentences)
