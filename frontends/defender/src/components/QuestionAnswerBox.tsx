@@ -1,5 +1,5 @@
 import axios from "axios";
-import { intersection } from "lodash";
+import { intersection, orderBy } from "lodash";
 import { useState } from "react";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
@@ -257,7 +257,7 @@ export const QuestionAnswerBox = () => {
                     <u>SOURCES:</u>
                   </p>
                   <ul>
-                    {answer?.locations?.map((l) => (
+                    {orderBy(answer?.locations, ["score"], ["desc"])?.map((l) => (
                       <li key={l.document_content.id}>
                         <AnswerLocationBox location={l} />
                       </li>

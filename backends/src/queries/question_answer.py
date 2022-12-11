@@ -14,7 +14,8 @@ async def question_answer(session, query_text, case_id):
     search_vectors = aigent_location_text_searcher.query_search_vectors(
         query_text,
         query_filters={ "string_length": { "$gt": 480 } },
-        top_k=8,
+        top_k=3, # was 8, I feel like only focusing on high matches will get less noisy answers + be faster
+        score_min=0.5,
         score_max=1.2,
         score_min_diff_percent=0.15)
 
