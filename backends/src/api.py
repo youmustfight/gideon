@@ -1,29 +1,30 @@
-import asyncio
 from contextvars import ContextVar
 from datetime import datetime
-import pinecone
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
-from sqlalchemy.orm import joinedload, selectinload, subqueryload
+from sqlalchemy.orm import selectinload, subqueryload
 
 from aia.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, Embedding, File, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, User
 from dbs.sa_sessions import create_sqlalchemy_session
-from dbs.vectordb_pinecone import get_vector_indexes
 import env
-from indexers.utils.index_document_prep import index_document_prep
-from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
-from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
-from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
-from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
+from indexers.deindex_document_content import deindex_document_content
+from indexers.index_audio import _index_audio_process_extractions
+from indexers.index_image import _index_image_process_extractions
+from indexers.index_pdf import _index_pdf_process_extractions
+from indexers.index_video import _index_video_process_extractions
+from indexers.processors.job_index_audio import job_index_audio
+from indexers.processors.job_index_image import job_index_image
 from indexers.processors.job_index_pdf import job_index_pdf
-from indexers.utils.index_document_content_vectors import index_document_content_vectors
+from indexers.processors.job_index_video import job_index_video
+from indexers.utils.index_document_prep import index_document_prep
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
+from queries.utils.serialize_location import serialize_location
 from queues import indexing_queue
 
 # INIT
@@ -324,38 +325,18 @@ async def app_route_highlights(request):
     return json({ 'status': 'success', "highlights": highlights })
 
 
-# INDEXES
-@app.route('/v1/index/<index_name>', methods = ['DELETE'])
-@auth_route
-def app_route_index_delete(request, index_name):
-    index_to_clear = pinecone.Index(index_name)
-    index_to_clear.delete(deleteAll=True) # just deletes all vectors
-    return json({ 'status': 'success' })
-
-@app.route('/v1/indexes/regenerate', methods = ['POST'])
-# @auth_route
-async def app_route_indexes_regenerate(request):
-    session = request.ctx.session
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document).where(Document.case_id != None))
-        documents = query_document.scalars().all()
-        for document in documents:
-            await index_document_content_vectors(session=session, document_id=document.id)
-    return json({ 'status': 'success' })
-
-
 # QUERIES
 @app.route('/v1/queries/document-query', methods = ['POST'])
 @auth_route
 async def app_route_question_answer(request):
     session = request.ctx.session
     async with session.begin():
-        answer = await question_answer(
+        answer, locations = await question_answer(
             session,
             query_text=request.json.get('question'),
             case_id=request.json.get('case_id'))
-    return json({ 'status': 'success', "answer": answer })
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
 @app.route('/v1/queries/documents-locations', methods = ['POST'])
 @auth_route
@@ -367,17 +348,10 @@ async def app_route_query_info_locations(request):
             session,
             query_text=request.json.get('query'),
             case_id=request.json.get('case_id'))
-        # Serialize (TODO): make "Location" class rather than plain dict
-        def serialize_location(location):
-            serial = dict(
-                document=location.get('document').serialize(),
-                document_content=location.get('document_content').serialize(),
-                score=location.get('score'))
-            if (location.get('image_file') != None):
-                serial['image_file'] = location.get('image_file').serialize()
-            return serial
+        # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
-    return json({ 'status': 'success', "locations": locations })
+    return json({ 'status': 'success', 'data': { 'locations': locations } })
+
 
 # USERS
 @app.route('/v1/user/<user_id>', methods = ['GET'])
