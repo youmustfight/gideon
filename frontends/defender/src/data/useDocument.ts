@@ -7,9 +7,6 @@ import { TDocument } from "./useDocuments";
 const reqDocumentGet = async (documentId: number | string): Promise<TDocument> =>
   axios.get(`${getGideonApiUrl()}/v1/document/${documentId}`).then((res) => res.data.document);
 
-export const reqDocumentEmbeddings = async (documentId: number | string): Promise<TDocument[]> =>
-  axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/embeddings`).then((res) => res.data.document);
-
 export const reqDocumentSummarize = async (documentId: number | string): Promise<TDocument[]> =>
   axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/extractions`).then((res) => res.data.document);
 

@@ -1,11 +1,10 @@
-import axios from "axios";
-import React from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route } from "react-router";
 import { useMatch } from "react-router-dom";
 import styled from "styled-components";
+import { CaseAdminToolbox } from "../../components/CaseAdminToolbox";
 import { CaseDriver } from "../../components/CaseDriver";
 import { QuestionAnswerBox } from "../../components/QuestionAnswerBox";
-import { useCase } from "../../data/useCase";
+import { useCase, reqCaseAILocksReset, reqCaseReindexAllDocuments } from "../../data/useCase";
 import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
 
@@ -37,12 +36,7 @@ export const ViewCase = () => {
         {/* --- ADMIN ---  */}
         <hr />
         <br />
-        <div className="section-lead">
-          <h4>ADMIN</h4>
-        </div>
-        <section className="section-admin">
-          <button onClick={() => axios.put(`/v1/case/${caseId}/ai_action_locks_reset`)}>Reset AI Action Locks</button>
-        </section>
+        <CaseAdminToolbox caseId={caseId} />
       </StyledViewCase>
     </>
   );

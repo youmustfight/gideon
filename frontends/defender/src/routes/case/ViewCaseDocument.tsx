@@ -4,7 +4,7 @@ import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { TimelineSummary } from "../../components/TimelineSummary";
-import { reqDocumentEmbeddings, reqDocumentSummarize, useDocument } from "../../data/useDocument";
+import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument } from "../../data/useDocuments";
 
@@ -32,7 +32,6 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
           <br />
           <div style={{ display: "flex" }}>
             <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
-            <button onClick={() => reqDocumentEmbeddings(document.id)}>Re-run Embeddings</button>
           </div>
         </>
       ) : null}

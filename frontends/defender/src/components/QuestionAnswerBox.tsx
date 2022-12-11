@@ -88,8 +88,14 @@ export const QuestionAnswerBox = () => {
   // --- answers state
   const [answer, setAnswer] = useState<{ answer?: string; locations?: TQueryLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
-  // --- q1 : Ask Question
+  // --- answers
   const [answerQuestion, setAnswerQuestion] = useState("");
+  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
+  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
+  const [userToSummarize, setUserToSummarize] = useState("");
+  const [userOneToContrast, setUserOneToContrast] = useState("");
+  const [userTwoToContrast, setUserTwoToContrast] = useState("");
+  // --- q1 : Ask Question
   // @ts-ignore
   const handleQuestion = (e) => {
     e.preventDefault();
@@ -102,12 +108,11 @@ export const QuestionAnswerBox = () => {
         index_type: "discovery",
       })
       .then((res) => {
-        setAnswer({ answer: res.data.answer, locations: res.data.locations });
+        setAnswer({ answer: res.data.data.answer, locations: res.data.data.locations });
         setIsAnswerPending(false);
       });
   };
   // --- q2 : Search for Detail
-  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
   // @ts-ignore
   const handleSearchForPage = (e) => {
     e.preventDefault();
@@ -120,12 +125,11 @@ export const QuestionAnswerBox = () => {
         index_type: "discovery",
       })
       .then((res) => {
-        setAnswer({ locations: res.data.locations });
+        setAnswer({ locations: res.data.data.locations });
         setIsAnswerPending(false);
       });
   };
   // --- q3 : Search Highlights
-  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
   // @ts-ignore
   const handleHighlightSearch = (e) => {
     e.preventDefault();
@@ -139,38 +143,6 @@ export const QuestionAnswerBox = () => {
       .then((res) => {
         // @ts-ignore
         setAnswer({ highlights: res.data.highlights });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q4 : Summarize Laywer
-  const [userToSummarize, setUserToSummarize] = useState("");
-  const handleUserSummarizing = () => {
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/summarize-user`, {
-        case_id: caseId,
-        user: userToSummarize,
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.answer });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q5 : Contrast Laywers
-  const [userOneToContrast, setUserOneToContrast] = useState("");
-  const [userTwoToContrast, setUserTwoToContrast] = useState("");
-  const handleUserContrasting = () => {
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/contrast-users`, {
-        case_id: caseId,
-        user_one: userOneToContrast,
-        user_two: userTwoToContrast,
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
       });
   };
@@ -224,11 +196,7 @@ export const QuestionAnswerBox = () => {
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          disabled={isAnswerPending || !(userToSummarize?.length > 0)}
-          onClick={handleUserSummarizing}
-        >
+        <button type="submit" disabled={isAnswerPending || !(userToSummarize?.length > 0)}>
           Summarize
         </button>
       </div>
@@ -248,11 +216,7 @@ export const QuestionAnswerBox = () => {
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}
-          onClick={handleUserContrasting}
-        >
+        <button type="submit" disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}>
           Contrast
         </button>
       </div>
