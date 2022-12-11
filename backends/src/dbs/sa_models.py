@@ -156,6 +156,9 @@ class DocumentContent(BaseModel):
             "text": self.text,
             "tokenizing_strategy": self.tokenizing_strategy,
             "page_number": self.page_number,
+            "sentence_number": self.sentence_number,
+            "sentence_start": self.sentence_start,
+            "sentence_end": self.sentence_end,
             "second_start": self.second_start,
             "second_end": self.second_end,
         }

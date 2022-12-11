@@ -8,6 +8,9 @@ async def deindex_document_content(session, document_id):
     Delete document embeddings + document and remove them from vector databases/indexes
     '''
     # FETCH
+    # --- document
+    query_document = await session.execute(sa.select(Document).where(Document.id == int(document_id)))
+    document = query_document.scalars().first()
     # --- embeddings
     query_embeddings = await session.execute(
         sa.select(Embedding).options(
@@ -27,10 +30,23 @@ async def deindex_document_content(session, document_id):
             print('INFO Deleting Embeddings on Index:', index)
             index.delete(ids=embeddings_ids_strs)
 
-    # DELETE MODELS
+    # DELETE MODELS/DATA
     # --- embeddings
     await session.execute(sa.delete(Embedding)
         .where(Embedding.id.in_(embeddings_ids_ints)))
+    document.status_processing_embeddings = None
     # --- document_content
     await session.execute(sa.delete(DocumentContent)
         .where(DocumentContent.document_id == int(document_id)))
+    document.status_processing_content = None
+    # --- document properties/extractions
+    document.status_processing_extractions = None
+    document.document_description = None
+    document.document_events = None
+    document.document_summary = None
+    document.document_summary_one_liner = None
+    document.document_citing_slavery_summary = None
+    document.document_citing_slavery_summary_one_liner = None
+
+    # SAVE DOCUMENT UPDATES
+    session.add(document)
