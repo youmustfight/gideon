@@ -1,5 +1,4 @@
 import axios from "axios";
-import { isBefore, subSeconds } from "date-fns";
 import { capitalize } from "lodash";
 import React, { useState } from "react";
 import ReactPlayer from "react-player";
@@ -96,8 +95,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
 export const DiscoveryBox = () => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
-  const { data: documents = [] } = useDocuments(caseId);
-  const [lastUploadedFileAt, setLastUploadedFileAt] = useState<Date>();
+  const { data: documents = [], refetch } = useDocuments(caseId);
   const [isAddingFile, setIsAddingFile] = useState(false);
   const isIndexingDisabled = documents?.some((d) => d.status_processing_content != "completed");
   // @ts-ignore
@@ -107,13 +105,17 @@ export const DiscoveryBox = () => {
       // --- setup form data/submit
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
-      axios.post(`${getGideonApiUrl()}/v1/documents/index/${type}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        params: { case_id: caseId },
-      });
+      axios
+        .post(`${getGideonApiUrl()}/v1/documents/index/${type}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          params: { case_id: caseId },
+        })
+        .then(() => {
+          // after a few seconds, refetch documents to get files processing
+          setTimeout(() => refetch(), 1000 * 2);
+        });
       // --- clear file in input if successful
       e.target.file.value = "";
-      setLastUploadedFileAt(new Date());
     }
   };
 
@@ -121,7 +123,7 @@ export const DiscoveryBox = () => {
   return (
     <StyledDiscoveryBox>
       {/* UPLOAD */}
-      {isAddingFile && !isIndexingDisabled ? (
+      {isAddingFile ? (
         <>
           {/* PDF */}
           <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
@@ -148,30 +150,35 @@ export const DiscoveryBox = () => {
           </form>
         </>
       ) : null}
-      {!isAddingFile && !isIndexingDisabled ? (
+      {!isAddingFile ? (
         <button className="add-files-btn" onClick={() => setIsAddingFile(true)}>
           + Upload PDF, Image, Audio, Video
         </button>
       ) : null}
+
+      {/* DOCUMENTS - PROCESSING */}
       {isIndexingDisabled && (
-        <div className="discovery-box__document processing">
-          <p>File "{documents?.find((d) => d.status_processing_content != "completed")?.name}" processing...</p>
-        </div>
+        <>
+          {documents
+            .filter((d) => d.status_processing_content != "completed")
+            .map((d) => (
+              <div className="discovery-box__document processing">
+                <p>
+                  File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
+                </p>
+              </div>
+            ))}
+        </>
       )}
-      {/* FILES */}
+      {/* DOCUMENTS - PROCESSED */}
       <ul>
-        {lastUploadedFileAt && isBefore(new Date(), subSeconds(lastUploadedFileAt, 15)) ? (
-          <li>
-            <div className="discovery-box__document processing">
-              <p>File processing. Will appear soon...</p>
-            </div>
-          </li>
-        ) : null}
-        {documents.map((doc) => (
-          <li key={doc.id}>
-            <DocumentBox document={doc} />
-          </li>
-        ))}
+        {documents
+          .filter((d) => d.status_processing_content === "completed")
+          .map((doc) => (
+            <li key={doc.id}>
+              <DocumentBox document={doc} />
+            </li>
+          ))}
       </ul>
     </StyledDiscoveryBox>
   );
