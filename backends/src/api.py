@@ -1,29 +1,30 @@
-import asyncio
 from contextvars import ContextVar
 from datetime import datetime
-import pinecone
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
-from sqlalchemy.orm import joinedload, selectinload, subqueryload
+from sqlalchemy.orm import selectinload, subqueryload
 
 from aia.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, Embedding, File, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, User
 from dbs.sa_sessions import create_sqlalchemy_session
-from dbs.vectordb_pinecone import get_vector_indexes
 import env
-from indexers.utils.index_document_prep import index_document_prep
-from indexers.index_audio import index_audio, _index_audio_process_embeddings, _index_audio_process_extractions
-from indexers.index_image import index_image, _index_image_process_embeddings, _index_image_process_extractions
-from indexers.index_pdf import index_pdf, _index_pdf_process_embeddings, _index_pdf_process_extractions
-from indexers.index_video import index_video, _index_video_process_embeddings, _index_video_process_extractions
+from indexers.deindex_document_content import deindex_document_content
+from indexers.index_audio import _index_audio_process_extractions
+from indexers.index_image import _index_image_process_extractions
+from indexers.index_pdf import _index_pdf_process_extractions
+from indexers.index_video import _index_video_process_extractions
+from indexers.processors.job_index_audio import job_index_audio
+from indexers.processors.job_index_image import job_index_image
 from indexers.processors.job_index_pdf import job_index_pdf
-from indexers.utils.index_document_content_vectors import index_document_content_vectors
+from indexers.processors.job_index_video import job_index_video
+from indexers.utils.index_document_prep import index_document_prep
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
+from queries.utils.serialize_location import serialize_location
 from queues import indexing_queue
 
 # INIT
@@ -135,16 +136,27 @@ async def app_route_case_put_action_locks(request, case_id):
         session.add_all(generate_ai_action_locks(case_id))
     return json({ 'status': 'success' })
 
-@app.route('/v1/case/<case_id>/reprocess_all_data', methods = ['PUT'])
+@app.route('/v1/case/<case_id>/reindex_all_documents', methods = ['PUT'])
 @auth_route
 async def app_route_case_put_reprocess_all_data(request, case_id):
     session = request.ctx.session
     async with session.begin():
         case_id = int(case_id)
-        # --- for each document, delete document embeddings into pinecone db
-        # --- ... then delete document embeddings
-        # --- re-run embeddings
-        # --- ... then re-run upsert into pinecone db
+        query_documents = await session.execute(sa.select(Document).where(Document.case_id == case_id))
+        documents = query_documents.scalars().all()
+        # --- for each document, delete embeddings, document content, remove from vector dbs/indexes
+        for document in documents:
+            await deindex_document_content(session, document.id)
+    # --- for each document, re-run document processing + embedding + vector db/index upsertion
+    for document in documents:
+        if document.type == 'pdf':
+            indexing_queue.enqueue(job_index_pdf, document.id)
+        if document.type == 'image':
+            indexing_queue.enqueue(job_index_image, document.id)
+        if document.type == 'audio':
+            indexing_queue.enqueue(job_index_audio, document.id)
+        if document.type == 'video':
+            indexing_queue.enqueue(job_index_video, document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/case', methods = ['POST'])
@@ -195,31 +207,8 @@ async def app_route_document_get(request, document_id):
 async def app_route_document_delete(request, document_id):
     session = request.ctx.session
     async with session.begin():
-        # FETCH
-        # --- embeddings
-        query_embeddings = await session.execute(
-            sa.select(Embedding).options(
-                joinedload(Embedding.document_content).options(
-                    joinedload(DocumentContent.document)
-            )).where(Embedding.document_content.has(
-                DocumentContent.document.has(
-                    Document.id == int(document_id)))))
-        embeddings = query_embeddings.scalars().all()
-        embeddings_ids_ints = list(map(lambda e: e.id, embeddings))
-        embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
-        # DELETE INDEX VECTORS (via embedidngs)
-        if (len(embeddings_ids_strs) > 0):
-            print('INFO Deleting Embeddings: ', embeddings_ids_strs)
-            for index in get_vector_indexes().values():
-                print('INFO Deleting Embeddings on Index:', index)
-                index.delete(ids=embeddings_ids_strs)
-        # DELETE MODELS
-        # --- embeddings
-        await session.execute(sa.delete(Embedding)
-            .where(Embedding.id.in_(embeddings_ids_ints)))
-        # --- document_content
-        await session.execute(sa.delete(DocumentContent)
-            .where(DocumentContent.document_id == int(document_id)))
+        # --- document content & embeddings
+        await deindex_document_content(session, document_id)
         # --- files
         await session.execute(sa.update(File)
             .where(File.document_id == int(document_id))
@@ -227,24 +216,6 @@ async def app_route_document_delete(request, document_id):
         # --- document
         await session.execute(sa.delete(Document)
             .where(Document.id == int(document_id)))
-    return json({ 'status': 'success' })
-
-@app.route('/v1/document/<document_id>/embeddings', methods = ['POST'])
-@auth_route
-async def app_route_document_embeddings(request, document_id):
-    session = request.ctx.session
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document).where(Document.id == int(document_id)))
-        document = query_document.scalars().first()
-        if (document.type == "pdf"):
-            await _index_pdf_process_embeddings(session=session, document_id=document.id)
-        if (document.type == "image"):
-            await _index_image_process_embeddings(session=session, document_id=document.id)
-        if (document.type == "audio"):
-            await _index_audio_process_embeddings(session=session, document_id=document.id)
-        if (document.type == "video"):
-            await _index_video_process_embeddings(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
@@ -293,16 +264,10 @@ async def app_route_documents_index_pdf(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
-    # --- process file
+    # --- setup document + file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
-    # # V1 SYNC
-    # # --- process embeddings/extractions
-    # async with session.begin():
-    #     document_id = await index_pdf(session=session, document_id=document_id)
-    # # --- queue indexing
-    # await index_document_content_vectors(session=session, document_id=document_id)
-    # V2 JOB BASED
+    # --- queue processing
     indexing_queue.enqueue(job_index_pdf, document_id)
     return json({ 'status': 'success' })
 
@@ -312,19 +277,11 @@ async def app_route_documents_index_image(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
-    # --- process file
+    # --- setup document + file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
     await session.commit()
-    # --- process embeddings/extractions
-    async with session.begin():
-        # V1 SYNC
-        document_id = await index_image(session=session, document_id=document_id)
-        # V2 ASYNC COROUTINES (still blocks web requests)
-        # couroutine_tasks = map(lambda document_id: index_image(session=session, document_id=document_id), [document_id])
-        # document_id = await asyncio.gather(*couroutine_tasks)
-        # document_id = document_id[0]
-    # --- queue indexing
-    await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue processing
+    indexing_queue.enqueue(job_index_image, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
@@ -333,14 +290,11 @@ async def app_route_documents_index_audio(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
-    # --- process file
+    # --- setup document + file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
     await session.commit()
-    # --- process embeddings/extractions
-    async with session.begin():
-        document_id = await index_audio(session=session, document_id=document_id)
-    # --- queue indexing
-    await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue processing
+    indexing_queue.enqueue(job_index_audio, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/video', methods = ['POST'])
@@ -349,14 +303,11 @@ async def app_route_documents_index_video(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
-    # --- process file
+    # --- setup document + file
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
     await session.commit()
-    # --- process embeddings/extractions
-    async with session.begin():
-        document_id = await index_video(session=session, document_id=document_id)
-    # --- queue indexing
-    await index_document_content_vectors(session=session, document_id=document_id)
+    # --- queue processing
+    indexing_queue.enqueue(job_index_video, document_id)
     return json({ 'status': 'success' })
 
 
@@ -374,38 +325,18 @@ async def app_route_highlights(request):
     return json({ 'status': 'success', "highlights": highlights })
 
 
-# INDEXES
-@app.route('/v1/index/<index_name>', methods = ['DELETE'])
-@auth_route
-def app_route_index_delete(request, index_name):
-    index_to_clear = pinecone.Index(index_name)
-    index_to_clear.delete(deleteAll=True) # just deletes all vectors
-    return json({ 'status': 'success' })
-
-@app.route('/v1/indexes/regenerate', methods = ['POST'])
-# @auth_route
-async def app_route_indexes_regenerate(request):
-    session = request.ctx.session
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document).where(Document.case_id != None))
-        documents = query_document.scalars().all()
-        for document in documents:
-            await index_document_content_vectors(session=session, document_id=document.id)
-    return json({ 'status': 'success' })
-
-
 # QUERIES
 @app.route('/v1/queries/document-query', methods = ['POST'])
 @auth_route
 async def app_route_question_answer(request):
     session = request.ctx.session
     async with session.begin():
-        answer = await question_answer(
+        answer, locations = await question_answer(
             session,
             query_text=request.json.get('question'),
             case_id=request.json.get('case_id'))
-    return json({ 'status': 'success', "answer": answer })
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
 @app.route('/v1/queries/documents-locations', methods = ['POST'])
 @auth_route
@@ -417,17 +348,10 @@ async def app_route_query_info_locations(request):
             session,
             query_text=request.json.get('query'),
             case_id=request.json.get('case_id'))
-        # Serialize (TODO): make "Location" class rather than plain dict
-        def serialize_location(location):
-            serial = dict(
-                document=location.get('document').serialize(),
-                document_content=location.get('document_content').serialize(),
-                score=location.get('score'))
-            if (location.get('image_file') != None):
-                serial['image_file'] = location.get('image_file').serialize()
-            return serial
+        # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
-    return json({ 'status': 'success', "locations": locations })
+    return json({ 'status': 'success', 'data': { 'locations': locations } })
+
 
 # USERS
 @app.route('/v1/user/<user_id>', methods = ['GET'])

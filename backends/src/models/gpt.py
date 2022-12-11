@@ -13,25 +13,14 @@ from time import sleep
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
 # https://openai.com/blog/introducing-text-and-code-embeddings/
 # https://beta.openai.com/docs/guides/embeddings/what-are-embeddings
-ENGINE_COMPLETION = 'text-davinci-003' # 'text-ada-001'
-ENGINE_EDIT = 'text-davinci-edit-001' # free atm because its in beta
-ENGINE_EMBEDDING = 'text-similarity-ada-001'
+GTP3_COMPLETION_MODEL_ENGINE = 'text-davinci-003' # 'text-ada-001'
+GTP3_EDIT_MODEL_ENGINE = 'text-davinci-edit-001' # free atm because its in beta
+GTP3_TEMPERATURE_DEFAULT = 0
 OPENAI_REQUEST_TIMEOUT = 60
 OPENAI_THROTTLE = 1.2
-TEMPERATURE_DEFAULT = 0
 
-# DEPRECATE THIS FOR AI_ACTION_LOCKS
-def gpt_vars():
-    return {
-        "ENGINE_COMPLETION": ENGINE_COMPLETION,
-        "ENGINE_EDIT": ENGINE_EDIT,
-        "ENGINE_EMBEDDING": ENGINE_EMBEDDING,
-        "TEMPERATURE_DEFAULT": TEMPERATURE_DEFAULT,
-        "OPENAI_REQUEST_TIMEOUT": OPENAI_REQUEST_TIMEOUT,
-        "OPENAI_THROTTLE": OPENAI_THROTTLE
-    }
-
-def gpt_embedding(content, engine=ENGINE_EMBEDDING):
+# EMBEDDING
+def gpt_embedding(content, engine):
     print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
     try:
         # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
@@ -45,11 +34,11 @@ def gpt_embedding(content, engine=ENGINE_EMBEDDING):
         # v2 --- setup with easy to use np arrays in a list, handling batch embeddings
         return list(map(lambda d: numpy.asarray(d['embedding'], dtype='float32'), response['data']))
     except Exception as err:
-        print(f"ERROR (GPT3): gpt_embedding", err)
+        print(f"ERROR (GPT3): gpt_embedding [{engine}] err = ", err, '\n', content)
         raise err
 
-# FUNCTIONS
-def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
+# COMPLETION
+def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 3
     retry = 0
     while True:
@@ -79,9 +68,9 @@ def gpt_completion(prompt, engine=ENGINE_COMPLETION, temperature=TEMPERATURE_DEF
             retry += 1
             if retry >= max_retry:
                 return "Error (GTP3 Completion): %s" % err
-            print('Error (GPT3):', err)
+            print('Error (GPT3):', err, '\n', f'{prompt[0:120]}...')
 
-def gpt_edit(prompt, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT, top_p=1.0):
+def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 3
     retry = 0
     while True:
@@ -109,7 +98,7 @@ def gpt_edit(prompt, input, engine=ENGINE_EDIT, temperature=TEMPERATURE_DEFAULT,
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, prompt, input)
 
-def gpt_summarize(text_to_recursively_summarize, engine=ENGINE_COMPLETION, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
+def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list()

@@ -3,8 +3,9 @@ import { Fragment, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { TimelineSummary } from "../../components/TimelineSummary";
-import { reqDocumentEmbeddings, reqDocumentSummarize, useDocument } from "../../data/useDocument";
+import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { reqDocumentDelete } from "../../data/useDocumentDelete";
 import { TDocument } from "../../data/useDocuments";
 
@@ -32,7 +33,6 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
           <br />
           <div style={{ display: "flex" }}>
             <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
-            <button onClick={() => reqDocumentEmbeddings(document.id)}>Re-run Embeddings</button>
           </div>
         </>
       ) : null}
@@ -67,7 +67,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
     setTimeout(() => {
       if (hash !== "" && typeof document !== "undefined" && document?.querySelector != null) {
         // --- scroll if we had an #anchor link param
-        const element = document.querySelector(hash);
+        const element = document.querySelector(`#${getHashHighlightingSentenceStart(hash)}`);
         if (element) element.scrollIntoView();
       } else {
         // --- otherwise scroll to top
@@ -86,7 +86,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
       if (["audio", "video"].includes(doc.type)) {
         // @ts-ignore
-        const minute = Math.floor(dc.start_second / 60);
+        const minute = Math.floor(dc.second_start / 60);
         // @ts-ignore
         if (!accum[minute]) accum[minute] = [];
         // @ts-ignore
@@ -100,11 +100,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   return (
     <StyledDocumentViewTranscript>
       {Object.keys(documentTextByGrouping)?.map((groupingNumber) => (
-        <div
-          key={`source-text-${groupingNumber}`}
-          id={`source-text-${groupingNumber}`}
-          className={hash && Number(hash?.replace(/[^0-9]/g, "")) === Number(groupingNumber) ? "active" : ""}
-        >
+        <div key={`text-batch-${groupingNumber}`}>
           <div className="document-transcript__header">
             <h6>
               {doc.type === "pdf" ? "Page" : "▶️ Minute"} #{groupingNumber}:
@@ -114,10 +110,14 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           {/* <p>{doc.document_text_by_minute}</p> */}
           <p>
             {documentTextByGrouping[groupingNumber].map((documentContent) => (
-              <Fragment key={documentContent.id}>
+              <span
+                key={`S${documentContent.id}`}
+                id={`S${documentContent.sentence_number}`}
+                className={isHashHighlightingSentence(hash, documentContent.sentence_number) ? "active" : ""}
+              >
                 {" "}
-                <span>{documentContent.text}</span>
-              </Fragment>
+                {documentContent.text}
+              </span>
             ))}
           </p>
         </div>
@@ -131,7 +131,7 @@ const StyledDocumentViewTranscript = styled.div`
     margin: 8px 0;
     padding: 8px;
     border-radius: 4px;
-    &.active {
+    .active {
       background: #ffffcf;
     }
     h6 {

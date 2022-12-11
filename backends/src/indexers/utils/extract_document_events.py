@@ -1,24 +1,9 @@
 import textwrap
-from models.gpt import gpt_completion, gpt_edit, gpt_vars
+from models.gpt import gpt_completion, gpt_edit, GTP3_COMPLETION_MODEL_ENGINE
 from models.gpt_prompts import gpt_prompt_timeline, gpt_prompt_edit_event_timeline, gpt_prompt_edit_event_timeline_structure
 from models.ner import ner_parse
 
 # EXTRACT TIMELINE
-async def extract_document_events_v2(document_text):
-    # parse
-    entities = ner_parse(document_text, ['DATE'])
-    # deduplicate - exact matches
-    events = set(map(lambda e: e.text, entities))
-    # return
-    events = list(events)
-    # for event in events:
-    #     t5_completion(
-    #         prompt=t5_prompt_date_iso_edit.replace("<<SOURCE_TEXT>>", event),
-    #         max_length=10)
-    print(f'INFO (extract_document_events): extracting..."', events)
-    return events
-
-
 async def extract_document_events_v1(document_text):
     print(f'INFO (extract_document_events): getting event timeline for..."', document_text)
 
@@ -26,10 +11,13 @@ async def extract_document_events_v1(document_text):
     # build timelines for each chunk of text (expecting)
     chunks = textwrap.wrap(document_text, 11000)
     for chunk in chunks:
+        # # --- check if any dates are mentioned at all (dates are found all over, this only slows things down as an extra step)
+        # date_entities = ner_parse(document_text, ['DATE'])
+        # if (len(date_entities) == 0): continue
         # --- extract timeline
         prompt = gpt_prompt_timeline.replace('<<SOURCE_TEXT>>', chunk)
         timeline_completion = gpt_completion(
-            prompt, max_tokens=500, engine=gpt_vars()['ENGINE_COMPLETION'])
+            prompt, max_tokens=500, engine=GTP3_COMPLETION_MODEL_ENGINE)
         # TODO: v2 extraction with ner
         # --- delelte lines without dates
         timeline_completion_with_dates = gpt_edit(

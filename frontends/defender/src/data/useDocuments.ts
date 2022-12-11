@@ -7,13 +7,18 @@ export type TDocumentSentenceTextVector = { page_number: number; text: string; v
 export type TDocumentContent = {
   id: number;
   document_id: number;
+  // text
   text: string;
   tokenizing_strategy: string;
   page_number: string;
-  // image_file_id
-  patch_size?: number;
-  start_second?: number;
-  end_second?: number;
+  sentence_number?: number;
+  sentence_start?: number;
+  sentence_end?: number;
+  // image
+  image_patch_size?: number;
+  // audio/video
+  second_start?: number;
+  second_end?: number;
 };
 
 export type TFile = {

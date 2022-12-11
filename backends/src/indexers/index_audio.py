@@ -1,51 +1,69 @@
-import numpy as np
 import pydash as _
 import sqlalchemy as sa
-from time import sleep
-
 from aia.agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
-from dbs.vector_utils import tokenize_string
-from files.file_utils import get_file_path, open_txt_file
-from files.s3_utils import s3_get_file_url, s3_upload_file
 from indexers.utils.extract_document_events import extract_document_events_v1
+from indexers.utils.tokenize_string import TOKENIZING_STRATEGY
 from models.assemblyai import assemblyai_transcribe
-from models.gpt import gpt_completion, gpt_embedding, gpt_summarize, gpt_vars
+from models.gpt import gpt_completion, gpt_summarize
 from models.gpt_prompts import gpt_prompt_document_type
 
 async def _index_audio_process_content(session, document_id: int) -> None:
     print("INFO (index_pdf.py:_index_audio_process_content) started", document_id)
-    # PROCESS FILE + PROPERTIES
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
-    files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
-    files = files_query.scalars()
-    file = files.first()
-    # --- process file for transcript
-    transcript_response = assemblyai_transcribe(file.upload_url)
-    # DOCUMENT CONTENT CREATION
-    # --- chunk audio text: document
-    document_text = transcript_response['text']
-    document_text_chunks = tokenize_string(document_text, "max_size")
-    document_content_text = list(map(lambda chunk: DocumentContent(
-        document_id=document_id,
-        text=chunk,
-        tokenizing_strategy="max_size"
-    ), document_text_chunks))
-    session.add_all(document_content_text)
-    # --- chunk audio text: by sentence (w/ start/end times)
-    sentences = transcript_response['sentences']
-    document_content_sentences = list(map(lambda sentence: DocumentContent(
-        document_id=document_id,
-        text=sentence['text'],
-        tokenizing_strategy="sentence",
-        start_second=sentence['start_second'],
-        end_second=sentence['end_second'],
-    ), sentences))
-    session.add_all(document_content_sentences)
-    # SAVE
+    document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
+    document_content = document_content_query.scalars().all()
+
+    if len(document_content) == 0:
+        # 1. AUDIO -> TEXT (SENTENCES)
+        files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
+        files = files_query.scalars()
+        file = files.first()
+        # --- process file for transcript
+        transcript_response = assemblyai_transcribe(file.upload_url)
+        sentences = transcript_response['sentences']
+        # 2. DOCUMENT CONTENT CREATION
+        # --- 2a. Tokenize/process text by sentence
+        document_content_sentences = []
+        counter_sentences = 0
+        for sentence in sentences:
+            counter_sentences += 1
+            document_content_sentences.append(DocumentContent(
+                document_id=document_id,
+                text=sentence['text'],
+                tokenizing_strategy=TOKENIZING_STRATEGY.sentence.value,
+                second_start=sentence['second_start'],
+                second_end=sentence['second_end'],
+                sentence_number=counter_sentences,
+            ))
+        session.add_all(document_content_sentences)
+        # --- 2b. Tokenize/process text by max size
+        document_content_sentence_chunks = _.chunk(document_content_sentences, 20)
+        document_content_sentences_20 = []
+        for dcsc in document_content_sentence_chunks:
+            sentence_start = dcsc[0].sentence_number
+            sentence_end = dcsc[-1].sentence_number
+            second_start = dcsc[0].second_start
+            second_end = dcsc[-1].second_end
+            document_content_sentences_20.append(DocumentContent(
+                document_id=document_id,
+                text=' '.join(map(lambda dc: dc.text, dcsc)),
+                tokenizing_strategy=TOKENIZING_STRATEGY.sentences_20.value,
+                sentence_start=sentence_start,
+                sentence_end=sentence_end,
+                second_start=second_start,
+                second_end=second_end
+            ))
+        session.add_all(document_content_sentences_20)
+        print(f"INFO (index_pdf.py:_index_audio_process_content): Inserted new document content records")
+    else:
+        print(f"INFO (index_pdf.py:_index_audio_process_content): already processed content for document #{document_id} (content count: {len(document_content)})")
+
+    # 3. SAVE
     document.status_processing_content = "completed"
     session.add(document)
+    print("INFO (index_pdf.py:_index_audio_process_content) done", document_id)
 
 async def _index_audio_process_embeddings(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_audio_process_embeddings): start')
@@ -55,13 +73,14 @@ async def _index_audio_process_embeddings(session, document_id: int) -> None:
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
     print('INFO (index_pdf.py:_index_audio_process_embeddings): document content', document_content)
-    document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == "sentence", document_content))
-    document_content_maxed_size = list(filter(lambda c: c.tokenizing_strategy == "max_size", document_content))
+    document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value, document_content))
+    document_content_sentences_20 = list(filter(lambda c: c.tokenizing_strategy == TOKENIZING_STRATEGY.sentences_20.value, document_content))
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agents
     aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
-    aiagent_max_size_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_max_size_embed, case_id=document.case_id)
+    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id)
     # --- sentences (batch processing to avoid rate limits/throttles)
+    print('INFO (index_pdf.py:_index_audio_process_embeddings): encoding sentences...', document_content_sentences)
     sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))
     sentence_embeddings_as_models = []
     for index, embedding in enumerate(sentence_embeddings):
@@ -74,21 +93,24 @@ async def _index_audio_process_embeddings(session, document_id: int) -> None:
             vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
         ))
     session.add_all(sentence_embeddings_as_models)
-    # --- max_size (batch processing to avoid rate limits/throttles)
-    for content in list(document_content):
-        text_embedding_tensor = gpt_embedding(content.text) # returns numpy array
-        text_embedding_vector = np.squeeze(text_embedding_tensor).tolist()
-        await session.execute(
-            sa.insert(Embedding).values(
-                document_id=document_id,
-                document_content_id=content.id,
-                encoded_model_engine=gpt_vars()["ENGINE_EMBEDDING"],
-                encoding_strategy="text",
-                vector_json=text_embedding_vector,
-            ))
+    # --- batch sentences (batch processing to avoid rate limits/throttles)
+    print('INFO (index_pdf.py:_index_audio_process_embeddings): encoding sentences in chunks of 20...', document_content_sentences_20)
+    sentences_20_embeddings = aiagent_sentences_20_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences_20)))
+    sentences_20_embeddings_as_models = []
+    for index, embedding in enumerate(sentences_20_embeddings):
+        sentences_20_embeddings_as_models.append(Embedding(
+            document_id=document_id,
+            document_content_id=document_content_sentences_20[index].id,
+            encoded_model_engine=aiagent_sentences_20_embeder.model_name,
+            encoding_strategy="text",
+            vector_dimensions=len(embedding),
+            vector_json=embedding.tolist(),
+        ))
+    session.add_all(sentences_20_embeddings_as_models)
     # --- SAVE
     document.status_processing_embeddings = "completed"
     session.add(document)
+    print('INFO (index_pdf.py:_index_audio_process_embeddings): done')
 
 async def _index_audio_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_audio_process_extractions): start')

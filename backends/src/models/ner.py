@@ -13,7 +13,7 @@ def ner_parse(text, labels):
     # otherwise return all entities
     else:
         ents = list(results.ents)
-    print("ner_parse: ents", ents)
+    print("INFO (ner.py:ner_parse): ents", ents)
     return ents
 
 # Extract NERs concerning laws with fine-tuned model

@@ -2,8 +2,8 @@ import math
 import pydash as _
 import requests
 from time import sleep
-
 import env
+from indexers.utils.tokenize_string import TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH
 
 def assemblyai_transcribe(file_upload_url):
     # REQUEST
@@ -27,6 +27,8 @@ def assemblyai_transcribe(file_upload_url):
         if transcript_check_response.json()['status'] == 'completed':
             is_transcript_complete = True
             transcript_response = transcript_check_response.json()
+        if transcript_check_response.json()['status'] == 'error':
+            raise transcript_check_response.json()
         sleep(3)
         
     # PROCESS
@@ -42,11 +44,11 @@ def assemblyai_transcribe(file_upload_url):
         sentence_text_fragments.append(word['text'])
         # print("INFO (index_audio.py): word", word)
         # --- if contains a period and word length is significant
-        if (_.has_substr(word['text'], ".") and len(word['text']) > 3 and len(" ".join(sentence_text_fragments)) > 36):
+        if (_.has_substr(word['text'], ".") and len(word['text']) > 3 and len(" ".join(sentence_text_fragments)) > TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH):
             sentence = {
                 "text": " ".join(sentence_text_fragments),
-                "start_second": math.floor(sentence_milliseconds_start / 1000),
-                "end_second": math.floor(sentence_milliseconds_end / 1000),
+                "second_start": math.floor(sentence_milliseconds_start / 1000),
+                "second_end": math.floor(sentence_milliseconds_end / 1000),
             }
             print("INFO (index_audio.py): sentence", sentence)
             sentences.append(sentence)

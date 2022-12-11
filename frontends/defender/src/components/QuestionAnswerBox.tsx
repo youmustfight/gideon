@@ -1,5 +1,5 @@
 import axios from "axios";
-import { intersection } from "lodash";
+import { intersection, orderBy } from "lodash";
 import { useState } from "react";
 import { Link, useMatch } from "react-router-dom";
 import styled from "styled-components";
@@ -7,6 +7,8 @@ import { useTeamStore } from "../data/TeamStore";
 import { TQueryLocation } from "../data/useDocuments";
 import { useHighlights } from "../data/useHighlights";
 import { getGideonApiUrl } from "../env";
+import { formatSecondToTime } from "./formatSecondToTime";
+import { formatHashForSentenceHighlight } from "./hashUtils";
 import { HighlightBox } from "./HighlightsBox";
 
 const StyledAnswerLocationBox = styled.div`
@@ -22,6 +24,8 @@ const StyledAnswerLocationBox = styled.div`
     flex-grow: 1;
     b {
       font-size: 12px;
+      display: flex;
+      justify-content: space-between;
     }
     p {
       margin: 8px 0 0;
@@ -50,30 +54,41 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
       <div className="answer-location-box__text">
         <b>
           <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
-          {location.document.type === "pdf" ? (
-            <>
-              ,{" "}
-              <Link
-                to={`/case/${caseId}/document/${location.document.id}#source-text-${location.document_content.page_number}`}
-              >
-                page {location.document_content.page_number}
-              </Link>
-            </>
-          ) : null}
-          {["audio", "video"].includes(location.document.type) ? (
-            <>
-              ,{" "}
-              <Link
-                to={`/case/${caseId}/document/${location.document.id}#source-text-${Math.floor(
-                  (location.document_content.start_second ?? 0) / 60
-                )}`}
-              >
-                minute {Math.floor((location.document_content.start_second ?? 0) / 60)}
-              </Link>
-            </>
-          ) : null}
+          <span>
+            {location.document.type === "pdf" ? (
+              <>
+                <Link
+                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    location.document_content.sentence_number ?? location.document_content.sentence_start,
+                    location.document_content.sentence_end
+                  )}`}
+                >
+                  {location.document_content.page_number
+                    ? `page ${location.document_content.page_number}`
+                    : `${formatHashForSentenceHighlight(
+                        location.document_content.sentence_number ?? location.document_content.sentence_start,
+                        location.document_content.sentence_end
+                      )}`}
+                </Link>
+              </>
+            ) : null}
+            {["audio", "video"].includes(location.document.type) ? (
+              <>
+                <Link
+                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    location.document_content.sentence_number ?? location.document_content.sentence_start,
+                    location.document_content.sentence_end
+                  )}`}
+                >
+                  {formatSecondToTime(location.document_content.second_start ?? 0)}
+                </Link>
+              </>
+            ) : null}
+          </span>
         </b>
-        {location.document_content.text ? <p>"...{location.document_content.text}..."</p> : null}
+        {location.document_content.text && location.document_content.tokenizing_strategy === "sentence" ? (
+          <p>"...{location.document_content.text}..."</p>
+        ) : null}
       </div>
       {location.image_file ? <StyledAnswerLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
     </StyledAnswerLocationBox>
@@ -88,8 +103,14 @@ export const QuestionAnswerBox = () => {
   // --- answers state
   const [answer, setAnswer] = useState<{ answer?: string; locations?: TQueryLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
-  // --- q1 : Ask Question
+  // --- answers
   const [answerQuestion, setAnswerQuestion] = useState("");
+  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
+  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
+  const [userToSummarize, setUserToSummarize] = useState("");
+  const [userOneToContrast, setUserOneToContrast] = useState("");
+  const [userTwoToContrast, setUserTwoToContrast] = useState("");
+  // --- q1 : Ask Question
   // @ts-ignore
   const handleQuestion = (e) => {
     e.preventDefault();
@@ -102,12 +123,11 @@ export const QuestionAnswerBox = () => {
         index_type: "discovery",
       })
       .then((res) => {
-        setAnswer({ answer: res.data.answer, locations: res.data.locations });
+        setAnswer({ answer: res.data.data.answer, locations: res.data.data.locations });
         setIsAnswerPending(false);
       });
   };
   // --- q2 : Search for Detail
-  const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
   // @ts-ignore
   const handleSearchForPage = (e) => {
     e.preventDefault();
@@ -120,12 +140,11 @@ export const QuestionAnswerBox = () => {
         index_type: "discovery",
       })
       .then((res) => {
-        setAnswer({ locations: res.data.locations });
+        setAnswer({ locations: res.data.data.locations });
         setIsAnswerPending(false);
       });
   };
   // --- q3 : Search Highlights
-  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
   // @ts-ignore
   const handleHighlightSearch = (e) => {
     e.preventDefault();
@@ -139,38 +158,6 @@ export const QuestionAnswerBox = () => {
       .then((res) => {
         // @ts-ignore
         setAnswer({ highlights: res.data.highlights });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q4 : Summarize Laywer
-  const [userToSummarize, setUserToSummarize] = useState("");
-  const handleUserSummarizing = () => {
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/summarize-user`, {
-        case_id: caseId,
-        user: userToSummarize,
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.answer });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q5 : Contrast Laywers
-  const [userOneToContrast, setUserOneToContrast] = useState("");
-  const [userTwoToContrast, setUserTwoToContrast] = useState("");
-  const handleUserContrasting = () => {
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/contrast-users`, {
-        case_id: caseId,
-        user_one: userOneToContrast,
-        user_two: userTwoToContrast,
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.answer });
         setIsAnswerPending(false);
       });
   };
@@ -224,11 +211,7 @@ export const QuestionAnswerBox = () => {
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          disabled={isAnswerPending || !(userToSummarize?.length > 0)}
-          onClick={handleUserSummarizing}
-        >
+        <button type="submit" disabled={isAnswerPending || !(userToSummarize?.length > 0)}>
           Summarize
         </button>
       </div>
@@ -248,11 +231,7 @@ export const QuestionAnswerBox = () => {
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}
-          onClick={handleUserContrasting}
-        >
+        <button type="submit" disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}>
           Contrast
         </button>
       </div>
@@ -264,18 +243,27 @@ export const QuestionAnswerBox = () => {
               {/* TEXT ANSWER */}
               {answer?.answer ? (
                 <p>
-                  <u>ANSWER:</u> {answer.answer}
+                  <u>ANSWER:</u>
+                  <br />
+                  <br />
+                  {answer.answer}
                 </p>
               ) : null}
               {/* LOCATIONS */}
               {answer?.locations ? (
-                <ul>
-                  {answer?.locations?.map((l) => (
-                    <li key={l.document_content.id}>
-                      <AnswerLocationBox location={l} />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <br />
+                  <p>
+                    <u>SOURCES:</u>
+                  </p>
+                  <ul>
+                    {orderBy(answer?.locations, ["score"], ["desc"])?.map((l) => (
+                      <li key={l.document_content.id}>
+                        <AnswerLocationBox location={l} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : null}
               {/* HIGHLIGHTS */}
               {/* {answer?.highlights ? (

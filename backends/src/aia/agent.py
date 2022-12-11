@@ -14,8 +14,10 @@ from models.sentence import sentence_encode_embeddings
 class AI_ACTIONS(Enum):
     document_similarity_image_embed = 'document_similarity_image_embed'
     document_similarity_text_sentence_embed = 'document_similarity_text_sentence_embed'
+    document_similarity_text_sentences_20_embed = 'document_similarity_text_sentences_20_embed'
     document_similarity_text_max_size_embed = 'document_similarity_text_max_size_embed'
-    case_similarity_text_sentences_search = 'case_similarity_text_sentences_search'
+    case_similarity_text_sentence_search = 'case_similarity_text_sentence_search'
+    case_similarity_text_sentences_20_search = 'case_similarity_text_sentences_20_search'
     case_similarity_text_max_size_search = 'case_similarity_text_max_size_search'
     case_similarity_text_to_image_search = 'case_similarity_text_to_image_search'
 
@@ -66,7 +68,7 @@ class AIActionAgent():
         if (self._case.uuid != None):
             filters.update({ "case_uuid": { "$eq": str(self._case.uuid) } })
         # --- query for vector
-        print(f'INFO (AIActionAgent:query_search_vectors): querying "{self.model_name}" on index "{self._vector_index_id}"', filters)
+        print(f'INFO (AIActionAgent:query_search_vectors): querying with "{self.model_name}" on index "{self._vector_index_id.value}"', filters)
         query_results = self.get_vector_index().query(
             vector=vector,
             top_k=top_k,
@@ -153,6 +155,7 @@ class AIActionAgent_ViTL14336px(AIActionAgent):
 
 # TODO: how the f can we just initialize a AIActionAgent class off the bat w/ this setup
 async def create_ai_action_agent(session: Session, action: AI_ACTIONS, case_id: int):
+    print(f'INFO (agent.py:create_ai_action_agent) create', action)
     case_query = await session.execute(
         sa.select(Case)
             .options(joinedload(Case.ai_action_locks))
