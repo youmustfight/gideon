@@ -33,8 +33,8 @@ async def _index_audio_process_content(session, document_id: int) -> None:
                 document_id=document_id,
                 text=sentence['text'],
                 tokenizing_strategy=TOKENIZING_STRATEGY.sentence.value,
-                start_second=sentence['start_second'],
-                end_second=sentence['end_second'],
+                second_start=sentence['second_start'],
+                second_end=sentence['second_end'],
                 sentence_number=counter_sentences,
             ))
         session.add_all(document_content_sentences)
@@ -44,16 +44,16 @@ async def _index_audio_process_content(session, document_id: int) -> None:
         for dcsc in document_content_sentence_chunks:
             sentence_start = dcsc[0].sentence_number
             sentence_end = dcsc[-1].sentence_number
-            start_second = dcsc[0].start_second
-            end_second = dcsc[-1].end_second
+            second_start = dcsc[0].second_start
+            second_end = dcsc[-1].second_end
             document_content_sentences_20.append(DocumentContent(
                 document_id=document_id,
                 text=' '.join(map(lambda dc: dc.text, dcsc)),
                 tokenizing_strategy=TOKENIZING_STRATEGY.sentences_20.value,
                 sentence_start=sentence_start,
                 sentence_end=sentence_end,
-                start_second=start_second,
-                end_second=end_second
+                second_start=second_start,
+                second_end=second_end
             ))
         session.add_all(document_content_sentences_20)
         print(f"INFO (index_pdf.py:_index_audio_process_content): Inserted new document content records")

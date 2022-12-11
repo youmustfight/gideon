@@ -145,10 +145,10 @@ class DocumentContent(BaseModel):
     # --- image
     image_file_id = Column(Integer, ForeignKey("file.id"))
     image_file = relationship("File", back_populates="document_content_image_file")
-    patch_size = Column(Integer)
+    image_patch_size = Column(Integer)
     # --- audio/video
-    start_second = Column(Integer)
-    end_second = Column(Integer)
+    second_start = Column(Integer)
+    second_end = Column(Integer)
     def serialize(self):
         return {
             "id": self.id,
@@ -156,8 +156,8 @@ class DocumentContent(BaseModel):
             "text": self.text,
             "tokenizing_strategy": self.tokenizing_strategy,
             "page_number": self.page_number,
-            "start_second": self.start_second,
-            "end_second": self.end_second,
+            "second_start": self.second_start,
+            "second_end": self.second_end,
         }
 
 class Embedding(BaseModel):

@@ -85,7 +85,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
       }
       if (["audio", "video"].includes(doc.type)) {
         // @ts-ignore
-        const minute = Math.floor(dc.start_second / 60);
+        const minute = Math.floor(dc.second_start / 60);
         // @ts-ignore
         if (!accum[minute]) accum[minute] = [];
         // @ts-ignore

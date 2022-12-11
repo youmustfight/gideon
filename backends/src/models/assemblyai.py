@@ -47,8 +47,8 @@ def assemblyai_transcribe(file_upload_url):
         if (_.has_substr(word['text'], ".") and len(word['text']) > 3 and len(" ".join(sentence_text_fragments)) > TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH):
             sentence = {
                 "text": " ".join(sentence_text_fragments),
-                "start_second": math.floor(sentence_milliseconds_start / 1000),
-                "end_second": math.floor(sentence_milliseconds_end / 1000),
+                "second_start": math.floor(sentence_milliseconds_start / 1000),
+                "second_end": math.floor(sentence_milliseconds_end / 1000),
             }
             print("INFO (index_audio.py): sentence", sentence)
             sentences.append(sentence)

@@ -39,8 +39,8 @@ async def _index_video_process_content(session, document_id: int) -> None:
                 document_id=document_id,
                 text=sentence['text'],
                 tokenizing_strategy=TOKENIZING_STRATEGY.sentence.value,
-                start_second=sentence['start_second'],
-                end_second=sentence['end_second'],
+                second_start=sentence['second_start'],
+                second_end=sentence['second_end'],
                 sentence_number=counter_sentences,
             ))
         session.add_all(document_content_sentences)
@@ -50,16 +50,16 @@ async def _index_video_process_content(session, document_id: int) -> None:
         for dcsc in document_content_sentence_chunks:
             sentence_start = dcsc[0].sentence_number
             sentence_end = dcsc[-1].sentence_number
-            start_second = dcsc[0].start_second
-            end_second = dcsc[-1].end_second
+            second_start = dcsc[0].second_start
+            second_end = dcsc[-1].second_end
             document_content_sentences_20.append(DocumentContent(
                 document_id=document_id,
                 text=' '.join(map(lambda dc: dc.text, dcsc)),
                 tokenizing_strategy=TOKENIZING_STRATEGY.sentences_20.value,
                 sentence_start=sentence_start,
                 sentence_end=sentence_end,
-                start_second=start_second,
-                end_second=end_second
+                second_start=second_start,
+                second_end=second_end
             ))
         session.add_all(document_content_sentences_20)
         print(f"INFO (index_pdf.py:_index_audio_process_content): Inserted new document content records")
@@ -79,10 +79,10 @@ async def _index_video_process_content(session, document_id: int) -> None:
         for frame, timestamp in video_frames(path):
             if timestamp - last_index > freq:
                 last_index = timestamp
-                start_second = math.floor(last_index)
+                second_start = math.floor(last_index)
                 # FRAME
                 # --- frame before patching vectors
-                frame_file_name = f'{document.id}' + '_' + 'image' + '_' + str(start_second).zfill(12) + '.png'
+                frame_file_name = f'{document.id}' + '_' + 'image' + '_' + str(second_start).zfill(12) + '.png'
                 frame_file_key = 'images/' + frame_file_name
                 frame_file_string = cv2.imencode('.png', frame)[1].tostring()
                 # --- upload frame
@@ -98,7 +98,7 @@ async def _index_video_process_content(session, document_id: int) -> None:
                             upload_key=frame_file_key,
                             upload_url=s3_get_file_url(frame_file_key),
                         ),
-                        start_second=start_second,
+                        second_start=second_start,
                     )
                 )
                 # PATCHIFY # TODO: re-enable this when/if we need to parallelize. takes too long
@@ -108,7 +108,7 @@ async def _index_video_process_content(session, document_id: int) -> None:
                 #         # for each patch...
                 #         single_image_patch_img = patches[i, j, 0, :, :, :]
                 #         single_image_patch_string = cv2.imencode('.png', single_image_patch_img)[1].tostring() # Save as PNG, not JPEG for keeping the quality.
-                #         image_patch_file_name = f'{document.id}' + '_' + 'image_patch' + '_' + str(start_second).zfill(12) + '_'+ str(i).zfill(2) + '_' + str(j).zfill(2) + '.png'
+                #         image_patch_file_name = f'{document.id}' + '_' + 'image_patch' + '_' + str(second_start).zfill(12) + '_'+ str(i).zfill(2) + '_' + str(j).zfill(2) + '.png'
                 #         image_patch_file_key = 'patches/' + image_patch_file_name
                 #         # --- upload the patch
                 #         s3_upload_file_string(image_patch_file_key, single_image_patch_string)
@@ -124,7 +124,7 @@ async def _index_video_process_content(session, document_id: int) -> None:
                 #                     upload_key=image_patch_file_key,
                 #                     upload_url=s3_get_file_url(image_patch_file_key),
                 #                 ),
-                #                 start_second=start_second,
+                #                 second_start=second_start,
                 #             )
                 #         )
     else:

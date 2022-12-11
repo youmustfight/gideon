@@ -31,7 +31,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   const caseId = Number(matches?.params?.caseId);
   const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
   const minuteCount = Math.floor(
-    Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.end_second))))) / 60
+    Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.second_end))))) / 60
   );
   return (
     <div className="discovery-box__document">
