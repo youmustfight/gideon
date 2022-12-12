@@ -37,6 +37,6 @@ logger.addHandler(logFileHandler)
 # --- stream (for local dev)
 if (env.env_is_local()):
     logStreamHandler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter()
+    formatter = jsonlogger.JsonFormatter(custom_format)
     logStreamHandler.setFormatter(formatter)
     logger.addHandler(logStreamHandler)
