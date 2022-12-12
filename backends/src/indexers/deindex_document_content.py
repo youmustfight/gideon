@@ -25,10 +25,13 @@ async def deindex_document_content(session, document_id):
 
     # DELETE INDEX VECTORS (via embedidngs)
     if (len(embeddings_ids_strs) > 0):
-        print('INFO Deleting Embeddings: ', embeddings_ids_strs)
+        print('INFO (deindex_document_content.py) Deleting Embeddings: ', embeddings_ids_strs)
         for index in get_vector_indexes().values():
-            print('INFO Deleting Embeddings on Index:', index)
-            index.delete(ids=embeddings_ids_strs)
+            print('INFO (deindex_document_content.py) Deleting Embeddings on Index:', index)
+            try:
+                index.delete(ids=embeddings_ids_strs)
+            except Exception as err:
+                print('ERROR (deindex_document_content.py) Error:', err)
 
     # DELETE MODELS/DATA
     # --- embeddings

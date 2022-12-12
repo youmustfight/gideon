@@ -1,6 +1,7 @@
 from multiprocessing import Process
-import env
 import torch
+import env
+import logger
 from api import start_api
 from worker import start_worker
 
