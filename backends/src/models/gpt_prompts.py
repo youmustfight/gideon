@@ -1,6 +1,6 @@
 # MISC/UTIL
  # used spaces instead of _, but gtp completion would make it 'NO MENTION OF SLAVERY'
-GPT_NULL_PHRASE = 'NO_MENTION_OF_ABCXYZ'
+GPT_NULL_PHRASE = 'NO_MENTION_NULL_PHRASE'
 
 # SUMMARIZTION
 gpt_prompt_summary_concise = """
