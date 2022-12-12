@@ -42,7 +42,7 @@ def assemblyai_transcribe(file_upload_url):
         if (sentence_milliseconds_start == None): sentence_milliseconds_start = word['start']
         sentence_milliseconds_end = word['end']
         sentence_text_fragments.append(word['text'])
-        # print("INFO (index_audio.py): word", word)
+        # print("INFO (assemblyai_transcript.py): word", word)
         # --- if contains a period and word length is significant
         if (_.has_substr(word['text'], ".") and len(word['text']) > 3 and len(" ".join(sentence_text_fragments)) > TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH):
             sentence = {
@@ -50,7 +50,7 @@ def assemblyai_transcribe(file_upload_url):
                 "second_start": math.floor(sentence_milliseconds_start / 1000),
                 "second_end": math.floor(sentence_milliseconds_end / 1000),
             }
-            print("INFO (index_audio.py): sentence", sentence)
+            print("INFO (assemblyai_transcript.py): sentence", sentence)
             sentences.append(sentence)
             sentence_text_fragments = []
             sentence_milliseconds_start = None

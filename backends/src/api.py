@@ -14,14 +14,14 @@ from dbs.sa_models import serialize_list, AIActionLock, Case, Document, Document
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document_content import deindex_document_content
-from indexers.index_audio import _index_audio_process_extractions
-from indexers.index_image import _index_image_process_extractions
-from indexers.index_pdf import _index_pdf_process_extractions
-from indexers.index_video import _index_video_process_extractions
-from indexers.processors.job_index_audio import job_index_audio
-from indexers.processors.job_index_image import job_index_image
-from indexers.processors.job_index_pdf import job_index_pdf
-from indexers.processors.job_index_video import job_index_video
+from indexers.index_document_audio import _index_document_audio_process_extractions
+from indexers.index_document_image import _index_document_image_process_extractions
+from indexers.index_document_pdf import _index_document_pdf_process_extractions
+from indexers.index_document_video import _index_document_video_process_extractions
+from indexers.processors.job_index_document_audio import job_index_document_audio
+from indexers.processors.job_index_document_image import job_index_document_image
+from indexers.processors.job_index_document_pdf import job_index_document_pdf
+from indexers.processors.job_index_document_video import job_index_document_video
 from indexers.utils.index_document_prep import index_document_prep
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
@@ -151,13 +151,13 @@ async def app_route_case_put_reprocess_all_data(request, case_id):
     # --- for each document, re-run document processing + embedding + vector db/index upsertion
     for document in documents:
         if document.type == 'pdf':
-            indexing_queue.enqueue(job_index_pdf, document.id)
+            indexing_queue.enqueue(job_index_document_pdf, document.id)
         if document.type == 'image':
-            indexing_queue.enqueue(job_index_image, document.id)
+            indexing_queue.enqueue(job_index_document_image, document.id)
         if document.type == 'audio':
-            indexing_queue.enqueue(job_index_audio, document.id)
+            indexing_queue.enqueue(job_index_document_audio, document.id)
         if document.type == 'video':
-            indexing_queue.enqueue(job_index_video, document.id)
+            indexing_queue.enqueue(job_index_document_video, document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/case', methods = ['POST'])
@@ -228,13 +228,13 @@ async def app_route_document_extractions(request, document_id):
             sa.select(Document).where(Document.id == int(document_id)))
         document = query_document.scalars().first()
         if (document.type == "pdf"):
-            await _index_pdf_process_extractions(session=session, document_id=document.id)
+            await _index_document_pdf_process_extractions(session=session, document_id=document.id)
         if (document.type == "image"):
-            await _index_image_process_extractions(session=session, document_id=document.id)
+            await _index_document_image_process_extractions(session=session, document_id=document.id)
         if (document.type == "audio"):
-            await _index_audio_process_extractions(session=session, document_id=document.id)
+            await _index_document_audio_process_extractions(session=session, document_id=document.id)
         if (document.type == "video"):
-            await _index_video_process_extractions(session=session, document_id=document.id)
+            await _index_document_video_process_extractions(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents', methods = ['GET'])
@@ -261,7 +261,7 @@ async def app_route_documents(request):
 
 @app.route('/v1/documents/index/pdf', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_pdf(request):
+async def app_route_documents_index_document_pdf(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -269,12 +269,12 @@ async def app_route_documents_index_pdf(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_pdf, document_id)
+    indexing_queue.enqueue(job_index_document_pdf, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/image', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_image(request):
+async def app_route_documents_index_document_image(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -282,12 +282,12 @@ async def app_route_documents_index_image(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_image, document_id)
+    indexing_queue.enqueue(job_index_document_image, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/audio', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_audio(request): 
+async def app_route_documents_index_document_audio(request): 
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -295,12 +295,12 @@ async def app_route_documents_index_audio(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_audio, document_id)
+    indexing_queue.enqueue(job_index_document_audio, document_id)
     return json({ 'status': 'success' })
 
 @app.route('/v1/documents/index/video', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_video(request): 
+async def app_route_documents_index_document_video(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -308,7 +308,7 @@ async def app_route_documents_index_video(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_video, document_id)
+    indexing_queue.enqueue(job_index_document_video, document_id)
     return json({ 'status': 'success' })
 
 
