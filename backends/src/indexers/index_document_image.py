@@ -6,13 +6,13 @@ from dbs.sa_models import Document, DocumentContent, Embedding, File
 from files.s3_utils import s3_get_file_url
 from models.clip import clip_classifications
 
-async def _index_image_process_content(session, document_id) -> None:
+async def _index_document_image_process_content(session, document_id) -> None:
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     # 1. STATUS
     files_query = await session.execute(sa.select(File).where(File.document_id == document_id))
     files = files_query.scalars()
-    print(f"INFO (index_image.py:_index_image_process_content) ##TODO## files")
+    print(f"INFO (index_document_image.py:_index_document_image_process_content) ##TODO## files")
     file = files.first()
     # 2. DOCUMENT CONTENT CREATE
     document_content = DocumentContent(
@@ -24,14 +24,14 @@ async def _index_image_process_content(session, document_id) -> None:
     document.status_processing_content = "completed"
     session.add(document)
 
-async def _index_image_process_embeddings(session, document_id) -> None:
-    print('INFO (index_pdf.py:_index_image_process_embeddings): start')
+async def _index_document_image_process_embeddings(session, document_id) -> None:
+    print('INFO (index_document_image.py:_index_document_image_process_embeddings): start')
     # SETUP
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
-    print('INFO (index_pdf.py:_index_image_process_embeddings): document content', document_content)
+    print('INFO (index_document_image.py:_index_document_image_process_embeddings): document content', document_content)
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agent
     aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
@@ -57,8 +57,8 @@ async def _index_image_process_embeddings(session, document_id) -> None:
     document.status_processing_embeddings = "completed"
     session.add(document)
 
-async def _index_image_process_extractions(session, document_id) -> None:
-    print('INFO (index_pdf.py:_index_image_process_extractions): start')
+async def _index_document_image_process_extractions(session, document_id) -> None:
+    print('INFO (index_document_image.py:_index_document_image_process_extractions): start')
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     # 1. vectors... for search... inspired by... https://adeshg7.medium.com/build-your-own-search-engine-using-openais-clip-and-fastapi-part-1-89995aefbcdd
@@ -74,7 +74,7 @@ async def _index_image_process_extractions(session, document_id) -> None:
         min_similarity=0.6
     )[0]
     document.document_description = ", ".join(map(lambda prediction: prediction['classification'], document_type_classifications))
-    print('INFO (index_image.py): document_description', document.document_description)
+    print('INFO (index_document_image.py): document_description', document.document_description)
     # 3. document summary (multiple breakdowns w/ contrast between classifications)
     document_summary_classifications = []
     document_summary_classifications += clip_classifications(
@@ -93,25 +93,25 @@ async def _index_image_process_extractions(session, document_id) -> None:
         min_similarity=0.6
     )[0]
     document.document_summary = ", ".join(map(lambda prediction: prediction['classification'], document_summary_classifications))
-    print('INFO (index_image.py): document_summary', document.document_summary)
+    print('INFO (index_document_image.py): document_summary', document.document_summary)
     # 4. SAVE
     document.status_processing_extractions = "completed"
     session.add(document)
 
 
-async def index_image(session, document_id) -> int:
-    print(f"INFO (index_image.py): indexing document #{document_id}")
+async def index_document_image(session, document_id) -> int:
+    print(f"INFO (index_document_image.py): indexing document #{document_id}")
     try:
         # PROCESS FILE & EMBEDDINGS
-        print(f"INFO (index_image.py): processing document #{document_id} content")
-        await _index_image_process_content(session=session, document_id=document_id)
-        print(f"INFO (index_image.py): processing document #{document_id} embeddings")
-        await _index_image_process_embeddings(session=session, document_id=document_id)
-        print(f"INFO (index_image.py): processing document #{document_id} extractions")
-        await _index_image_process_extractions(session=session, document_id=document_id)
-        print(f"INFO (index_image.py): finished intake of document #{document_id}")
+        print(f"INFO (index_document_image.py): processing document #{document_id} content")
+        await _index_document_image_process_content(session=session, document_id=document_id)
+        print(f"INFO (index_document_image.py): processing document #{document_id} embeddings")
+        await _index_document_image_process_embeddings(session=session, document_id=document_id)
+        print(f"INFO (index_document_image.py): processing document #{document_id} extractions")
+        await _index_document_image_process_extractions(session=session, document_id=document_id)
+        print(f"INFO (index_document_image.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)
         return document_id
     except Exception as err:
-        print(f"ERROR (index_image.py):", err)
+        print(f"ERROR (index_document_image.py):", err)
         raise err # by throwing the error up to the route context(with), we'll trigger a rollback automatically
