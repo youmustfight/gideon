@@ -1,3 +1,4 @@
+import logging
 from rq import Connection, Worker
 
 # QUEUES
@@ -9,7 +10,6 @@ from queries.processors import *
 # WORKER
 def start_worker():
     with Connection(redis_cxn):
-        print('INFO (worker.py): worker starting on default_queue')
         Worker([
             indexing_queue,
             prompt_queue,

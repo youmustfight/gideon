@@ -1,5 +1,6 @@
 from contextvars import ContextVar
 from datetime import datetime
+import logging
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
@@ -380,7 +381,6 @@ async def app_route_users(request):
 def start_api():
     host = env.env_get_gideon_api_host()
     port = env.env_get_gideon_api_port()
-    print(f'Starting Server at: {host}:{port}')
     # RUN API WORKERS
     app.run(
         host=host,

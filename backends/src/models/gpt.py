@@ -1,6 +1,5 @@
 import env
 from models.gpt_prompts import gpt_prompt_summary_detailed
-from utils import filter_empty_strs
 import numpy
 import requests
 import textwrap
