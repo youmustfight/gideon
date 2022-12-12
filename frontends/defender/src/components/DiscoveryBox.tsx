@@ -43,7 +43,9 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         </small>
         {["audio", "pdf", "video"].includes(document.type) ? (
           <>
-            <p>{document.document_description}</p>
+            <p>
+              {document.document_description}: {document.document_summary_one_liner}
+            </p>
             {viewMore ? (
               <>
                 <div className="discovery-box__document__actions">

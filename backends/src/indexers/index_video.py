@@ -9,7 +9,8 @@ from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file_string
 from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_summary import extract_document_summary
-from indexers.utils.tokenize_string import tokenize_string, TOKENIZING_STRATEGY
+from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
+from indexers.utils.tokenize_string import TOKENIZING_STRATEGY
 from models.assemblyai import assemblyai_transcribe
 from models.gpt import gpt_completion
 from models.gpt_prompts import gpt_prompt_video_type
@@ -210,7 +211,7 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars()
     document_content_text = " ".join(map(
-        lambda content: content.text if content.tokenizing_strategy == "max_size" else "", document_content))
+        lambda content: content.text if content.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value else "", document_content))
     # COMPILE/EXTRACT
     # --- classification/description
     print('INFO (index_pdf.py:_index_video_process_extractions): document_description')
@@ -221,6 +222,7 @@ async def _index_video_process_extractions(session, document_id: int) -> None:
     print('INFO (index_pdf.py:_index_video_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
         document.document_summary = extract_document_summary(document_content_text)
+        document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
     # --- events
     print('INFO (index_pdf.py:_index_video_process_extractions): document_events')
     document.document_events = await extract_document_events_v1(document_content_text)

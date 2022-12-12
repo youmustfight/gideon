@@ -51,7 +51,7 @@ async def _index_pdf_process_content(session, document_id: int) -> None:
                     sentence_number=counter_sentences,
                 ))
         session.add_all(document_content_sentences)
-        # --- 2c. Tokenize/process text by max_size (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
+        # --- 2c. Tokenize/process text by batches (defined by text-similiarty-davinci-001, should later try chunking by # sentences)
         document_content_sentence_chunks = _.chunk(document_content_sentences, 20)
         document_content_sentences_20 = []
         for dcsc in document_content_sentence_chunks:
@@ -103,7 +103,7 @@ async def _index_pdf_process_embeddings(session, document_id: int) -> None:
             vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
         ))
     session.add_all(sentence_embeddings_as_models)
-    # --- max_size (gtp3 ada = very very cheap, and large token length)
+    # --- batches (gtp3 ada = very very cheap, and large token length)
     print('INFO (index_pdf.py:_index_pdf_process_embeddings): encoding sentences in chunks of 20...', document_content_sentences_20)
     sentences_20_embeddings = aiagent_sentences_20_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences_20)))
     sentences_20_embeddings_as_models = []
