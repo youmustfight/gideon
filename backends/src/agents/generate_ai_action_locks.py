@@ -1,4 +1,4 @@
-from aia.agent import AI_ACTIONS, AI_MODELS
+from agents.ai_action_agent import AI_ACTIONS, AI_MODELS
 from dbs.sa_models import AIActionLock
 
 def generate_ai_action_locks(case_id = None):

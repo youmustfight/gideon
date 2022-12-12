@@ -1,5 +1,5 @@
 import asyncio
-from aia.agent import AI_ACTIONS, create_ai_action_agent
+from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_document_content_from_search_vectors, get_embeddings_from_search_vectors
 from models.gpt import gpt_completion, gpt_summarize
 from models.gpt_prompts import gpt_prompt_answer_question

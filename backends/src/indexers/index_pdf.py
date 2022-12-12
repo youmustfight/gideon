@@ -1,7 +1,7 @@
 import asyncio
 import pydash as _
 import sqlalchemy as sa
-from aia.agent import create_ai_action_agent, AI_ACTIONS
+from agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from indexers.utils.extract_document_type import extract_document_type
 from indexers.utils.extract_document_events import extract_document_events_v1

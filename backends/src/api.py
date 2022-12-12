@@ -7,7 +7,7 @@ from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload, subqueryload
 
-from aia.generate_ai_action_locks import generate_ai_action_locks
+from agents.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, User

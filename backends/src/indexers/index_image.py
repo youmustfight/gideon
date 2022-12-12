@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 
-from aia.agent import create_ai_action_agent, AI_ACTIONS
+from agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from files.s3_utils import s3_get_file_url
 from models.clip import clip_classifications
