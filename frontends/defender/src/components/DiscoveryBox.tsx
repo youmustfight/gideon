@@ -100,7 +100,7 @@ export const DiscoveryBox = () => {
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
       axios
-        .post(`${getGideonApiUrl()}/v1/documents/index/${type}`, formData, {
+        .post(`${getGideonApiUrl()}/v1/index/document/${type}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           params: { case_id: caseId },
         })

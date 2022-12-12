@@ -13,7 +13,7 @@ from auth.token import decode_token, encode_token
 from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
-from indexers.deindex_document_content import deindex_document_content
+from indexers.deindex_document import deindex_document
 from indexers.index_document_audio import _index_document_audio_process_extractions
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
@@ -147,7 +147,7 @@ async def app_route_case_put_reprocess_all_data(request, case_id):
         documents = query_documents.scalars().all()
         # --- for each document, delete embeddings, document content, remove from vector dbs/indexes
         for document in documents:
-            await deindex_document_content(session, document.id)
+            await deindex_document(session, document.id)
     # --- for each document, re-run document processing + embedding + vector db/index upsertion
     for document in documents:
         if document.type == 'pdf':
@@ -209,7 +209,7 @@ async def app_route_document_delete(request, document_id):
     session = request.ctx.session
     async with session.begin():
         # --- document content & embeddings
-        await deindex_document_content(session, document_id)
+        await deindex_document(session, document_id)
         # --- files
         await session.execute(sa.update(File)
             .where(File.document_id == int(document_id))
@@ -259,9 +259,11 @@ async def app_route_documents(request):
         documents_json = list(map(map_documents_and_content, documents))
     return json({ 'status': 'success', "documents": documents_json })
 
-@app.route('/v1/documents/index/pdf', methods = ['POST'])
+
+# INDEXERS
+@app.route('/v1/index/document/pdf', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_document_pdf(request):
+async def app_route_index_document_pdf(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -272,9 +274,9 @@ async def app_route_documents_index_document_pdf(request):
     indexing_queue.enqueue(job_index_document_pdf, document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/documents/index/image', methods = ['POST'])
+@app.route('/v1/index/document/image', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_document_image(request):
+async def app_route_index_document_image(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -285,9 +287,9 @@ async def app_route_documents_index_document_image(request):
     indexing_queue.enqueue(job_index_document_image, document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/documents/index/audio', methods = ['POST'])
+@app.route('/v1/index/document/audio', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_document_audio(request): 
+async def app_route_index_document_audio(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
@@ -298,9 +300,9 @@ async def app_route_documents_index_document_audio(request):
     indexing_queue.enqueue(job_index_document_audio, document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/documents/index/video', methods = ['POST'])
+@app.route('/v1/index/document/video', methods = ['POST'])
 @auth_route
-async def app_route_documents_index_document_video(request):
+async def app_route_index_document_video(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
     case_id = int(request.args.get('case_id'))
