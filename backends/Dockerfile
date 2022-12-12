@@ -43,8 +43,8 @@ ARG TARGET_ENV
 ENV TARGET_ENV=$TARGET_ENV
 ARG TARGET_SERVICE
 ENV TARGET_SERVICE=$TARGET_SERVICE
-# --- Configs (pytorch num_threads related)
-ENV OMP_NUM_THREADS=1
+# --- Configs (pytorch num_threads, logging, etc.)
+ENV PYTHONUNBUFFERED=1
 
 # Start
 EXPOSE 3000

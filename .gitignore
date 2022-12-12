@@ -17,3 +17,5 @@ public
 
 # tmp storage/things to remove
 tmp
+log
+logs
