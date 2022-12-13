@@ -18,6 +18,7 @@ from indexers.index_document_audio import _index_document_audio_process_extracti
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
+from indexers.processors.job_index_cap_caselaw import job_index_cap_caselaw
 from indexers.processors.job_index_document_audio import job_index_document_audio
 from indexers.processors.job_index_document_image import job_index_document_image
 from indexers.processors.job_index_document_pdf import job_index_document_pdf
@@ -175,6 +176,18 @@ async def app_route_case_post(request):
         )
         session.add(case_to_insert)
     return json({ 'status': 'success', "case": { "id": case_to_insert.id } })
+
+
+# CASELAW
+@app.route('/v1/cap/caselaw/index', methods = ['POST'])
+@auth_route
+async def app_route_cap_caselaw_index(request):
+    session = request.ctx.session
+    async with session.begin():
+        cap_ids = request.json['cap_ids']
+        for cap_id in cap_ids:
+            indexing_queue.enqueue(job_index_cap_caselaw, cap_id)
+    return json({ 'status': 'success' })
 
 
 # DOCUMENTS
