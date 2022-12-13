@@ -130,7 +130,7 @@ class Document(BaseModel):
         }
 
 class DocumentContent(BaseModel):
-    __tablename__ = "documentcontent"
+    __tablename__ = "document_content"
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="content")
@@ -168,7 +168,7 @@ class Embedding(BaseModel):
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="embeddings")
-    document_content_id = Column(Integer, ForeignKey("documentcontent.id"))
+    document_content_id = Column(Integer, ForeignKey("document_content.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
     # --- encoding model/engine info
     encoded_model_type = Column(Text()) # gpt3, clip
