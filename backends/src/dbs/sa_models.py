@@ -130,7 +130,7 @@ class Document(BaseModel):
         }
 
 class DocumentContent(BaseModel):
-    __tablename__ = "documentcontent"
+    __tablename__ = "document_content"
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="content")
@@ -168,7 +168,7 @@ class Embedding(BaseModel):
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="embeddings")
-    document_content_id = Column(Integer, ForeignKey("documentcontent.id"))
+    document_content_id = Column(Integer, ForeignKey("document_content.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
     # --- encoding model/engine info
     encoded_model_type = Column(Text()) # gpt3, clip
@@ -221,3 +221,34 @@ class AIActionLock(BaseModel):
     case_id = Column(Integer, ForeignKey('case.id'))
     case = relationship("Case", back_populates="ai_action_locks")
     created_at = Column(DateTime(timezone=True))
+
+
+# CAP
+class CAPCaseLaw(BaseModel):
+    __tablename__ = "cap_caselaw"
+    cap_id = Column(Integer()) # maps just bad to their "id"
+    url = Column(Text())
+    name = Column(Text())
+    name_abbreviation = Column(Text())
+    decision_date = Column(Text())
+    docket_number = Column(Text())
+    first_page = Column(Text())
+    last_page = Column(Text())
+    citations = Column(JSON()) # { type: String, cite: String }[]
+    volume = Column(JSON()) # { url, volume_number, barcode }
+    reporter = Column(JSON()) # { url, full_name, id }
+    court = Column(JSON()) # { url, name_abbreviation, slug, id, name }
+    jurisdiction = Column(JSON()) # { id, name_long, url, slug, whitelisted: boolean, name }
+    cites_to = Column(JSON()) # { cite: string (ex: "10 Mass. 199"), category: string (ex: "reporters:state"), reporter: string (ex: "Mass"), case_ids: number[], opinion_id: number }[]
+    frontend_url = Column(Text())
+    frontend_pdf_url = Column(Text())
+    preview = Column(JSON()) # ?[]
+    analysis = Column(JSON()) # { cardinality, char_count, ocr_confidence, pagerank, sha256, simhash, word_count, random_id, random_bucket }
+    last_updated = Column(Text())
+    provenance = Column(JSON()) # { date_added: string (ex: "2022-01-01"), source: string, batch: string }
+    casebody = Column(JSON()) # { status, judges: string[], parties: string[], opinions: { text, type, author }[], attorneys: string[], corrections, head_matter }
+    # extras
+    document_summary = Column(Text())
+    document_summary_one_liner = Column(Text())
+    document_citing_slavery_summary = Column(Text())
+    document_citing_slavery_summary_one_liner = Column(Text())

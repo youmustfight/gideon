@@ -8,6 +8,13 @@ import { TDocument, useDocuments } from "../data/useDocuments";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
 
+const DocumentPreviewMedia = styled.div`
+  min-width: 120px;
+  max-width: 120px;
+  width: 120px;
+  display: flex;
+  align-items: center;
+`;
 const DocumentPreviewAudio = styled.audio`
   min-width: 120px;
   max-width: 120px;
@@ -44,29 +51,11 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         {["audio", "pdf", "video"].includes(document.type) ? (
           <>
             <p>{document.document_description}</p>
-            {viewMore ? (
-              <>
-                <div className="discovery-box__document__actions">
-                  <div>
-                    <small onClick={() => setViewMore(false)}>Hide summary...</small>
-                  </div>
-                </div>
-                <div className="discovery-box__document__expanded">
-                  <p>
-                    <u>Mentions</u>: TODO
-                  </p>
-                  <p>
-                    <u>Summary</u>: {document.document_summary}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="discovery-box__document__actions">
-                <div>
-                  <small onClick={() => setViewMore(true)}>View summary...</small>
-                </div>
+            <div className="discovery-box__document__actions">
+              <div>
+                <small>{document.document_summary_one_liner}</small>
               </div>
-            )}
+            </div>
           </>
         ) : null}
         {["image"].includes(document.type) ? (
@@ -79,15 +68,19 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         <DocumentPreviewImage imageSrc={document.files[0].upload_url} />
       ) : null}
       {["audio"].includes(document.type) && document.files?.[0] ? (
-        <DocumentPreviewAudio src={document.files[0].upload_url} controls />
+        <DocumentPreviewMedia>
+          <DocumentPreviewAudio src={document.files[0].upload_url} controls />
+        </DocumentPreviewMedia>
       ) : null}
       {["video"].includes(document.type) && document.files?.[0] ? (
-        <ReactPlayer
-          width="120px"
-          height=""
-          url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
-          controls={false}
-        />
+        <DocumentPreviewMedia>
+          <ReactPlayer
+            width="120px"
+            height=""
+            url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
+            controls={false}
+          />
+        </DocumentPreviewMedia>
       ) : null}
     </div>
   );
@@ -107,7 +100,7 @@ export const DiscoveryBox = () => {
       const formData = new FormData();
       formData.append("file", e.target.file.files[0]);
       axios
-        .post(`${getGideonApiUrl()}/v1/documents/index/${type}`, formData, {
+        .post(`${getGideonApiUrl()}/v1/index/document/${type}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           params: { case_id: caseId },
         })
@@ -225,7 +218,8 @@ const StyledDiscoveryBox = styled.div`
   }
   .discovery-box__document__actions {
     border-top: 1px solid #eee;
-    margin-top: 2px;
+    padding-top: 4px;
+    margin-top: 6px;
     small {
       cursor: pointer;
     }

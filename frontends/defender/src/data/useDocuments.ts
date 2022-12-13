@@ -43,6 +43,7 @@ export type TDocument = {
   document_description?: string;
   document_events?: { date: string; event: string }[];
   document_summary?: string;
+  document_summary_one_liner?: string;
   content?: TDocumentContent[];
   files?: TFile[];
   // v1 (when saving everything to disk as json)

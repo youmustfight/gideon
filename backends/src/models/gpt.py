@@ -1,9 +1,9 @@
-import env
-from models.gpt_prompts import gpt_prompt_summary_detailed
 import numpy
 import requests
 import textwrap
 from time import sleep
+import env
+from models.gpt_prompts import gpt_prompt_summary_detailed
 
 # SETUP
 # we should stop differentiating between model/engine. it's not interchangable. cpt-text/text-davinci-003

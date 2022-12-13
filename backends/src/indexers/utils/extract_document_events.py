@@ -23,12 +23,14 @@ async def extract_document_events_v1(document_text):
         timeline_completion_with_dates = gpt_edit(
             gpt_prompt_edit_event_timeline,
             timeline_completion)
-        # --- reformat specifically for ISO strings
-        timeline_completion_with_dates_as_iso = gpt_edit(
-            gpt_prompt_edit_event_timeline_structure,
-            timeline_completion_with_dates)
-        # --- append
-        completion_event_responses.append(timeline_completion_with_dates_as_iso)
+        # --- if we found some events...
+        if (timeline_completion_with_dates != None and len(timeline_completion_with_dates) > 0):
+            # --- reformat specifically for ISO strings
+            timeline_completion_with_dates = gpt_edit(
+                gpt_prompt_edit_event_timeline_structure,
+                timeline_completion_with_dates)
+            # --- append
+            completion_event_responses.append(timeline_completion_with_dates)
 
     events = []
     # format events: split each into a date, description, documents involved

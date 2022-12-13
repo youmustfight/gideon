@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
-from aia.agent import AI_ACTIONS, create_ai_action_agent
+from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.sa_models import Document, DocumentContent, Embedding
 from indexers.utils.tokenize_string import TOKENIZING_STRATEGY
 

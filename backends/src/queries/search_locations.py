@@ -1,6 +1,6 @@
 from logger import logger
 from queries.utils.search_vector_to_location import search_vector_to_location
-from aia.agent import AI_ACTIONS, create_ai_action_agent
+from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 
 
