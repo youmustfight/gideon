@@ -7,6 +7,7 @@ import { QuestionAnswerBox } from "../../components/QuestionAnswerBox";
 import { useCase, reqCaseAILocksReset, reqCaseReindexAllDocuments } from "../../data/useCase";
 import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
+import { ViewCaseWriting } from "./ViewCaseWriting";
 
 export const ViewCase = () => {
   const matches = useMatch("/case/:caseId/*");
@@ -23,10 +24,14 @@ export const ViewCase = () => {
           <QuestionAnswerBox />
         </section>
 
+        <hr />
+
         {/* --- CASE VIEWS ---  */}
         <Routes>
           {/* --- document inspection */}
           <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
+          {/* --- writing */}
+          <Route path="/:caseId/writing/:writingId" element={<ViewCaseWriting />} />
           {/* --- overview */}
           <Route path="/:caseId/" element={<ViewCaseOverview />} />
           {/* --- default overview showing. TODO: figure out relative path version */}
@@ -68,6 +73,11 @@ const StyledViewCase = styled.div`
       font-weight: 900;
       margin: 6px 0;
       display: flex;
+    }
+    h2,
+    h3,
+    h4 {
+      justify-content: center;
     }
   }
   section {

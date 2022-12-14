@@ -159,6 +159,7 @@ export const ViewCaseDocument = () => {
   // @ts-ignore
   const { caseId, documentId } = useMatch("/case/:caseId/document/:documentId")?.params;
   const { data: document } = useDocument(documentId);
+  // const {mutateAsync: updateDocument} = useDocumentUpdate();
   // --- highlights
   // const { data: highlights = [] } = useHighlights();
   // const hasHighlights = false; // TODO: refactor highlights.some((hl) => hl.filename === filename);
@@ -172,19 +173,26 @@ export const ViewCaseDocument = () => {
 
   // RENDER
   return !document ? null : (
-    <div>
-      {/* SUMMARY */}
-      <div className="section-lead">
+    <StyledViewCaseDocument>
+      {/* HEAD */}
+      <div className="document-title">
         <h4>
-          <Link to={`/case/${caseId}`}>
-            <button>←</button>
-          </Link>{" "}
-          <span>Back to Documents</span>
+          <b>{document.document_description}</b>
         </h4>
-        <br />
-        <i>{document?.name}</i>
-        <h2>{document?.document_description}</h2>
       </div>
+      <div className="document-header">
+        <Link to={`/case/${caseId}`}>
+          <button>←</button>
+        </Link>
+        <input
+          placeholder="Untitled Name"
+          value={document?.name}
+          disabled
+          // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
+        />
+      </div>
+
+      {/* SUMMARY */}
       <section>
         <DocumentViewSummary document={document} />
         {/* TODO */}
@@ -292,6 +300,29 @@ export const ViewCaseDocument = () => {
           Delete Document
         </button>
       </section>
-    </div>
+    </StyledViewCaseDocument>
   );
 };
+
+const StyledViewCaseDocument = styled.div`
+  .document-title {
+    text-align: center;
+    padding: 20px 0 12px;
+    font-weight: 900;
+  }
+  .document-header {
+    padding: 0 24px;
+    display: flex;
+    & > a {
+      max-width: 40px;
+    }
+    & > input {
+      flex-grow: 1;
+    }
+    & > button {
+      width: 150px;
+      min-width: 150px;
+      max-width: 150px;
+    }
+  }
+`;

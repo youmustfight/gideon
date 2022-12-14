@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload, subqueryload
 from agents.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
@@ -367,6 +367,70 @@ async def app_route_query_info_locations(request):
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
+
+
+# WRITING
+@app.route('/v1/writings', methods = ['GET'])
+@auth_route
+async def app_route_writings_get(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_writings = await session.execute(
+            sa.select(Writing)
+                .where(Writing.case_id == int(request.args.get('case_id')))
+                .order_by(sa.desc(Writing.id)))
+        writings = query_writings.scalars().all()
+        writings_json = serialize_list(writings)
+    return json({ 'status': 'success', 'data': { 'writings': writings_json } })
+
+@app.route('/v1/writing', methods = ['POST'])
+@auth_route
+async def app_route_writings_post(request):
+    session = request.ctx.session
+    writing_model = Writing(
+        case_id=request.json.get('case_id'))
+    session.add(writing_model)
+    await session.commit()
+    return json({ 'status': 'success' })
+
+@app.route('/v1/writing/<writing_id>', methods = ['GET'])
+@auth_route
+async def app_route_writing_get(request, writing_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_writing = await session.execute(
+            sa.select(Writing).where(Writing.id == int(writing_id)))
+        writing = query_writing.scalar_one_or_none()
+        writing_json = writing.serialize()
+    return json({ 'status': 'success', "writing": writing_json })
+
+@app.route('/v1/writing/<writing_id>', methods = ['PUT'])
+@auth_route
+async def app_route_writing_put(request, writing_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_writing = await session.execute(
+            sa.select(Writing).where(Writing.id == int(writing_id)))
+        writing = query_writing.scalars().one()
+        # TODO: make better lol
+        if (request.json.get('writing').get('name')):
+            writing.name = request.json['writing']['name']
+        if (request.json.get('writing').get('body_html')):
+            writing.body_html = request.json['writing']['body_html']
+        if (request.json.get('writing').get('body_text')):
+            writing.body_text = request.json['writing']['body_text']
+        session.add(writing)
+    return json({ 'status': 'success' })
+
+@app.route('/v1/writing/<writing_id>', methods = ['DELETE'])
+@auth_route
+async def app_route_writing_delete(request, writing_id):
+    session = request.ctx.session
+    async with session.begin():
+        # --- writing
+        await session.execute(sa.delete(Writing)
+            .where(Writing.id == int(writing_id)))
+    return json({ 'status': 'success' })
 
 
 # USERS

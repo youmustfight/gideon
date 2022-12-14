@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { HighlightsBox } from "../../components/HighlightsBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
+import { WritingsBox } from "../../components/WritingsBox";
 import { useHighlights } from "../../data/useHighlights";
 
 export const ViewCaseOverview = () => {
@@ -11,6 +12,11 @@ export const ViewCaseOverview = () => {
   return (
     <>
       <StyledViewCaseOverview>
+        {/* WRITINGS */}
+        <section>
+          <WritingsBox />
+        </section>
+
         {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
         <div className="section-lead">
           <h4>Discovery, Evidence, Exhibits</h4>
