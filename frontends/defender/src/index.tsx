@@ -1,4 +1,4 @@
-import React from "react";
+import React, { StrictMode } from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "react-query";
@@ -8,12 +8,14 @@ import { ResetCSS } from "./components/ResetCSS";
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ResetCSS />
-        <Gideon />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ResetCSS />
+          <Gideon />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </StrictMode>
   );
 };
 

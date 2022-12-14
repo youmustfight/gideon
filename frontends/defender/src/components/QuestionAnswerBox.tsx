@@ -167,7 +167,7 @@ export const QuestionAnswerBox = () => {
     <StyledQuestionAnswerBox>
       <form className="question-box" onSubmit={handleQuestion}>
         <label>
-          <span>Ask Question</span>
+          {/* <span>Ask Question</span> */}
           <input
             placeholder="Where did the search warrant authorize a raid on?"
             value={answerQuestion}
@@ -175,12 +175,12 @@ export const QuestionAnswerBox = () => {
           />
         </label>
         <button type="submit" disabled={isAnswerPending || !(answerQuestion?.length > 0)}>
-          Ask
+          Ask Question
         </button>
       </form>
       <form className="question-box" onSubmit={handleSearchForPage}>
         <label>
-          <span>Search for Detail</span>
+          {/* <span>Search for Detail</span> */}
           <input
             placeholder="Presidential authority on disclosure"
             value={infoLocationQuestion}
@@ -189,10 +189,10 @@ export const QuestionAnswerBox = () => {
           />
         </label>
         <button type="submit" disabled={isAnswerPending || !(infoLocationQuestion?.length > 0)}>
-          Ask
+          Find Detail
         </button>
       </form>
-      <form className="question-box" onSubmit={handleHighlightSearch}>
+      {/* <form className="question-box" onSubmit={handleHighlightSearch}>
         <label>
           <span>Search Highlights</span>
           <input disabled value={highlightSearchQuery} onChange={(e) => setHighlightSearchQuery(e.target.value)} />
@@ -200,8 +200,8 @@ export const QuestionAnswerBox = () => {
         <button type="submit" disabled={isAnswerPending || !(highlightSearchQuery?.length > 0)}>
           Ask
         </button>
-      </form>
-      <div className="question-box">
+      </form> */}
+      {/* <div className="question-box">
         <label>
           <span>Summarize Laywer</span>
           <select disabled value={userToSummarize} onChange={(e) => setUserToSummarize(e.target.value)}>
@@ -214,8 +214,8 @@ export const QuestionAnswerBox = () => {
         <button type="submit" disabled={isAnswerPending || !(userToSummarize?.length > 0)}>
           Summarize
         </button>
-      </div>
-      <div className="question-box">
+      </div> */}
+      {/* <div className="question-box">
         <label>
           <span>Contrast Laywers</span>
           <select disabled value={userOneToContrast} onChange={(e) => setUserOneToContrast(e.target.value)}>
@@ -234,7 +234,7 @@ export const QuestionAnswerBox = () => {
         <button type="submit" disabled={isAnswerPending || !(userOneToContrast && userTwoToContrast)}>
           Contrast
         </button>
-      </div>
+      </div> */}
 
       {(isAnswerPending || answer != null) && (
         <div className="answer">

@@ -8,6 +8,7 @@ import { ViewCases } from "./routes/cases/ViewCases";
 import { Link } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ToolWindow } from "./components/ToolWindow";
+import { ViewWritingPDF } from "./routes/writing/ViewWritingPDF";
 
 export const Gideon: React.FC = () => {
   const { data: user, isSuccess: isSuccessUserFetch } = useUser();
@@ -43,6 +44,15 @@ export const Gideon: React.FC = () => {
             <ToolWindow>
               <ViewCase />
             </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
+      {/* WRITINGS */}
+      <Route
+        path="/writing/*"
+        element={
+          <ProtectedRoute user={user}>
+            <ViewWritingPDF />
           </ProtectedRoute>
         }
       />
