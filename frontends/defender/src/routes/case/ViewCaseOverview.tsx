@@ -18,9 +18,6 @@ export const ViewCaseOverview = () => {
         </section>
 
         {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-        <div className="section-lead">
-          <h4>Discovery, Evidence, Exhibits</h4>
-        </div>
         <section>
           <DiscoveryBox />
         </section>
@@ -28,9 +25,6 @@ export const ViewCaseOverview = () => {
         {/* TODO: MY DOCS */}
 
         {/* SUMMATION (timeline w/ summaries) */}
-        <div className="section-lead">
-          <h4>Timeline Summary</h4>
-        </div>
         <section>
           <TimelineSummary />
         </section>

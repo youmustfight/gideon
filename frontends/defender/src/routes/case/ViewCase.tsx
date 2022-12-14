@@ -24,8 +24,6 @@ export const ViewCase = () => {
           <QuestionAnswerBox />
         </section>
 
-        <hr />
-
         {/* --- CASE VIEWS ---  */}
         <Routes>
           {/* --- document inspection */}

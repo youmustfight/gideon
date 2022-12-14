@@ -90,93 +90,96 @@ export const DiscoveryBox = () => {
   const matches = useMatch("/case/:caseId/*");
   const caseId = Number(matches?.params?.caseId);
   const { data: documents = [], refetch } = useDocuments(caseId);
-  const [isAddingFile, setIsAddingFile] = useState(false);
-  const isIndexingDisabled = documents?.some((d) => d.status_processing_content != "completed");
+
   // @ts-ignore
-  const onSubmitFile = (type: "audio" | "image" | "pdf" | "video") => (e) => {
+  const onSubmitFile = (e) => {
     e.preventDefault();
-    if (e.target.file?.files?.[0]) {
-      // --- setup form data/submit
-      const formData = new FormData();
-      formData.append("file", e.target.file.files[0]);
-      axios
-        .post(`${getGideonApiUrl()}/v1/index/document/${type}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          params: { case_id: caseId },
-        })
-        .then(() => {
-          // after a few seconds, refetch documents to get files processing
-          setTimeout(() => refetch(), 1000 * 2);
-        });
-      // --- clear file in input if successful
-      e.target.file.value = "";
+    if (!e.target.file?.files?.[0]) return;
+    // --- get type from mime_type
+    const mimeType = e.target.file.files[0].type;
+    let type;
+    if (mimeType.includes("image")) {
+      type = "image";
+    } else if (mimeType.includes("video")) {
+      type = "video";
+    } else if (mimeType.includes("audio")) {
+      type = "audio";
+    } else if (mimeType.includes("application")) {
+      type = "pdf";
     }
+    // --- setup form data/submit
+    const formData = new FormData();
+    formData.append("file", e.target.file.files[0]);
+    axios
+      .post(`${getGideonApiUrl()}/v1/index/document/${type}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        params: { case_id: caseId },
+      })
+      .then(() => {
+        // after a few seconds, refetch documents to get files processing
+        setTimeout(() => refetch(), 1000 * 2);
+      });
+    // --- clear file in input if successful
+    e.target.file.value = "";
   };
 
   // RENDER
   return (
-    <StyledDiscoveryBox>
-      {/* UPLOAD */}
-      {isAddingFile ? (
-        <>
-          {/* PDF */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("pdf")}>
-            <input type="file" name="file" accept=".pdf" />
-            <button type="submit">Upload PDF</button>
-          </form>
-
-          {/* IMAGE */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("image")}>
-            <input type="file" name="file" accept=".jpg,.jpeg,.png" />
-            <button type="submit">Upload Image</button>
-          </form>
-
-          {/* AUDIO */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("audio")}>
-            <input type="file" name="file" accept=".m4a,.mp3" />
-            <button type="submit">Upload Audio</button>
-          </form>
-
-          {/* VIDEO */}
-          <form className="discovery-box__file-uploader" onSubmit={onSubmitFile("video")}>
-            <input type="file" name="file" accept=".mp4,.mov" />
-            <button type="submit">Upload Video</button>
-          </form>
-        </>
-      ) : null}
-      {!isAddingFile ? (
-        <button className="add-files-btn" onClick={() => setIsAddingFile(true)}>
-          + Upload PDF, Image, Audio, Video
-        </button>
-      ) : null}
-
-      {/* DOCUMENTS - PROCESSING */}
-      {isIndexingDisabled && (
-        <>
-          {documents
-            .filter((d) => d.status_processing_content != "completed")
-            .map((d) => (
-              <div key={d.id} className="discovery-box__document processing">
-                <p>
-                  File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
-                </p>
-              </div>
-            ))}
-        </>
-      )}
-      {/* DOCUMENTS - PROCESSED */}
-      <ul>
+    <>
+      <StyledDiscoveryBoxLead>
+        <h2>Documents</h2>
+        <form className="discovery-box__file-uploader" onSubmit={(e) => onSubmitFile(e)}>
+          <button type="submit">+ Upload</button>
+          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov" />
+        </form>
+      </StyledDiscoveryBoxLead>
+      <StyledDiscoveryBox>
+        {/* DOCUMENTS - PROCESSING */}
         {documents
-          .filter((d) => d.status_processing_content === "completed")
-          .map((doc) => (
-            <li key={doc.id}>
-              <DocumentBox document={doc} />
-            </li>
+          .filter((d) => d.status_processing_content != "completed")
+          .map((d) => (
+            <div key={d.id} className="discovery-box__document processing">
+              <p>
+                File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
+              </p>
+            </div>
           ))}
-      </ul>
-    </StyledDiscoveryBox>
+        {/* DOCUMENTS - PROCESSED */}
+        <ul>
+          {documents
+            .filter((d) => d.status_processing_content === "completed")
+            .map((doc) => (
+              <li key={doc.id}>
+                <DocumentBox document={doc} />
+              </li>
+            ))}
+        </ul>
+      </StyledDiscoveryBox>
+    </>
   );
 };
+
+const StyledDiscoveryBoxLead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 4px;
+  h2 {
+    font-size: 18px;
+    font-weight: 900;
+  }
+  form {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .discovery-box__file-uploader {
+    input {
+      max-width: 180px;
+    }
+  }
+`;
 
 const StyledDiscoveryBox = styled.div`
   p {
@@ -223,16 +226,5 @@ const StyledDiscoveryBox = styled.div`
     small {
       cursor: pointer;
     }
-  }
-  .discovery-box__file-uploader {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .add-files-btn {
-    width: 100%;
-    text-align: center;
-    margin-top: 8px;
   }
 `;

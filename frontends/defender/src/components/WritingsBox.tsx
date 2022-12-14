@@ -11,20 +11,45 @@ export const WritingsBox = () => {
   const { mutateAsync: writingCreate } = useWritingCreate();
 
   return (
-    <StyledWritingsBox>
-      <button className="add-files-btn" onClick={() => writingCreate({ caseId })}>
-        + Create New Writing
-      </button>
-      {writings?.map((w) => (
-        <div key={w.id} className="writings-box__writing">
-          <p>
-            <Link to={`/case/${caseId}/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
-          </p>
-        </div>
-      ))}
-    </StyledWritingsBox>
+    <>
+      <StyledWritingsBoxLead>
+        <h2>Writings</h2>
+        <button onClick={() => writingCreate({ caseId })}>+ Create</button>
+      </StyledWritingsBoxLead>
+      <StyledWritingsBox>
+        {writings?.map((w) => (
+          <div key={w.id} className="writings-box__writing">
+            <p>
+              <Link to={`/case/${caseId}/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
+            </p>
+          </div>
+        ))}
+      </StyledWritingsBox>
+    </>
   );
 };
+
+const StyledWritingsBoxLead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 4px;
+  h2 {
+    font-size: 18px;
+    font-weight: 900;
+  }
+  form {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .discovery-box__file-uploader {
+    input {
+      max-width: 180px;
+    }
+  }
+`;
 
 const StyledWritingsBox = styled.div`
   button {

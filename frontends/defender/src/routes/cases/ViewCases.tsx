@@ -1,6 +1,5 @@
 import styled from "styled-components";
-import { CAPCaseLawDriver } from "../../components/CAPCaseLawDriver";
-import { CaseDriver } from "../../components/CaseDriver";
+import { CasesDriver } from "../../components/CasesDriver";
 import { useUserLogout } from "../../data/useUserLogout";
 
 export const ViewCases = () => {
@@ -8,8 +7,7 @@ export const ViewCases = () => {
 
   return (
     <StyledViewCases>
-      <CaseDriver />
-      <CAPCaseLawDriver />
+      <CasesDriver />
       <button onClick={() => logout()}>Logout</button>
     </StyledViewCases>
   );
