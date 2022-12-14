@@ -1,5 +1,5 @@
 from pydash import to_list
-from sqlalchemy import JSON, Column, DateTime, Integer, ForeignKey, String, Table, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, ForeignKey, String, Table, Text
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 import uuid
@@ -82,6 +82,7 @@ class Organization(BaseModel):
     name = Column(Text())
     cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
+    writing_templates = relationship("Writing", back_populates="organization")
     def serialize(self):
         return {
             "id": self.id,
@@ -228,13 +229,19 @@ class Writing(BaseModel):
     id = Column(Integer, primary_key=True)
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="writings")
+    organization_id = Column(Integer, ForeignKey("organization.id"))
+    organization = relationship("Organization", back_populates="writing_templates")
     name = Column(Text())
+    is_template = Column(Boolean())
     body_html = Column(Text())
     body_text = Column(Text())
+    created_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,
             "case_id": self.case_id,
+            "organization_id": self.organization_id,
+            "is_template": self.is_template,
             "name": self.name,
             "body_html": self.body_html,
             "body_text": self.body_text,
