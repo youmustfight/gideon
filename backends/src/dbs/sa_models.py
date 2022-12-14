@@ -66,6 +66,7 @@ class Case(BaseModel):
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
+    writings = relationship("Writing", back_populates="case")
     ai_action_locks = relationship("AIActionLock", back_populates="case")
     def serialize(self):
         return {
@@ -221,6 +222,23 @@ class AIActionLock(BaseModel):
     case_id = Column(Integer, ForeignKey('case.id'))
     case = relationship("Case", back_populates="ai_action_locks")
     created_at = Column(DateTime(timezone=True))
+
+class Writing(BaseModel):
+    __tablename__ = "writing"
+    id = Column(Integer, primary_key=True)
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="writings")
+    name = Column(Text())
+    body_html = Column(Text())
+    body_text = Column(Text())
+    def serialize(self):
+        return {
+            "id": self.id,
+            "case_id": self.case_id,
+            "name": self.name,
+            "body_html": self.body_html,
+            "body_text": self.body_text,
+        }
 
 
 # CAP
