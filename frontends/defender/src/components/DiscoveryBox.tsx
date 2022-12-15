@@ -1,9 +1,10 @@
 import axios from "axios";
 import { capitalize } from "lodash";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
-import { Link, useMatch } from "react-router-dom";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
+import { useAppStore } from "../data/AppStore";
 import { TDocument, useDocuments } from "../data/useDocuments";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
@@ -33,9 +34,7 @@ const DocumentPreviewImage = styled.div<{ imageSrc: string }>`
 `;
 
 const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
-  const [viewMore, setViewMore] = useState(false);
-  const matches = useMatch("/case/:caseId/*");
-  const caseId = Number(matches?.params?.caseId);
+  const { focusedCaseId } = useAppStore();
   const pageCount = Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.page_number)))));
   const timeText = formatSecondToTime(
     Math.max(...Array.from(new Set(document?.content?.map((dc) => Number(dc.second_end)))))
@@ -44,7 +43,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
     <div className="discovery-box__document">
       <div style={{ flexGrow: 1 }}>
         <small>
-          <Link to={`/case/${caseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
+          <Link to={`/case/${focusedCaseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
           {["audio", "video"].includes(document?.type) ? <> ({timeText} min.)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
@@ -86,10 +85,8 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
   );
 };
 
-export const DiscoveryBox = () => {
-  const matches = useMatch("/case/:caseId/*");
-  const caseId = Number(matches?.params?.caseId);
-  const { data: documents = [], refetch } = useDocuments(caseId);
+export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
+  const { data: documents, refetch } = useDocuments(caseId);
 
   // @ts-ignore
   const onSubmitFile = (e) => {
@@ -97,6 +94,7 @@ export const DiscoveryBox = () => {
     if (!e.target.file?.files?.[0]) return;
     // --- get type from mime_type
     const mimeType = e.target.file.files[0].type;
+    console.log(mimeType);
     let type;
     if (mimeType.includes("image")) {
       type = "image";
@@ -104,7 +102,7 @@ export const DiscoveryBox = () => {
       type = "video";
     } else if (mimeType.includes("audio")) {
       type = "audio";
-    } else if (mimeType.includes("application")) {
+    } else if (mimeType.includes("/pdf")) {
       type = "pdf";
     }
     // --- setup form data/submit
@@ -129,31 +127,35 @@ export const DiscoveryBox = () => {
       <StyledDiscoveryBoxLead>
         <h2>Documents</h2>
         <form className="discovery-box__file-uploader" onSubmit={(e) => onSubmitFile(e)}>
+          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.doc,.docx" />
           <button type="submit">+ Upload</button>
-          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov" />
         </form>
       </StyledDiscoveryBoxLead>
       <StyledDiscoveryBox>
-        {/* DOCUMENTS - PROCESSING */}
-        {documents
-          .filter((d) => d.status_processing_content != "completed")
-          .map((d) => (
-            <div key={d.id} className="discovery-box__document processing">
-              <p>
-                File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
-              </p>
-            </div>
-          ))}
-        {/* DOCUMENTS - PROCESSED */}
-        <ul>
-          {documents
-            .filter((d) => d.status_processing_content === "completed")
-            .map((doc) => (
-              <li key={doc.id}>
-                <DocumentBox document={doc} />
-              </li>
-            ))}
-        </ul>
+        {!caseId ? null : (
+          <>
+            {/* DOCUMENTS - PROCESSING */}
+            {documents
+              ?.filter((d) => d.status_processing_content != "completed")
+              .map((d) => (
+                <div key={d.id} className="discovery-box__document processing">
+                  <p>
+                    File "<Link to={`/case/${caseId}/document/${d.id}`}>{d.name}</Link>" processing...
+                  </p>
+                </div>
+              ))}
+            {/* DOCUMENTS - PROCESSED */}
+            <ul>
+              {documents
+                ?.filter((d) => d.status_processing_content === "completed")
+                .map((doc) => (
+                  <li key={doc.id}>
+                    <DocumentBox document={doc} />
+                  </li>
+                ))}
+            </ul>
+          </>
+        )}
       </StyledDiscoveryBox>
     </>
   );

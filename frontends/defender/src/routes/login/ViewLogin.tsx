@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Navigate, redirect } from "react-router-dom";
 import styled from "styled-components";
-import { useUser } from "../../data/useUser";
-import { useUserLogin } from "../../data/useUserLogin";
+import { useUser, useUserLogin } from "../../data/useUser";
 
 export const ViewLogin = () => {
   const { data: user } = useUser();

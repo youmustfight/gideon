@@ -1,13 +1,10 @@
 import React from "react";
-import { useMatch, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { useCase } from "../data/useCase";
-import { useCaseUpdate } from "../data/useCaseUpdate";
+import { useCase, useCaseUpdate } from "../data/useCase";
 
-export const CaseDriver: React.FC = () => {
+export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
   const navigate = useNavigate();
-  const matches = useMatch("/case/:caseId/*");
-  const caseId = matches?.params?.caseId;
   const { data: cse } = useCase(caseId);
   const { mutateAsync: caseUpdate } = useCaseUpdate();
 

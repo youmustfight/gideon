@@ -1,23 +1,28 @@
-import { Routes, Route } from "react-router";
-import { useMatch } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useParams } from "react-router";
 import styled from "styled-components";
 import { CaseAdminToolbox } from "../../components/CaseAdminToolbox";
 import { CaseDriver } from "../../components/CaseDriver";
 import { QuestionAnswerBox } from "../../components/QuestionAnswerBox";
-import { useCase, reqCaseAILocksReset, reqCaseReindexAllDocuments } from "../../data/useCase";
+import { useAppStore } from "../../data/AppStore";
 import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
-import { ViewCaseWriting } from "./ViewCaseWriting";
+import { ViewWriting } from "../writing/ViewWriting";
 
 export const ViewCase = () => {
-  const matches = useMatch("/case/:caseId/*");
-  const caseId = Number(matches?.params?.caseId);
-  const { data: cse } = useCase(caseId);
+  const params = useParams();
+  const caseId = Number(params.caseId);
+  const app = useAppStore();
+  // ON MOUNT
+  // --- on mounting this, set the new focus
+  useEffect(() => {
+    if (caseId) app.setFocusedCaseId(Number(caseId));
+  }, []);
 
   // RENDER
-  return (
+  return !caseId ? null : (
     <>
-      <CaseDriver />
+      <CaseDriver caseId={caseId} />
       <StyledViewCase>
         {/* --- AI inputs --- */}
         <section>
@@ -27,11 +32,11 @@ export const ViewCase = () => {
         {/* --- CASE VIEWS ---  */}
         <Routes>
           {/* --- document inspection */}
-          <Route path="/:caseId/document/:documentId" element={<ViewCaseDocument />} />
+          <Route path="/document/:documentId" element={<ViewCaseDocument />} />
           {/* --- writing */}
-          <Route path="/:caseId/writing/:writingId" element={<ViewCaseWriting />} />
+          <Route path="/writing/:writingId" element={<ViewWriting caseId={caseId} />} />
           {/* --- overview */}
-          <Route path="/:caseId/" element={<ViewCaseOverview />} />
+          <Route path="/" element={<ViewCaseOverview />} />
           {/* --- default overview showing. TODO: figure out relative path version */}
           {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
         </Routes>
@@ -39,7 +44,7 @@ export const ViewCase = () => {
         {/* --- ADMIN ---  */}
         <hr />
         <br />
-        <CaseAdminToolbox caseId={caseId} />
+        <CaseAdminToolbox />
       </StyledViewCase>
     </>
   );

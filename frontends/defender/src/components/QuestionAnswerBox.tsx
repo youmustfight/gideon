@@ -1,15 +1,13 @@
 import axios from "axios";
-import { intersection, orderBy } from "lodash";
+import { orderBy } from "lodash";
 import { useState } from "react";
-import { Link, useMatch } from "react-router-dom";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { useTeamStore } from "../data/TeamStore";
+import { useAppStore } from "../data/AppStore";
 import { TQueryLocation } from "../data/useDocuments";
-import { useHighlights } from "../data/useHighlights";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
 import { formatHashForSentenceHighlight } from "./hashUtils";
-import { HighlightBox } from "./HighlightsBox";
 
 const StyledAnswerLocationBox = styled.div`
   margin-top: 4px;
@@ -46,19 +44,17 @@ const StyledAnswerLocationBoxImage = styled.div<{ imageSrc: string }>`
 `;
 
 export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) => {
-  // TODO: replace with useCase() hook
-  const matches = useMatch("/case/:caseId/*")?.params;
-  const caseId = Number(matches?.caseId);
+  const { focusedCaseId } = useAppStore();
   return (
     <StyledAnswerLocationBox>
       <div className="answer-location-box__text">
         <b>
-          <Link to={`/case/${caseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
+          <Link to={`/case/${focusedCaseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
           <span>
             {location.document.type === "pdf" ? (
               <>
                 <Link
-                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
                     location.document_content.sentence_number ?? location.document_content.sentence_start,
                     location.document_content.sentence_end
                   )}`}
@@ -75,7 +71,7 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
             {["audio", "video"].includes(location.document.type) ? (
               <>
                 <Link
-                  to={`/case/${caseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
                     location.document_content.sentence_number ?? location.document_content.sentence_start,
                     location.document_content.sentence_end
                   )}`}
@@ -96,10 +92,7 @@ export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) =>
 };
 
 export const QuestionAnswerBox = () => {
-  const matches = useMatch("/case/:caseId/*")?.params;
-  const caseId = Number(matches?.caseId);
-  const { data: highlights = [] } = useHighlights();
-  const { users } = useTeamStore();
+  const { focusedCaseId } = useAppStore();
   // --- answers state
   const [answer, setAnswer] = useState<{ answer?: string; locations?: TQueryLocation[] } | null>(null);
   const [isAnswerPending, setIsAnswerPending] = useState(false);
@@ -118,7 +111,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post(`${getGideonApiUrl()}/v1/queries/document-query`, {
-        case_id: caseId,
+        case_id: focusedCaseId,
         question: answerQuestion,
         index_type: "discovery",
       })
@@ -135,7 +128,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post(`${getGideonApiUrl()}/v1/queries/documents-locations`, {
-        case_id: caseId,
+        case_id: focusedCaseId,
         query: infoLocationQuestion,
         index_type: "discovery",
       })
@@ -152,7 +145,7 @@ export const QuestionAnswerBox = () => {
     setIsAnswerPending(true);
     return axios
       .post(`${getGideonApiUrl()}/v1/queries/highlights-query`, {
-        case_id: caseId,
+        case_id: focusedCaseId,
         query: highlightSearchQuery,
       })
       .then((res) => {
