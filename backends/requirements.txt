@@ -23,6 +23,7 @@ spacy-alignments==0.8.6
 spacy-legacy==3.0.10
 spacy-loggers==1.0.3
 spacy-transformers==1.1.8
+strawberry-graphql==0.151.0
 # SQLAlchemy==2.0.0b1 # https://github.com/sqlalchemy/sqlalchemy/issues/8631
 sqlalchemy==1.4.43
 transformers==4.19.4
