@@ -5,6 +5,7 @@ import { QueryClientProvider } from "react-query";
 import { queryClient } from "./data/queryClient";
 import { Gideon } from "./Gideon";
 import { ResetCSS } from "./components/ResetCSS";
+import "./data/axiosConfig";
 
 const App: React.FC = () => {
   return (
