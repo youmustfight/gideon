@@ -15,18 +15,31 @@ export const useWriting = (writingId: number | string) => {
 };
 
 // CREATE
-type TWritingCreateParams = {
+export type TWritingCreateParams = {
+  bodyHtml?: string;
+  bodyText?: string;
   caseId?: number;
   isTemplate: boolean;
+  name?: string;
   organizationId?: number;
 };
 
-const reqWritingPost = async ({ caseId, isTemplate, organizationId }: TWritingCreateParams): Promise<any> =>
+const reqWritingPost = async ({
+  bodyHtml,
+  bodyText,
+  caseId,
+  isTemplate,
+  name,
+  organizationId,
+}: TWritingCreateParams): Promise<any> =>
   axios
     .post(`${getGideonApiUrl()}/v1/writing`, {
       case_id: caseId,
       is_template: isTemplate,
       organization_id: organizationId,
+      body_html: bodyHtml,
+      name,
+      body_text: bodyText,
     })
     .then((res) => res.data.writing);
 

@@ -1,31 +1,64 @@
-import React from "react";
-import { Link, useMatch } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { useWritingCreate } from "../data/useWritingCreate";
+import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { useWritings } from "../data/useWritings";
 
-export const WritingsBox = () => {
-  const matches = useMatch("/case/:caseId/*");
-  const caseId = Number(matches?.params?.caseId);
-  const { data: writings } = useWritings(caseId);
-  const { mutateAsync: writingCreate } = useWritingCreate();
+type TWritingsBoxProps = {
+  caseId?: number;
+  isTemplate: boolean;
+  organizationId?: number;
+};
 
+export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, organizationId }) => {
+  const { data: writings } = useWritings({ caseId, isTemplate: isTemplate, organizationId });
+  const { data: writingsTemplates } = useWritings({ isTemplate: true, organizationId });
+  const { mutateAsync: writingCreate } = useWritingCreate();
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  // --- create helper
+  const onWritingCreate = (e) => {
+    e.preventDefault();
+    const writingParams: TWritingCreateParams = {
+      caseId,
+      isTemplate,
+      name: prompt(isTemplate ? "Template Name:" : "Writing File Name:") ?? "",
+      organizationId,
+    };
+    if (selectedTemplateId) {
+      const templateToUse = writingsTemplates?.find((wt) => Number(wt.id) === Number(selectedTemplateId));
+      writingParams.bodyHtml = templateToUse?.body_html;
+      writingParams.bodyText = templateToUse?.body_text;
+    }
+    writingCreate(writingParams);
+  };
+
+  // RENDER
   return (
-    <>
+    <div>
       <StyledWritingsBoxLead>
-        <h2>Writings</h2>
-        <button onClick={() => writingCreate({ caseId })}>+ Create</button>
+        <h2>{isTemplate ? "Templates" : "Writings"}</h2>
+        <form onSubmit={onWritingCreate}>
+          <select value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}>
+            <option value="">--- Without Template ---</option>
+            {writingsTemplates?.map((wt) => (
+              <option key={wt.id} value={wt.id}>
+                Template: {wt.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit">+ {isTemplate ? "Template" : "Writing"}</button>
+        </form>
       </StyledWritingsBoxLead>
       <StyledWritingsBox>
         {writings?.map((w) => (
           <div key={w.id} className="writings-box__writing">
             <p>
-              <Link to={`/case/${caseId}/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
+              <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
             </p>
           </div>
         ))}
       </StyledWritingsBox>
-    </>
+    </div>
   );
 };
 
@@ -33,8 +66,7 @@ const StyledWritingsBoxLead = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 4px;
+  margin: 20px 12px;
   h2 {
     font-size: 18px;
     font-weight: 900;
@@ -52,6 +84,7 @@ const StyledWritingsBoxLead = styled.div`
 `;
 
 const StyledWritingsBox = styled.div`
+  margin: 20px 12px;
   button {
     width: 100%;
   }

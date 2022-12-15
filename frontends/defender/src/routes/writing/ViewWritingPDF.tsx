@@ -1,14 +1,22 @@
-import React from "react";
-import { useMatch } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useWriting } from "../../data/useWriting";
 import { PdfPreview } from "../../components/PdfPreview";
 
 export const ViewWritingPDF = () => {
-  const { writingId } = useMatch("/writing/:writingId/pdf")?.params;
-  const { data: writing } = useWriting(writingId);
+  const navigate = useNavigate();
+  const params = useParams();
+  const writingId = Number(params.writingId);
+  const { data: writing, isSuccess: isSuccessWriting } = useWriting(writingId);
+  // ON MOUNT
+  // --- check if we have a writing
+  useEffect(() => {
+    if (!writingId || (isSuccessWriting && !writing)) navigate("/");
+  }, [writing, isSuccessWriting]);
+
   // RENDER
-  return (
+  return !writing ? null : (
     <StyledViewWritingPDF>
       <PdfPreview html={writing?.body_html} />
     </StyledViewWritingPDF>
