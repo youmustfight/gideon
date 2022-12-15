@@ -427,9 +427,12 @@ async def app_route_writings_get(request):
 async def app_route_writings_post(request):
     session = request.ctx.session
     writing_model = Writing(
+        body_html=request.json.get('body_html'),
+        body_text=request.json.get('body_text'),
         case_id=request.json.get('case_id'),
-        organization_id=request.json.get('organization_id'),
         is_template=request.json.get('is_template'),
+        name=request.json.get('name'),
+        organization_id=request.json.get('organization_id'),
     )
     session.add(writing_model)
     await session.commit()
