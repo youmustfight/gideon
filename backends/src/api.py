@@ -4,13 +4,14 @@ import logging
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
+from strawberry.sanic.views import GraphQLView
 import sqlalchemy as sa
-from sqlalchemy.orm import selectinload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from agents.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, Writing, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
@@ -214,7 +215,7 @@ async def app_route_document_get(request, document_id):
         document_json = document.serialize()
         document_json['content'] = list(map(map_content, document.content))
         document_json['files'] = serialize_list(document.files)
-    return json({ 'status': 'success', "document": document_json })
+    return json({ 'status': 'success', 'data': { 'document': document_json } })
 
 @app.route('/v1/document/<document_id>', methods = ['DELETE'])
 @auth_route
@@ -341,6 +342,34 @@ async def app_route_highlights(request):
     return json({ 'status': 'success', "highlights": highlights })
 
 
+# TODO: GRAPHQL
+# app.add_route(
+#     GraphQLView.as_view(schema=get_gql_schema(), graphiql=True),
+#     "/graphql",
+# )
+
+# ORGANIZATIONS
+@app.route('/v1/organizations', methods = ['GET'])
+@auth_route
+async def app_route_organizations(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_orgs = await session.execute(
+            sa.select(Organization)
+                .options(
+                    joinedload(Organization.users),
+                    joinedload(Organization.writing_templates)
+                ))
+        organizations_models = query_orgs.scalars().unique().all()
+        # organizations_json = serialize_list(organizations_models)
+        # TODO: FFS how do we serialize simply... keep getting async io errors
+        # https://github.com/n0nSmoker/SQLAlchemy-serializer
+        # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
+        # organizations_json = list(map(lambda o: o.to_dict(), organizations_models))
+        organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
+    return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
+
+
 # QUERIES
 @app.route('/v1/queries/document-query', methods = ['POST'])
 @auth_route
@@ -375,10 +404,20 @@ async def app_route_query_info_locations(request):
 async def app_route_writings_get(request):
     session = request.ctx.session
     async with session.begin():
-        query_writings = await session.execute(
-            sa.select(Writing)
-                .where(Writing.case_id == int(request.args.get('case_id')))
-                .order_by(sa.desc(Writing.id)))
+        query_builder = sa.select(Writing).order_by(sa.desc(Writing.id))
+        # --- filter for org or case related writing
+        if (request.args.get('case_id')):
+            query_builder = query_builder.where(Writing.case_id == int(request.args.get('case_id')))
+        elif (request.args.get('organization_id')):
+            query_builder = query_builder.where(Writing.organization_id == int(request.args.get('organization_id')))
+        # --- filter for templates
+        if (request.args.get('is_template')):
+            is_template_true = request.args.get('is_template') == 'true'
+            if (is_template_true):
+                query_builder= query_builder.where(Writing.is_template == True)
+            else:
+                query_builder= query_builder.where(sa.or_(Writing.is_template == False, Writing.is_template == None))
+        query_writings = await session.execute(query_builder)
         writings = query_writings.scalars().all()
         writings_json = serialize_list(writings)
     return json({ 'status': 'success', 'data': { 'writings': writings_json } })
@@ -388,7 +427,10 @@ async def app_route_writings_get(request):
 async def app_route_writings_post(request):
     session = request.ctx.session
     writing_model = Writing(
-        case_id=request.json.get('case_id'))
+        case_id=request.json.get('case_id'),
+        organization_id=request.json.get('organization_id'),
+        is_template=request.json.get('is_template'),
+    )
     session.add(writing_model)
     await session.commit()
     return json({ 'status': 'success' })

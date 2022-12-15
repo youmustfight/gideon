@@ -83,12 +83,23 @@ class Organization(BaseModel):
     cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
     writing_templates = relationship("Writing", back_populates="organization")
-    def serialize(self):
+    def serialize(self, serialize_relationships):
+        cases = None
+        users = None
+        writing_templates = None
+        # This shit breaks if we serialize a model without values
+        if 'cases' in serialize_relationships:
+            cases = serialize_list(self.cases)
+        if 'users' in serialize_relationships:
+            users = serialize_list(self.users)
+        if 'writing_templates' in serialize_relationships:
+            writing_templates = serialize_list(self.writing_templates)
         return {
             "id": self.id,
             "name": self.name,
-            # "cases": list(map(lambda cse: cse.serialize(), to_list(self.cases))),
-            # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
+            "cases": cases,
+            "users": users,
+            "writing_templates": writing_templates,
         }
 
 class Document(BaseModel):
@@ -119,6 +130,7 @@ class Document(BaseModel):
     def serialize(self):
         return {
             "id": self.id,
+            "case_id": self.case_id,
             "name": self.name,
             "type": self.type,
             "status_processing_files": self.status_processing_files,
