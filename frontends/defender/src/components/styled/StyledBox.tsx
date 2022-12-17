@@ -6,7 +6,7 @@ export const BoxWithRightSideButton = styled.div`
   align-items: center;
   background: white;
   border-radius: 4px;
-  margin: 4px 12px;
+  margin: 4px 0;
   padding: 12px;
   border: 1px solid #ddd;
   transition: 250ms;

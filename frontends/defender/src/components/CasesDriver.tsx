@@ -43,7 +43,9 @@ const StyledCasesDriver = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 24px 16px;
+    margin-top: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
     h2 {
       font-weight: 900;
       font-size: 20px;

@@ -88,7 +88,7 @@ const StyledWritingsBoxLead = styled.div`
 `;
 
 const StyledWritingsBox = styled.div`
-  margin: 20px 12px;
+  margin: 20px 4px;
   button {
     width: 100%;
   }
