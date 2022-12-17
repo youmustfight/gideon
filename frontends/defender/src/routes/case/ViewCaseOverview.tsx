@@ -1,53 +1,37 @@
 import React from "react";
 import styled from "styled-components";
+import { CaseFacts } from "../../components/CaseFacts";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
-import { HighlightsBox } from "../../components/HighlightsBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
-import { useHighlights } from "../../data/useHighlights";
+import { useAppStore } from "../../data/AppStore";
 
 export const ViewCaseOverview = () => {
-  const { data: highlights = [] } = useHighlights();
-  // RENDER
-  return (
-    <>
-      <StyledViewCaseOverview>
-        {/* WRITINGS */}
-        <section>
-          <WritingsBox />
-        </section>
+  const { focusedCaseId, focusedOrgId } = useAppStore();
 
-        {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-        <div className="section-lead">
-          <h4>Discovery, Evidence, Exhibits</h4>
-        </div>
-        <section>
-          <DiscoveryBox />
-        </section>
+  // RENDER (attaching key to force re-renders of child components, so we don't have lingering react-query data)
+  return !focusedCaseId ? null : (
+    <StyledViewCaseOverview key={focusedCaseId}>
+      {/* WRITINGS */}
+      <section>
+        <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
+      </section>
 
-        {/* TODO: MY DOCS */}
+      {/* CASE FACTS */}
+      <section>
+        <CaseFacts caseId={focusedCaseId} />
+      </section>
 
-        {/* SUMMATION (timeline w/ summaries) */}
-        <div className="section-lead">
-          <h4>Timeline Summary</h4>
-        </div>
-        <section>
-          <TimelineSummary />
-        </section>
+      {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
+      <section>
+        <DiscoveryBox caseId={focusedCaseId} />
+      </section>
 
-        {/* HIGHLIGHTS/ANNOTATIONS */}
-        {highlights?.length > 0 ? (
-          <>
-            <div className="section-lead">
-              <h4>Highlights</h4>
-            </div>
-            <section>
-              <HighlightsBox />
-            </section>
-          </>
-        ) : null}
-      </StyledViewCaseOverview>
-    </>
+      {/* SUMMATION (timeline w/ summaries) */}
+      <section>
+        <TimelineSummary caseId={focusedCaseId} />
+      </section>
+    </StyledViewCaseOverview>
   );
 };
 

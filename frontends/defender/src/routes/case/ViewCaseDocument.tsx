@@ -5,8 +5,7 @@ import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { TimelineSummary } from "../../components/TimelineSummary";
-import { reqDocumentSummarize, useDocument } from "../../data/useDocument";
-import { reqDocumentDelete } from "../../data/useDocumentDelete";
+import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { TDocument } from "../../data/useDocuments";
 
 const DocumentViewImage = styled.div<{ imageSrc: string }>`
@@ -157,8 +156,10 @@ const StyledDocumentViewTranscript = styled.div`
 export const ViewCaseDocument = () => {
   const navigate = useNavigate();
   // @ts-ignore
-  const { caseId, documentId } = useMatch("/case/:caseId/document/:documentId")?.params;
-  const { data: document } = useDocument(documentId);
+  const params = useMatch("/case/:caseId/document/:documentId")?.params;
+  const caseId = Number(params?.caseId);
+  const documentId = Number(params?.documentId);
+  const { data: document, isFetched: isFetchedDocument } = useDocument(documentId);
   // const {mutateAsync: updateDocument} = useDocumentUpdate();
   // --- highlights
   // const { data: highlights = [] } = useHighlights();
@@ -170,6 +171,16 @@ export const ViewCaseDocument = () => {
     await reqDocumentDelete(documentId);
     navigate(`/case/${caseId}`);
   };
+
+  // ON MOUNT
+  // --- check if document exists
+  useEffect(() => {
+    if (!document && isFetchedDocument) navigate(`/case/${caseId}`);
+  }, [document, isFetchedDocument]);
+  // --- check if in case/document match
+  useEffect(() => {
+    if (document && document.case_id !== caseId) navigate(`/case/${caseId}`);
+  }, [document]);
 
   // RENDER
   return !document ? null : (
@@ -227,7 +238,7 @@ export const ViewCaseDocument = () => {
             <h4>Timeline/Events</h4>
           </div>
           <section className="no-shadow">
-            <TimelineSummary documentId={document.id} />
+            <TimelineSummary caseId={caseId} documentId={document.id} />
           </section>
         </>
       ) : null}

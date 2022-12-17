@@ -1,5 +1,5 @@
 from pydash import to_list
-from sqlalchemy import JSON, Column, DateTime, Integer, ForeignKey, String, Table, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, ForeignKey, String, Table, Text
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 import uuid
@@ -58,6 +58,32 @@ class User(BaseModel):
             # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
         }
 
+class Organization(BaseModel):
+    __tablename__ = "organization"
+    id = Column(Integer, primary_key=True)
+    name = Column(Text())
+    cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
+    users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
+    writing_templates = relationship("Writing", back_populates="organization")
+    def serialize(self, serialize_relationships):
+        cases = None
+        users = None
+        writing_templates = None
+        # This shit breaks if we serialize a model without values
+        if 'cases' in serialize_relationships:
+            cases = serialize_list(self.cases)
+        if 'users' in serialize_relationships:
+            users = serialize_list(self.users)
+        if 'writing_templates' in serialize_relationships:
+            writing_templates = serialize_list(self.writing_templates)
+        return {
+            "id": self.id,
+            "name": self.name,
+            "cases": cases,
+            "users": users,
+            "writing_templates": writing_templates,
+        }
+
 class Case(BaseModel):
     __tablename__ = "case"
     id = Column(Integer, primary_key=True)
@@ -67,6 +93,7 @@ class Case(BaseModel):
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
     writings = relationship("Writing", back_populates="case")
+    case_facts = relationship("CaseFact", back_populates="case")
     ai_action_locks = relationship("AIActionLock", back_populates="case")
     def serialize(self):
         return {
@@ -76,18 +103,17 @@ class Case(BaseModel):
             # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
         }
 
-class Organization(BaseModel):
-    __tablename__ = "organization"
+class CaseFact(BaseModel):
+    __tablename__ = "case_fact"
     id = Column(Integer, primary_key=True)
-    name = Column(Text())
-    cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
-    users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="case_facts")
+    text = Column(Text())
     def serialize(self):
         return {
             "id": self.id,
-            "name": self.name,
-            # "cases": list(map(lambda cse: cse.serialize(), to_list(self.cases))),
-            # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
+            "case_id": self.case_id,
+            "text": self.text
         }
 
 class Document(BaseModel):
@@ -118,6 +144,7 @@ class Document(BaseModel):
     def serialize(self):
         return {
             "id": self.id,
+            "case_id": self.case_id,
             "name": self.name,
             "type": self.type,
             "status_processing_files": self.status_processing_files,
@@ -228,13 +255,22 @@ class Writing(BaseModel):
     id = Column(Integer, primary_key=True)
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="writings")
+    organization_id = Column(Integer, ForeignKey("organization.id"))
+    organization = relationship("Organization", back_populates="writing_templates")
     name = Column(Text())
+    is_template = Column(Boolean())
     body_html = Column(Text())
     body_text = Column(Text())
+    generated_body_html = Column(Text())
+    generated_body_text = Column(Text())
+    forked_writing_id = Column(Integer, ForeignKey("writing.id"))
+    created_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,
             "case_id": self.case_id,
+            "organization_id": self.organization_id,
+            "is_template": self.is_template,
             "name": self.name,
             "body_html": self.body_html,
             "body_text": self.body_text,

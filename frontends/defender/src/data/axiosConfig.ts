@@ -1,8 +1,7 @@
 /* eslint-env browser */
 import axios from "axios";
 import * as Env from "../env";
-
-export const LOCAL_STORAGE_KEY_API_TOKEN = "Gideon:apiToken";
+import { LOCAL_STORAGE_KEY_API_TOKEN } from "./localStorageKeys";
 
 axios.defaults.baseURL = Env.getGideonApiUrl();
 

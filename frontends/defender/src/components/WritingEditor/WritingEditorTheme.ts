@@ -121,14 +121,14 @@ export const StyledWritingEditorCSS = createGlobalStyle`
     }
   
     .editor-input {
-      min-height: 150px;
+      min-height: 450px;
       resize: none;
       font-size: 15px;
       caret-color: rgb(5, 5, 5);
       position: relative;
       tab-size: 1;
       outline: 0;
-      padding: 15px 10px;
+      padding: 32px;
       caret-color: #444;
     }
   
@@ -137,8 +137,8 @@ export const StyledWritingEditorCSS = createGlobalStyle`
       overflow: hidden;
       position: absolute;
       text-overflow: ellipsis;
-      top: 15px;
-      left: 10px;
+      top: 32px;
+      left: 32px;
       font-size: 15px;
       user-select: none;
       display: inline-block;

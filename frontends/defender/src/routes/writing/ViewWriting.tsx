@@ -1,23 +1,31 @@
-import { useState } from "react";
-import { Link, useMatch, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useDebounce } from "react-use";
 import { WritingEditor } from "../../components/WritingEditor/WritingEditor";
-import { useWriting } from "../../data/useWriting";
-import { reqWritingDelete } from "../../data/useWritingDelete";
-import { useWritingUpdate } from "../../data/useWritingUpdate";
+import { useWriting, useWritingDelete, useWritingUpdate } from "../../data/useWriting";
 import styled from "styled-components";
 
-export const ViewCaseWriting = () => {
+type TViewWritingProps = {
+  caseId?: number;
+};
+
+export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
   const navigate = useNavigate();
-  const { caseId, writingId } = useMatch("/case/:caseId/writing/:writingId")?.params;
-  const { data: writing } = useWriting(writingId);
+  const params = useParams();
+  const writingId = Number(params.writingId);
+  const { data: writing, isSuccess: isSuccessWriting } = useWriting(writingId);
   const { mutateAsync: writingUpdate } = useWritingUpdate();
+  const { mutateAsync: writingDelete, isIdle: isIdleDelete } = useWritingDelete();
+
+  // ON MOUNT
+  // --- check if writing exists
+  useEffect(() => {
+    if (!writingId || (isSuccessWriting && !writing)) navigate("/");
+  }, [writing, isSuccessWriting]);
   // --- deletion
-  const [isDeleting, setIsDeleting] = useState(false);
   const deleteHandler = async () => {
-    setIsDeleting(true);
-    await reqWritingDelete(writingId);
-    navigate(`/case/${writing?.case_id}`);
+    await writingDelete(writingId);
+    navigate(caseId ? `/case/${writing?.case_id}` : "/cases");
   };
   // --- writing props
   const [writingName, setWritingName] = useState(writing?.name);
@@ -32,10 +40,10 @@ export const ViewCaseWriting = () => {
 
   // RENDER
   return !writing ? null : (
-    <StyledViewCaseWriting>
+    <StyledViewWriting>
       {/* HEAD */}
       <div className="writing-header">
-        <Link to={`/case/${caseId}`}>
+        <Link to={caseId ? `/case/${caseId}` : "/cases"}>
           <button>←</button>
         </Link>
         <input
@@ -45,9 +53,7 @@ export const ViewCaseWriting = () => {
           onChange={(e) => setWritingName(e.target.value)}
         />
         <button>
-          <a href={`/writing/${writingId}/pdf`} target="_blank">
-            Preview PDF
-          </a>
+          <Link to={`/writing/${writingId}/pdf`}>Preview PDF</Link>
         </button>
       </div>
 
@@ -58,15 +64,15 @@ export const ViewCaseWriting = () => {
       <br />
       <br />
       <section>
-        <button disabled={isDeleting} onClick={deleteHandler} style={{ width: "100%" }}>
+        <button disabled={!isIdleDelete} onClick={deleteHandler} style={{ width: "100%" }}>
           Delete Writing
         </button>
       </section>
-    </StyledViewCaseWriting>
+    </StyledViewWriting>
   );
 };
 
-export const StyledViewCaseWriting = styled.div`
+export const StyledViewWriting = styled.div`
   .writing-title {
     text-align: center;
     padding: 20px 0 6px;

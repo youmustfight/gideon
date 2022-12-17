@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import styled from "styled-components";
-import { useHighlightStore } from "../../data/HighlightStore";
-import { useTeamStore } from "../../data/TeamStore";
+import { useHighlightStore } from "../../data/deprecated/HighlightStore";
+import { useAppStore } from "../../data/AppStore";
 import { TDocument, TDocumentSentenceTextVector } from "../../data/useDocuments";
-import { useHighlights } from "../../data/useHighlights";
+import { useHighlights } from "../../data/deprecated/useHighlights";
 
 const SentenceTextVector = ({
   document,
@@ -16,7 +16,7 @@ const SentenceTextVector = ({
   textVector: TDocumentSentenceTextVector;
   textVectorIndex: number;
 }) => {
-  const { currentUser } = useTeamStore();
+  const { currentUser } = useAppStore();
   const { data: highlights } = useHighlights();
   // SETUP
   const [isHovering, setIsHovering] = useState(false);

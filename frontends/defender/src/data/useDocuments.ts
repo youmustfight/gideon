@@ -34,6 +34,7 @@ export type TFile = {
 export type TDocument = {
   // v2 (now with a database/orm)
   id: number;
+  case_id: number;
   name?: string;
   type: "audio" | "image" | "pdf" | "video";
   status_processing_files?: "queued" | "completed";
@@ -79,7 +80,7 @@ const reqDocumentsGet = async (caseId: number): Promise<TDocument[]> =>
   axios.get(`${getGideonApiUrl()}/v1/documents`, { params: { case_id: caseId } }).then((res) => res.data.documents);
 
 export const useDocuments = (caseId: number) => {
-  return useQuery<TDocument[]>(["documents"], async () => reqDocumentsGet(caseId), {
+  return useQuery<TDocument[]>(["documents", caseId], async () => reqDocumentsGet(caseId), {
     refetchInterval: 1000 * 15,
   });
 };

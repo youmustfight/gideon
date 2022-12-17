@@ -25,10 +25,10 @@ export const CAPCaseLawDriver: React.FC = () => {
 };
 
 const StyledCAPCaseLawDriver = styled.div`
-  background: white;
-  border-radius: 4px;
-  margin: 12px;
-  padding: 12px;
+  // background: white;
+  // border-radius: 4px;
+  margin: 12px 0;
+  // padding: 12px;
   select {
     width: 100%;
   }

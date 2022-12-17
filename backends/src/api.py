@@ -4,13 +4,14 @@ import logging
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
+from strawberry.sanic.views import GraphQLView
 import sqlalchemy as sa
-from sqlalchemy.orm import selectinload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from agents.generate_ai_action_locks import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, Document, DocumentContent, File, Writing, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, CaseFact, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
@@ -27,6 +28,7 @@ from indexers.utils.index_document_prep import index_document_prep
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
 from queries.utils.serialize_location import serialize_location
+from queries.write_template_with_ai import write_template_with_ai
 from queues import indexing_queue
 
 # INIT
@@ -178,6 +180,68 @@ async def app_route_case_post(request):
     return json({ 'status': 'success', "case": { "id": case_to_insert.id } })
 
 
+# CASE FACTS
+@app.route('/v1/case_facts', methods = ['GET'])
+@auth_route
+async def app_route_case_facts_get(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_builder = sa.select(CaseFact).order_by(sa.desc(CaseFact.id))
+        # --- filter for org or case related case_fact
+        if (request.args.get('case_id')):
+            query_builder = query_builder.where(CaseFact.case_id == int(request.args.get('case_id')))
+        query_case_facts = await session.execute(query_builder)
+        case_facts = query_case_facts.scalars().all()
+        case_facts_json = serialize_list(case_facts)
+    return json({ 'status': 'success', 'data': { 'case_facts': case_facts_json } })
+
+@app.route('/v1/case_fact/<case_fact_id>', methods = ['GET'])
+@auth_route
+async def app_route_case_fact_get(request, case_fact_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_case_fact = await session.execute(
+            sa.select(CaseFact).where(CaseFact.id == int(case_fact_id)))
+        case_fact = query_case_fact.scalar_one_or_none()
+        case_fact_json = case_fact.serialize()
+    return json({ 'status': 'success', "case_fact": case_fact_json })
+
+@app.route('/v1/case_fact', methods = ['POST'])
+@auth_route
+async def app_route_case_facts_post(request):
+    session = request.ctx.session
+    case_fact_model = CaseFact(
+        case_id=request.json.get('case_id'),
+    )
+    session.add(case_fact_model)
+    await session.commit()
+    return json({ 'status': 'success', })
+
+@app.route('/v1/case_fact/<case_fact_id>', methods = ['PUT'])
+@auth_route
+async def app_route_case_fact_put(request, case_fact_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_case_fact = await session.execute(
+            sa.select(CaseFact).where(CaseFact.id == int(case_fact_id)))
+        case_fact = query_case_fact.scalars().one()
+        # TODO: make better lol
+        if (request.json.get('case_fact').get('text')):
+            case_fact.text = request.json['case_fact']['text']
+        session.add(case_fact)
+    return json({ 'status': 'success' })
+
+@app.route('/v1/case_fact/<case_fact_id>', methods = ['DELETE'])
+@auth_route
+async def app_route_case_fact_delete(request, case_fact_id):
+    session = request.ctx.session
+    async with session.begin():
+        # --- case_fact
+        await session.execute(sa.delete(CaseFact)
+            .where(CaseFact.id == int(case_fact_id)))
+    return json({ 'status': 'success' })
+
+
 # CASELAW
 @app.route('/v1/cap/caselaw/index', methods = ['POST'])
 @auth_route
@@ -214,7 +278,7 @@ async def app_route_document_get(request, document_id):
         document_json = document.serialize()
         document_json['content'] = list(map(map_content, document.content))
         document_json['files'] = serialize_list(document.files)
-    return json({ 'status': 'success', "document": document_json })
+    return json({ 'status': 'success', 'data': { 'document': document_json } })
 
 @app.route('/v1/document/<document_id>', methods = ['DELETE'])
 @auth_route
@@ -341,6 +405,34 @@ async def app_route_highlights(request):
     return json({ 'status': 'success', "highlights": highlights })
 
 
+# TODO: GRAPHQL
+# app.add_route(
+#     GraphQLView.as_view(schema=get_gql_schema(), graphiql=True),
+#     "/graphql",
+# )
+
+# ORGANIZATIONS
+@app.route('/v1/organizations', methods = ['GET'])
+@auth_route
+async def app_route_organizations(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_orgs = await session.execute(
+            sa.select(Organization)
+                .options(
+                    joinedload(Organization.users),
+                    joinedload(Organization.writing_templates)
+                ))
+        organizations_models = query_orgs.scalars().unique().all()
+        # organizations_json = serialize_list(organizations_models)
+        # TODO: FFS how do we serialize simply... keep getting async io errors
+        # https://github.com/n0nSmoker/SQLAlchemy-serializer
+        # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
+        # organizations_json = list(map(lambda o: o.to_dict(), organizations_models))
+        organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
+    return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
+
+
 # QUERIES
 @app.route('/v1/queries/document-query', methods = ['POST'])
 @auth_route
@@ -375,23 +467,23 @@ async def app_route_query_info_locations(request):
 async def app_route_writings_get(request):
     session = request.ctx.session
     async with session.begin():
-        query_writings = await session.execute(
-            sa.select(Writing)
-                .where(Writing.case_id == int(request.args.get('case_id')))
-                .order_by(sa.desc(Writing.id)))
+        query_builder = sa.select(Writing).order_by(sa.desc(Writing.id))
+        # --- filter for org or case related writing
+        if (request.args.get('case_id')):
+            query_builder = query_builder.where(Writing.case_id == int(request.args.get('case_id')))
+        elif (request.args.get('organization_id')):
+            query_builder = query_builder.where(Writing.organization_id == int(request.args.get('organization_id')))
+        # --- filter for templates
+        if (request.args.get('is_template')):
+            is_template_true = request.args.get('is_template') == 'true'
+            if (is_template_true):
+                query_builder= query_builder.where(Writing.is_template == True)
+            else:
+                query_builder= query_builder.where(sa.or_(Writing.is_template == False, Writing.is_template == None))
+        query_writings = await session.execute(query_builder)
         writings = query_writings.scalars().all()
         writings_json = serialize_list(writings)
     return json({ 'status': 'success', 'data': { 'writings': writings_json } })
-
-@app.route('/v1/writing', methods = ['POST'])
-@auth_route
-async def app_route_writings_post(request):
-    session = request.ctx.session
-    writing_model = Writing(
-        case_id=request.json.get('case_id'))
-    session.add(writing_model)
-    await session.commit()
-    return json({ 'status': 'success' })
 
 @app.route('/v1/writing/<writing_id>', methods = ['GET'])
 @auth_route
@@ -403,6 +495,42 @@ async def app_route_writing_get(request, writing_id):
         writing = query_writing.scalar_one_or_none()
         writing_json = writing.serialize()
     return json({ 'status': 'success', "writing": writing_json })
+
+@app.route('/v1/writing', methods = ['POST'])
+@auth_route
+async def app_route_writings_post(request):
+    session = request.ctx.session
+    writing_model = Writing(
+        body_html=request.json.get('body_html'),
+        body_text=request.json.get('body_text'),
+        case_id=request.json.get('case_id'),
+        is_template=request.json.get('is_template'),
+        name=request.json.get('name'),
+        organization_id=request.json.get('organization_id'),
+        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
+    )
+    session.add(writing_model)
+    await session.commit()
+    return json({ 'status': 'success' })
+
+@app.route('/v1/writing/ai', methods = ['POST'])
+@auth_route
+async def app_route_writings_post_ai(request):
+    session = request.ctx.session
+    # setup writing model
+    writing_model = Writing(
+        case_id=request.json.get('case_id'),
+        is_template=request.json.get('is_template'),
+        name=request.json.get('name'),
+        organization_id=request.json.get('organization_id'),
+        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
+    )
+    # pass it to ai writer
+    updated_writing_model = await write_template_with_ai(session, writing_model)
+    # save
+    session.add(updated_writing_model)
+    await session.commit()
+    return json({ 'status': 'success' })
 
 @app.route('/v1/writing/<writing_id>', methods = ['PUT'])
 @auth_route
