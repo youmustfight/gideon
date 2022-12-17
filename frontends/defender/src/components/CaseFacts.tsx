@@ -2,22 +2,47 @@ import React, { useState } from "react";
 import { useDebounce } from "react-use";
 import styled from "styled-components";
 import { useCaseFactCreate, useCaseFactDelete, useCaseFacts, useCaseFactUpdate } from "../data/useCaseFact";
+import { TQueryLocation } from "../data/useDocuments";
+import { reqQueryDocumentLocations } from "../data/useQueryAI";
+import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
+import { LocationBox } from "./LocationBox";
 import { SlimBox } from "./styled/StyledBox";
 
 const CaseFactBox = ({ caseFact, caseId }) => {
   const [newCaseFactText, setNewCaseFactText] = useState(caseFact.text ?? "");
+  const [caseFactLocations, setCaseFactLocations] = useState<TQueryLocation[]>();
   const { mutateAsync: caseFactUpdate } = useCaseFactUpdate();
   const { mutateAsync: caseFactDelete } = useCaseFactDelete();
   useDebounce(() => caseFactUpdate({ id: caseFact.id, caseId, text: newCaseFactText }), 1000 * 2, [newCaseFactText]);
 
   // RENDER
   return (
-    <SlimBox>
-      <input value={newCaseFactText} onChange={(e) => setNewCaseFactText(e.target.value)} style={{ width: "100%" }} />
-      <div>
-        <button onClick={() => caseFactDelete(caseFact.id)}>Delete</button>
+    <StyledCaseFactSlimBox>
+      <div style={{ display: "flex", width: "100%" }}>
+        <input value={newCaseFactText} onChange={(e) => setNewCaseFactText(e.target.value)} style={{ width: "100%" }} />
+        <div style={{ display: "flex" }}>
+          <button
+            onClick={() =>
+              reqQueryDocumentLocations({ caseId, query: caseFact.text }).then(({ locations }) =>
+                setCaseFactLocations(locations)
+              )
+            }
+          >
+            Find&nbsp;Refs
+          </button>
+          <ConfirmDeleteButton prompts={["Delete", "Yes Delete"]} onClick={() => caseFactDelete(caseFact.id)} />
+        </div>
       </div>
-    </SlimBox>
+      {caseFactLocations && (
+        <>
+          <hr />
+          <button onClick={() => setCaseFactLocations(undefined)}>Clear References Search</button>
+          {caseFactLocations?.map((location) => (
+            <LocationBox location={location} />
+          ))}
+        </>
+      )}
+    </StyledCaseFactSlimBox>
   );
 };
 
@@ -53,3 +78,10 @@ const StyledCaseFactsBoxLead = styled.div`
   }
 `;
 const StyledCaseFactsBox = styled.div``;
+
+const StyledCaseFactSlimBox = styled(SlimBox)`
+  flex-direction: column;
+  hr {
+    width: 100%;
+  }
+`;
