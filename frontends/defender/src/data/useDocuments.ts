@@ -60,7 +60,6 @@ export type TDocument = {
   // event_timeline: string[];
   // filename: string;
   // format: "audio" | "pdf";
-  // index_type: string;
   // mentions_cases_laws: string[];
   // mentions_organizations: string[];
   // mentions_people: string[];
@@ -73,6 +72,7 @@ export type TQueryLocation = {
   document: TDocument;
   document_content: TDocumentContent;
   image_file?: TFile;
+  case_id?: number;
 };
 
 // Filters for user via forUser

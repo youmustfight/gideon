@@ -72,7 +72,6 @@ export const reqWritingDelete = async (writingId: number | string): Promise<void
 export const useWritingDelete = () =>
   useMutation(async (writingId: number) => reqWritingDelete(writingId), {
     onSuccess: () => {
-      queryClient.invalidateQueries(["writing"]);
       queryClient.invalidateQueries(["writings"]);
     },
   });

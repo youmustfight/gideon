@@ -16,26 +16,19 @@ export const QuestionAnswerBox = () => {
   // --- answers
   const [answerQuestion, setAnswerQuestion] = useState("");
   const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
-  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
-  const [userToSummarize, setUserToSummarize] = useState("");
-  const [userOneToContrast, setUserOneToContrast] = useState("");
-  const [userTwoToContrast, setUserTwoToContrast] = useState("");
   // --- q1 : Ask Question
   // @ts-ignore
   const handleQuestion = (e) => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/document-query`, {
-        case_id: focusedCaseId,
-        question: answerQuestion,
-        index_type: "discovery",
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.data.answer, locations: res.data.data.locations });
-        setIsAnswerPending(false);
-      });
+    return reqQueryDocument({
+      caseId: focusedCaseId,
+      query: answerQuestion,
+    }).then(({ answer, locations }) => {
+      setAnswer({ answer, locations });
+      setIsAnswerPending(false);
+    });
   };
   // --- q2 : Search for Detail
   // @ts-ignore
@@ -43,33 +36,10 @@ export const QuestionAnswerBox = () => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/documents-locations`, {
-        case_id: focusedCaseId,
-        query: infoLocationQuestion,
-        index_type: "discovery",
-      })
-      .then((res) => {
-        setAnswer({ locations: res.data.data.locations });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q3 : Search Highlights
-  // @ts-ignore
-  const handleHighlightSearch = (e) => {
-    e.preventDefault();
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/highlights-query`, {
-        case_id: focusedCaseId,
-        query: highlightSearchQuery,
-      })
-      .then((res) => {
-        // @ts-ignore
-        setAnswer({ highlights: res.data.highlights });
-        setIsAnswerPending(false);
-      });
+    return reqQueryDocumentLocations({ caseId: focusedCaseId, query: infoLocationQuestion }).then(({ locations }) => {
+      setAnswer({ locations });
+      setIsAnswerPending(false);
+    });
   };
 
   // RENDER
