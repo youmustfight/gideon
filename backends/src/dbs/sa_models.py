@@ -58,24 +58,6 @@ class User(BaseModel):
             # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
         }
 
-class Case(BaseModel):
-    __tablename__ = "case"
-    id = Column(Integer, primary_key=True)
-    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
-    name = Column(Text())
-    organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
-    users = relationship("User", secondary=case_user_junction, back_populates="cases")
-    documents = relationship("Document", back_populates="case")
-    writings = relationship("Writing", back_populates="case")
-    ai_action_locks = relationship("AIActionLock", back_populates="case")
-    def serialize(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
-            # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
-        }
-
 class Organization(BaseModel):
     __tablename__ = "organization"
     id = Column(Integer, primary_key=True)
@@ -100,6 +82,38 @@ class Organization(BaseModel):
             "cases": cases,
             "users": users,
             "writing_templates": writing_templates,
+        }
+
+class Case(BaseModel):
+    __tablename__ = "case"
+    id = Column(Integer, primary_key=True)
+    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
+    name = Column(Text())
+    organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
+    users = relationship("User", secondary=case_user_junction, back_populates="cases")
+    documents = relationship("Document", back_populates="case")
+    writings = relationship("Writing", back_populates="case")
+    case_facts = relationship("CaseFact", back_populates="case")
+    ai_action_locks = relationship("AIActionLock", back_populates="case")
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
+            # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
+        }
+
+class CaseFact(BaseModel):
+    __tablename__ = "case_fact"
+    id = Column(Integer, primary_key=True)
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="case_facts")
+    text = Column(Text())
+    def serialize(self):
+        return {
+            "id": self.id,
+            "case_id": self.case_id,
+            "text": self.text
         }
 
 class Document(BaseModel):
@@ -247,6 +261,9 @@ class Writing(BaseModel):
     is_template = Column(Boolean())
     body_html = Column(Text())
     body_text = Column(Text())
+    generated_body_html = Column(Text())
+    generated_body_text = Column(Text())
+    forked_writing_id = Column(Integer, ForeignKey("writing.id"))
     created_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
