@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { useWritings } from "../data/useWritings";
+import { SlimBox } from "./styled/StyledBox";
 
 type TWritingsBoxProps = {
   caseId?: number;
@@ -16,20 +17,20 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
   const { mutateAsync: writingCreate } = useWritingCreate();
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   // --- create helper
-  const onWritingCreate = (e) => {
-    e.preventDefault();
+  const onWritingCreate = (runAIWriter: boolean) => {
     const writingParams: TWritingCreateParams = {
       caseId,
       isTemplate,
       name: prompt(isTemplate ? "Template Name:" : "Writing File Name:") ?? "",
       organizationId,
+      forkedWritingId: selectedTemplateId ? Number(selectedTemplateId) : undefined,
     };
     if (selectedTemplateId) {
       const templateToUse = writingsTemplates?.find((wt) => Number(wt.id) === Number(selectedTemplateId));
       writingParams.bodyHtml = templateToUse?.body_html;
       writingParams.bodyText = templateToUse?.body_text;
     }
-    writingCreate(writingParams);
+    writingCreate({ params: writingParams, runAIWriter });
   };
 
   // RENDER
@@ -37,7 +38,7 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
     <div>
       <StyledWritingsBoxLead>
         <h2>{isTemplate ? "Templates" : "Writings"}</h2>
-        <form onSubmit={onWritingCreate}>
+        <div>
           <select value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}>
             <option value="">--- Without Template ---</option>
             {writingsTemplates?.map((wt) => (
@@ -46,16 +47,17 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
               </option>
             ))}
           </select>
-          <button type="submit">+ {isTemplate ? "Template" : "Writing"}</button>
-        </form>
+          <button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ Add"}</button>
+          {!isTemplate && <button onClick={() => onWritingCreate(true)}>+ Fill with AI</button>}
+        </div>
       </StyledWritingsBoxLead>
       <StyledWritingsBox>
         {writings?.map((w) => (
-          <div key={w.id} className="writings-box__writing">
+          <SlimBox key={w.id}>
             <p>
               <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
             </p>
-          </div>
+          </SlimBox>
         ))}
       </StyledWritingsBox>
     </div>
@@ -66,7 +68,9 @@ const StyledWritingsBoxLead = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 20px 12px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  padding: 4px;
   h2 {
     font-size: 18px;
     font-weight: 900;
@@ -87,19 +91,5 @@ const StyledWritingsBox = styled.div`
   margin: 20px 12px;
   button {
     width: 100%;
-  }
-  .writings-box__writing {
-    background: white;
-    border-radius: 4px;
-    padding: 8px 12px 8px;
-    margin: 4px 0;
-    display: flex;
-    justify-content: space-between;
-    &.processing {
-      opacity: 0.5;
-      text-align: center;
-      margin-bottom: 6px;
-      margin-top: 0;
-    }
   }
 `;

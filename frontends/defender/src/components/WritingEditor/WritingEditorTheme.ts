@@ -137,8 +137,8 @@ export const StyledWritingEditorCSS = createGlobalStyle`
       overflow: hidden;
       position: absolute;
       text-overflow: ellipsis;
-      top: 15px;
-      left: 10px;
+      top: 32px;
+      left: 32px;
       font-size: 15px;
       user-select: none;
       display: inline-block;

@@ -4,9 +4,8 @@ import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { useDocuments } from "../data/useDocuments";
 
-export const TimelineSummary: React.FC<{ documentId?: number }> = ({ documentId }) => {
-  const { focusedCaseId } = useAppStore();
-  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments(focusedCaseId);
+export const TimelineSummary: React.FC<{ documentId?: number; caseId: number }> = ({ documentId, caseId }) => {
+  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments(caseId);
   const documentIdMap = keyBy(documents, "id");
 
   // RENDER
@@ -28,7 +27,7 @@ export const TimelineSummary: React.FC<{ documentId?: number }> = ({ documentId 
                   <b>{date}</b>
                 </td>
                 <td className="timeline-summary__td-doc">
-                  <Link to={`/case/${focusedCaseId}/document/${documentId}`}>
+                  <Link to={`/case/${caseId}/document/${documentId}`}>
                     {documentIdMap[documentId].name?.slice(0, 24)}...
                   </Link>
                 </td>

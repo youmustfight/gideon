@@ -22,34 +22,36 @@ export type TWritingCreateParams = {
   isTemplate: boolean;
   name?: string;
   organizationId?: number;
+  forkedWritingId?: number;
 };
 
-const reqWritingPost = async ({
-  bodyHtml,
-  bodyText,
-  caseId,
-  isTemplate,
-  name,
-  organizationId,
-}: TWritingCreateParams): Promise<any> =>
+const reqWritingPost = async (
+  { bodyHtml, bodyText, caseId, forkedWritingId, isTemplate, name, organizationId }: TWritingCreateParams,
+  runAIWriter: boolean
+): Promise<any> =>
   axios
-    .post(`${getGideonApiUrl()}/v1/writing`, {
-      case_id: caseId,
-      is_template: isTemplate,
-      organization_id: organizationId,
+    .post(runAIWriter ? `${getGideonApiUrl()}/v1/writing/ai` : `${getGideonApiUrl()}/v1/writing`, {
       body_html: bodyHtml,
-      name,
       body_text: bodyText,
+      case_id: caseId,
+      forked_writing_id: forkedWritingId,
+      is_template: isTemplate,
+      name,
+      organization_id: organizationId,
     })
     .then((res) => res.data.writing);
 
 export const useWritingCreate = () =>
-  useMutation(async (params: TWritingCreateParams) => reqWritingPost(params), {
-    onSuccess: () => {
-      queryClient.invalidateQueries(["writing"]);
-      queryClient.invalidateQueries(["writings"]);
-    },
-  });
+  useMutation(
+    async ({ params, runAIWriter }: { params: TWritingCreateParams; runAIWriter: boolean }) =>
+      reqWritingPost(params, runAIWriter),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(["writing"]);
+        queryClient.invalidateQueries(["writings"]);
+      },
+    }
+  );
 
 // UPDATE
 const reqWritingPut = async (writing: any): Promise<TWriting> =>
