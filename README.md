@@ -35,10 +35,6 @@ Want to deploy some changes for others to use?
   - `bash manage.sh local migrate-app rollback`
   - `bash manage.sh production migrate-app head`
 
-### Gotcha's Currently
-
-- Running Sanic with multiple workers/dev doesn't work in a docker container. Restart the API after changes have been made by typing in a separate shell `docker-compose restart api`. You can keep the cluster running.
-
 ---
 
 ![](./ops/ai-library-2.png)
