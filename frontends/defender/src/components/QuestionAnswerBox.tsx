@@ -1,95 +1,12 @@
 import axios from "axios";
 import { orderBy } from "lodash";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { TQueryLocation } from "../data/useDocuments";
+import { reqQueryDocument, reqQueryDocumentLocations } from "../data/useQueryAI";
 import { getGideonApiUrl } from "../env";
-import { formatSecondToTime } from "./formatSecondToTime";
-import { formatHashForSentenceHighlight } from "./hashUtils";
-
-const StyledAnswerLocationBox = styled.div`
-  margin-top: 4px;
-  min-height: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  background: white;
-  padding: 8px;
-  border-radius: 6px;
-  & > div.answer-location-box__text {
-    flex-grow: 1;
-    b {
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
-    }
-    p {
-      margin: 8px 0 0;
-    }
-  }
-`;
-
-const StyledAnswerLocationBoxImage = styled.div<{ imageSrc: string }>`
-  width: 100%;
-  max-width: 120px;
-  min-height: 60px;
-  max-height: 60px;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-image: url(${(props) => props.imageSrc});
-  margin-left: 8px;
-`;
-
-export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) => {
-  const { focusedCaseId } = useAppStore();
-  return (
-    <StyledAnswerLocationBox>
-      <div className="answer-location-box__text">
-        <b>
-          <Link to={`/case/${focusedCaseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
-          <span>
-            {location.document.type === "pdf" ? (
-              <>
-                <Link
-                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
-                    location.document_content.sentence_number ?? location.document_content.sentence_start,
-                    location.document_content.sentence_end
-                  )}`}
-                >
-                  {location.document_content.page_number
-                    ? `page ${location.document_content.page_number}`
-                    : `${formatHashForSentenceHighlight(
-                        location.document_content.sentence_number ?? location.document_content.sentence_start,
-                        location.document_content.sentence_end
-                      )}`}
-                </Link>
-              </>
-            ) : null}
-            {["audio", "video"].includes(location.document.type) ? (
-              <>
-                <Link
-                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
-                    location.document_content.sentence_number ?? location.document_content.sentence_start,
-                    location.document_content.sentence_end
-                  )}`}
-                >
-                  {formatSecondToTime(location.document_content.second_start ?? 0)}
-                </Link>
-              </>
-            ) : null}
-          </span>
-        </b>
-        {location.document_content.text && location.document_content.tokenizing_strategy === "sentence" ? (
-          <p>"...{location.document_content.text}..."</p>
-        ) : null}
-      </div>
-      {location.image_file ? <StyledAnswerLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
-    </StyledAnswerLocationBox>
-  );
-};
+import { LocationBox } from "./LocationBox";
 
 export const QuestionAnswerBox = () => {
   const { focusedCaseId } = useAppStore();
@@ -252,7 +169,7 @@ export const QuestionAnswerBox = () => {
                   <ul>
                     {orderBy(answer?.locations, ["score"], ["desc"])?.map((l) => (
                       <li key={l.document_content.id}>
-                        <AnswerLocationBox location={l} />
+                        <LocationBox location={l} />
                       </li>
                     ))}
                   </ul>
