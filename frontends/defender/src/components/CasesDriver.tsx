@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
 import { useUser } from "../data/useUser";
+import { BoxWithRightSideButton } from "./styled/StyledBox";
 
 export const CasesDriver: React.FC = () => {
   const navigate = useNavigate();
@@ -26,12 +27,12 @@ export const CasesDriver: React.FC = () => {
         {user ? <button onClick={() => caseCreationHelper()}>+ Add Case</button> : null}
       </div>
       {cases?.map((c) => (
-        <div key={c.id} className="cases-driver__case-box">
+        <BoxWithRightSideButton key={c.id}>
           <span>
             {c.name ?? "Untitled Case"} (#{c.id})
           </span>
           <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-        </div>
+        </BoxWithRightSideButton>
       ))}
     </StyledCasesDriver>
   );
@@ -51,23 +52,6 @@ const StyledCasesDriver = styled.div`
       width: 100px;
       min-width: 100px;
       max-width: 100px;
-    }
-  }
-  .cases-driver__case-box {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: white;
-    border-radius: 4px;
-    margin: 12px;
-    padding: 12px;
-    border: 1px solid #ddd;
-    transition: 250ms;
-    &:hover {
-      border: 1px solid blue;
-    }
-    button {
-      color: blue;
     }
   }
 `;

@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { CaseFacts } from "../../components/CaseFacts";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
@@ -16,6 +17,11 @@ export const ViewCaseOverview = () => {
         <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
       </section>
 
+      {/* CASE FACTS */}
+      <section>
+        <CaseFacts caseId={focusedCaseId} />
+      </section>
+
       {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
       <section>
         <DiscoveryBox caseId={focusedCaseId} />
@@ -23,7 +29,7 @@ export const ViewCaseOverview = () => {
 
       {/* SUMMATION (timeline w/ summaries) */}
       <section>
-        <TimelineSummary />
+        <TimelineSummary caseId={focusedCaseId} />
       </section>
     </StyledViewCaseOverview>
   );

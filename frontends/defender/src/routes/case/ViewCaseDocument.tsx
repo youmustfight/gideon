@@ -238,7 +238,7 @@ export const ViewCaseDocument = () => {
             <h4>Timeline/Events</h4>
           </div>
           <section className="no-shadow">
-            <TimelineSummary documentId={document.id} />
+            <TimelineSummary caseId={caseId} documentId={document.id} />
           </section>
         </>
       ) : null}
