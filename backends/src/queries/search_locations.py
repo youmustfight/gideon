@@ -30,10 +30,18 @@ async def search_locations(session, query_text, case_id):
     # 2. Combine
     search_vectors = text_search_vectors + image_search_vectors
     search_embeddings = text_search_embeddings + image_search_embeddings
+
+    # 3. Maps
     logger.info(f"search_embeddings count: {len(search_embeddings)}")
+    # --- search vectors
     locations = list(map(lambda sv: search_vector_to_location(sv, search_embeddings), search_vectors))
     locations = list(filter(lambda loc: loc != None, locations))
+    # --- caseid
+    def map_case_id_to_location(loc):
+        loc['case_id'] = int(case_id)
+        return loc
+    locations = list(map(map_case_id_to_location, locations))
 
-    # 3. RETURN (serialized?)
+    # 4. RETURN (serialized?)
     logger.info(f"locations count: {len(locations)}")
     return locations
