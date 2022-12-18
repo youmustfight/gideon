@@ -87,6 +87,53 @@ async def app_route_auth_user(request):
             return json({ 'status': 'success', 'user': None })
 
 
+# AI ACTIONS/QUERIES
+@app.route('/v1/ai/query-document-answer', methods = ['POST'])
+@auth_route
+async def app_route_ai_query_document_answer(request):
+    session = request.ctx.session
+    async with session.begin():
+        answer, locations = await question_answer(
+            session,
+            query_text=request.json.get('question'),
+            case_id=request.json.get('case_id'))
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
+
+@app.route('/v1/ai/query-document-locations', methods = ['POST'])
+@auth_route
+async def app_route_ai_query_document_locations(request):
+    session = request.ctx.session
+    async with session.begin():
+        # Fetch
+        locations = await search_locations(
+            session,
+            query_text=request.json.get('query'),
+            case_id=request.json.get('case_id'))
+        # Serialize (TODO): make 'Location' class rather than plain dict
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'locations': locations } })
+
+@app.route('/v1/ai/fill-writing-template', methods = ['POST'])
+@auth_route
+async def app_route_ai_fill_writing_template(request):
+    session = request.ctx.session
+    # setup writing model
+    writing_model = Writing(
+        case_id=request.json.get('case_id'),
+        is_template=request.json.get('is_template'),
+        name=request.json.get('name'),
+        organization_id=request.json.get('organization_id'),
+        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
+    )
+    # pass it to ai writer
+    updated_writing_model = await write_template_with_ai(session, writing_model)
+    # save
+    session.add(updated_writing_model)
+    await session.commit()
+    return json({ 'status': 'success' })
+
+
 # CASES
 @app.route('/v1/cases', methods = ['GET'])
 @auth_route
@@ -405,12 +452,6 @@ async def app_route_highlights(request):
     return json({ 'status': 'success', "highlights": highlights })
 
 
-# TODO: GRAPHQL
-# app.add_route(
-#     GraphQLView.as_view(schema=get_gql_schema(), graphiql=True),
-#     "/graphql",
-# )
-
 # ORGANIZATIONS
 @app.route('/v1/organizations', methods = ['GET'])
 @auth_route
@@ -431,34 +472,6 @@ async def app_route_organizations(request):
         # organizations_json = list(map(lambda o: o.to_dict(), organizations_models))
         organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
     return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
-
-
-# QUERIES
-@app.route('/v1/queries/document-query', methods = ['POST'])
-@auth_route
-async def app_route_question_answer(request):
-    session = request.ctx.session
-    async with session.begin():
-        answer, locations = await question_answer(
-            session,
-            query_text=request.json.get('question'),
-            case_id=request.json.get('case_id'))
-        locations = list(map(serialize_location, locations))
-    return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
-
-@app.route('/v1/queries/documents-locations', methods = ['POST'])
-@auth_route
-async def app_route_query_info_locations(request):
-    session = request.ctx.session
-    async with session.begin():
-        # Fetch
-        locations = await search_locations(
-            session,
-            query_text=request.json.get('query'),
-            case_id=request.json.get('case_id'))
-        # Serialize (TODO): make 'Location' class rather than plain dict
-        locations = list(map(serialize_location, locations))
-    return json({ 'status': 'success', 'data': { 'locations': locations } })
 
 
 # WRITING
@@ -510,25 +523,6 @@ async def app_route_writings_post(request):
         forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
     )
     session.add(writing_model)
-    await session.commit()
-    return json({ 'status': 'success' })
-
-@app.route('/v1/writing/ai', methods = ['POST'])
-@auth_route
-async def app_route_writings_post_ai(request):
-    session = request.ctx.session
-    # setup writing model
-    writing_model = Writing(
-        case_id=request.json.get('case_id'),
-        is_template=request.json.get('is_template'),
-        name=request.json.get('name'),
-        organization_id=request.json.get('organization_id'),
-        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
-    )
-    # pass it to ai writer
-    updated_writing_model = await write_template_with_ai(session, writing_model)
-    # save
-    session.add(updated_writing_model)
     await session.commit()
     return json({ 'status': 'success' })
 

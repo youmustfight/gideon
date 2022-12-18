@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useDebounce } from "react-use";
 import styled from "styled-components";
-import { useCaseFactCreate, useCaseFactDelete, useCaseFacts, useCaseFactUpdate } from "../data/useCaseFact";
+import { TCaseFact, useCaseFactCreate, useCaseFactDelete, useCaseFacts, useCaseFactUpdate } from "../data/useCaseFact";
 import { TQueryLocation } from "../data/useDocuments";
 import { reqQueryDocumentLocations } from "../data/useQueryAI";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
 import { LocationBox } from "./LocationBox";
 import { SlimBox } from "./styled/StyledBox";
 
-const CaseFactBox = ({ caseFact, caseId }) => {
+const CaseFactBox: React.FC<{ caseFact: TCaseFact; caseId: number }> = ({ caseFact, caseId }) => {
   const [newCaseFactText, setNewCaseFactText] = useState(caseFact.text ?? "");
   const [caseFactLocations, setCaseFactLocations] = useState<TQueryLocation[]>();
   const { mutateAsync: caseFactUpdate } = useCaseFactUpdate();

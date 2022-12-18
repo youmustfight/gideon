@@ -10,7 +10,7 @@ export const reqQueryDocument = async ({
   query: string;
 }): Promise<{ answer: string; locations: TQueryLocation[] }> =>
   axios
-    .post(`${getGideonApiUrl()}/v1/queries/document-query`, {
+    .post(`${getGideonApiUrl()}/v1/ai/query-document-answer`, {
       case_id: caseId,
       question: query,
     })
@@ -24,7 +24,7 @@ export const reqQueryDocumentLocations = async ({
   query: string;
 }): Promise<{ locations: TQueryLocation[] }> =>
   axios
-    .post(`${getGideonApiUrl()}/v1/queries/documents-locations`, {
+    .post(`${getGideonApiUrl()}/v1/ai/query-document-locations`, {
       case_id: caseId,
       query,
     })

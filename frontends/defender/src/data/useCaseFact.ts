@@ -2,9 +2,8 @@ import axios from "axios";
 import { useMutation, useQuery } from "react-query";
 import { getGideonApiUrl } from "../env";
 import { queryClient } from "./queryClient";
-import { TCase } from "./useCase";
 
-type TCaseFact = {
+export type TCaseFact = {
   id: number;
   case_id: number;
   text: string;
