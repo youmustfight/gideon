@@ -51,6 +51,10 @@ async def _index_document_image_process_embeddings(session, document_id) -> None
             encoded_model_engine=aiagent_image_embeder.model_name,
             encoding_strategy="image",
             vector_json=image_embeddings[0].tolist(),
+            ai_action=aiagent_image_embeder.ai_action.value,
+            index_id=aiagent_image_embeder.index_id,
+            index_partition_id=aiagent_image_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(image_embeddings_as_models)
     # --- SAVE
