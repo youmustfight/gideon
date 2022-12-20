@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { TQueryLocation } from "../data/useDocuments";
+import { TQueryLocation } from "../data/useQueryAI";
 import { formatSecondToTime } from "./formatSecondToTime";
 import { formatHashForSentenceHighlight } from "./hashUtils";
 
-export const LocationBox = ({ location }: { location: TQueryLocation }) => {
+export const DocumentContentLocationBox = ({ location }: { location: TQueryLocation }) => {
   return (
-    <StyledLocationBox>
+    <StyledDocumentContentLocationBox>
       <div className="answer-location-box__text">
         <b>
           <Link to={`/case/${location.case_id}/document/${location.document.id}`}>
@@ -48,12 +48,12 @@ export const LocationBox = ({ location }: { location: TQueryLocation }) => {
           <p>"...{location.document_content.text}..."</p>
         ) : null}
       </div>
-      {location.image_file ? <StyledLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
-    </StyledLocationBox>
+      {location.image_file ? <StyledDocumentContentLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
+    </StyledDocumentContentLocationBox>
   );
 };
 
-const StyledLocationBox = styled.div`
+const StyledDocumentContentLocationBox = styled.div`
   margin-top: 4px;
   min-height: 20px;
   font-size: 12px;
@@ -75,7 +75,7 @@ const StyledLocationBox = styled.div`
   }
 `;
 
-const StyledLocationBoxImage = styled.div<{ imageSrc: string }>`
+const StyledDocumentContentLocationBoxImage = styled.div<{ imageSrc: string }>`
   width: 100%;
   max-width: 120px;
   min-height: 60px;

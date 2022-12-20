@@ -1,6 +1,14 @@
 import axios from "axios";
 import { getGideonApiUrl } from "../env";
-import { TQueryLocation } from "./useDocuments";
+import { TDocument, TDocumentContent, TFile } from "./useDocuments";
+
+export type TQueryLocation = {
+  score: number;
+  document: TDocument;
+  document_content: TDocumentContent;
+  image_file?: TFile;
+  case_id?: number;
+};
 
 export const reqQueryDocument = async ({
   caseId,
@@ -27,5 +35,16 @@ export const reqQueryDocumentLocations = async ({
     .post(`${getGideonApiUrl()}/v1/ai/query-document-locations`, {
       case_id: caseId,
       query,
+    })
+    .then((res) => ({ locations: res.data.data.locations }));
+
+export const reqQueryLegalBriefFactSimilarity = async ({
+  caseId,
+}: {
+  caseId: number;
+}): Promise<{ locations: TQueryLocation[] }> =>
+  axios
+    .post(`${getGideonApiUrl()}/v1/ai/query-legal-brief-fact-similiarty`, {
+      case_id: caseId,
     })
     .then((res) => ({ locations: res.data.data.locations }));

@@ -8,10 +8,9 @@ import {
   useLegalBriefFacts,
   useLegalBriefFactUpdate,
 } from "../data/useLegalBriefFact";
-import { TQueryLocation } from "../data/useDocuments";
-import { reqQueryDocumentLocations } from "../data/useQueryAI";
+import { reqQueryDocumentLocations, TQueryLocation } from "../data/useQueryAI";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
-import { LocationBox } from "./LocationBox";
+import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 import { SlimBox } from "./styled/StyledBox";
 
 const LegalBriefFactBox: React.FC<{ legalBriefFact: TLegalBriefFact; caseId: number }> = ({
@@ -56,7 +55,7 @@ const LegalBriefFactBox: React.FC<{ legalBriefFact: TLegalBriefFact; caseId: num
           <hr />
           <button onClick={() => setLegalBriefFactLocations(undefined)}>Clear References Search</button>
           {legalBriefFactLocations?.map((location) => (
-            <LocationBox location={location} />
+            <DocumentContentLocationBox key={Object.values(location).join("-")} location={location} />
           ))}
         </>
       )}

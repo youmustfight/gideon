@@ -67,14 +67,6 @@ export type TDocument = {
   // people: Record<string, string>;
 };
 
-export type TQueryLocation = {
-  score: number;
-  document: TDocument;
-  document_content: TDocumentContent;
-  image_file?: TFile;
-  case_id?: number;
-};
-
 // Filters for user via forUser
 const reqDocumentsGet = async (caseId: number): Promise<TDocument[]> =>
   axios.get(`${getGideonApiUrl()}/v1/documents`, { params: { case_id: caseId } }).then((res) => res.data.documents);

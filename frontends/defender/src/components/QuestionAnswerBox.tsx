@@ -3,10 +3,9 @@ import { orderBy } from "lodash";
 import { useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
-import { TQueryLocation } from "../data/useDocuments";
-import { reqQueryDocument, reqQueryDocumentLocations } from "../data/useQueryAI";
+import { reqQueryDocument, reqQueryDocumentLocations, TQueryLocation } from "../data/useQueryAI";
 import { getGideonApiUrl } from "../env";
-import { LocationBox } from "./LocationBox";
+import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 
 export const QuestionAnswerBox = () => {
   const { focusedCaseId } = useAppStore();
@@ -139,7 +138,7 @@ export const QuestionAnswerBox = () => {
                   <ul>
                     {orderBy(answer?.locations, ["score"], ["desc"])?.map((l) => (
                       <li key={l.document_content.id}>
-                        <LocationBox location={l} />
+                        <DocumentContentLocationBox location={l} />
                       </li>
                     ))}
                   </ul>
