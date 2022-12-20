@@ -68,12 +68,14 @@ class AIActionAgent():
         vector = vectors[0]
         if (hasattr(vector, 'tolist')):
             vector = vector.tolist()
-        # --- filter
+        # --- filters
         filters = {}
+        # --- filters: pinecone
         if (query_filters != None):
             filters.update(query_filters)
-        if (self._case.uuid != None):
-            filters.update({ "case_uuid": { "$eq": str(self._case.uuid) } })
+        # --- filters: case, organization, or user (DEPRECATED: using query_filter now w/ case_id. the args/api becomes too complicated)
+        # if (self._case.uuid != None):
+        #     filters.update({ 'case_uuid': { '$eq': str(self._case.uuid) } })
         # --- query for vector
         print(f'INFO (AIActionAgent:index_query): querying with "{self.model_name}" on index "{self.index_id}"', filters)
         query_results = self._get_vector_index().query(

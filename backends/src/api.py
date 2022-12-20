@@ -121,9 +121,10 @@ async def app_route_ai_query_legal_brief_fact_similarity(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
+        case_id = int(request.json.get('case_id'))
         locations = await legal_brief_fact_similarity(
             session,
-            case_id=request.json.get('case_id'))
+            case_id=case_id)
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })

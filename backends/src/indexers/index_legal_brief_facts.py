@@ -11,7 +11,8 @@ async def index_legal_brief_facts(session: Session, case_id):
         sa.select(LegalBriefFact).where(LegalBriefFact.case_id == int(case_id)))
     legal_brief_facts = query_legal_brief_facts.scalars().all()
     # --- Concat into one string
-    facts_string = "\n".join(map(lambda cf: cf.text, legal_brief_facts))
+    facts_string = '\n\n'.join(map(lambda cf: cf.text, legal_brief_facts))
+    facts_string = f'''Legal Brief Facts:\n\n{facts_string}'''
     print(f'INFO (index_legal_brief_facts) start indexing case facts: ', facts_string)
 
     # EMBEDDING
@@ -40,7 +41,7 @@ async def index_legal_brief_facts(session: Session, case_id):
         session.add(Embedding(
             case_id=int(case_id),
             encoded_model_engine=aiagent_legal_brief_facts_embeder.model_name,
-            encoding_strategy="text",
+            encoding_strategy='text',
             vector_dimensions=len(legal_brief_fact_embedding),
             vector_json=legal_brief_fact_embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
             ai_action=aiagent_legal_brief_facts_embeder.ai_action.value,
