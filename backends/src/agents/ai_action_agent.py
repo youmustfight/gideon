@@ -28,11 +28,12 @@ class AI_ACTIONS(Enum):
     writing_similarity_search = 'writing_similarity_search'
 
 class AI_MODELS(Enum):
-    all_MiniLM_L6_v2 = 'all-MiniLM-L6-v2'
+    all_mpnet_base_v2 = 'all-mpnet-base-v2'
+    all_MiniLM_L6_v2 = 'all-MiniLM-L6-v2' # DEPRECATED
     text_embedding_ada_002 = 'text-embedding-ada-002'
-    text_similarity_ada_001 = 'text-similarity-ada-001'
-    text_similarity_curie_001 = 'text-similarity-curie-001'
-    text_similarity_davinci_001 = 'text-similarity-davinci-001'
+    text_similarity_ada_001 = 'text-similarity-ada-001' # DEPRECATED
+    text_similarity_curie_001 = 'text-similarity-curie-001' # DEPRECATED
+    text_similarity_davinci_001 = 'text-similarity-davinci-001' # DEPRECATED
     ViT_L_14_336px = 'ViT-L/14@336px'
 
 class DISTANCE_METRIC(Enum):
@@ -118,6 +119,16 @@ class AIActionAgent_AllMiniLML6v2(AIActionAgent):
         return embeddings_arr
     def encode_image(self):
         pass
+class AIActionAgent_AllMpnetBaseV2(AIActionAgent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._model_distance_metric = DISTANCE_METRIC.cosine
+        self._model_embed_dimensions = 768
+    def encode_text(self, sentences):
+        embeddings_arr = sentence_encode_embeddings(sentences)
+        return embeddings_arr
+    def encode_image(self):
+        pass
 
 class AIActionAgent_TextEmbeddingAda002(AIActionAgent):
     def __init__(self, *args, **kwargs):
@@ -191,16 +202,22 @@ async def create_ai_action_agent(session: Session, action: AI_ACTIONS, case_id: 
             model_name = ai_action_lock.model_name
             def get_ai_agent_for_model(model_name):
                 match model_name:
-                    case AI_MODELS.all_MiniLM_L6_v2.value:
-                        return AIActionAgent_AllMiniLML6v2
-                    case AI_MODELS.text_similarity_ada_001.value:
-                        return AIActionAgent_TextSimilarityAda001
+                    # DEPRECATED
+                    # case AI_MODELS.all_MiniLM_L6_v2.value:
+                    #     return AIActionAgent_AllMiniLML6v2
+                    case AI_MODELS.all_mpnet_base_v2.value:
+                        return AIActionAgent_AllMpnetBaseV2
+                    # DEPRECATED
+                    # case AI_MODELS.text_similarity_ada_001.value:
+                    #     return AIActionAgent_TextSimilarityAda001
                     case AI_MODELS.text_embedding_ada_002.value:
                         return AIActionAgent_TextEmbeddingAda002
-                    case AI_MODELS.text_similarity_curie_001.value:
-                        return AIActionAgent_TextSimilarityCurie001
-                    case AI_MODELS.text_similarity_davinci_001.value:
-                        return AIActionAgent_TextSimilarityDavinci001
+                    # DEPRECATED
+                    # case AI_MODELS.text_similarity_curie_001.value:
+                    #     return AIActionAgent_TextSimilarityCurie001
+                    # DEPRECATED
+                    # case AI_MODELS.text_similarity_davinci_001.value:
+                    #     return AIActionAgent_TextSimilarityDavinci001
                     case AI_MODELS.ViT_L_14_336px.value:
                         return AIActionAgent_ViTL14336px
             AIA = get_ai_agent_for_model(model_name)
@@ -220,8 +237,8 @@ def generate_ai_action_locks(case_id = None):
     # DOCUMENT EMBEDDING
     AIActionLock(
         action=AI_ACTIONS.document_similarity_text_sentence_embed.value,
-        model_name=AI_MODELS.all_MiniLM_L6_v2.value,
-        index_id=VECTOR_INDEX_ID.index_384_cosine.value,
+        model_name=AI_MODELS.all_mpnet_base_v2.value,
+        index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentence_embed.value,
         case_id=case_id),
     AIActionLock(
@@ -258,8 +275,8 @@ def generate_ai_action_locks(case_id = None):
     # CASE->DOCUMENTS SEARCH
     AIActionLock(
         action=AI_ACTIONS.case_similarity_text_sentence_search.value,
-        model_name=AI_MODELS.all_MiniLM_L6_v2.value,
-        index_id=VECTOR_INDEX_ID.index_384_cosine.value,
+        model_name=AI_MODELS.all_mpnet_base_v2.value,
+        index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentence_embed.value,
         case_id=case_id),
     AIActionLock(
