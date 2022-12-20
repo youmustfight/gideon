@@ -1,5 +1,5 @@
 from logger import logger
-from queries.utils.search_vector_to_location import search_vector_to_location
+from queries.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
 from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 
@@ -36,7 +36,7 @@ async def search_locations(session, query_text, case_id):
     # 3. Maps
     logger.info(f"search_embeddings count: {len(search_embeddings)}")
     # --- search vectors
-    locations = list(map(lambda sv: search_vector_to_location(sv, search_embeddings), search_vectors))
+    locations = list(map(lambda sv: location_from_search_vector_embedding(sv, search_embeddings), search_vectors))
     locations = list(filter(lambda loc: loc != None, locations))
 
     # 4. RETURN (serialized?)

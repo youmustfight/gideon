@@ -8,6 +8,7 @@ export type TQueryLocation = {
   document_content: TDocumentContent;
   image_file?: TFile;
   case_id?: number;
+  writing_id?: number;
 };
 
 export const reqQueryDocument = async ({
@@ -46,5 +47,19 @@ export const reqQueryLegalBriefFactSimilarity = async ({
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-legal-brief-fact-similiarty`, {
       case_id: caseId,
+    })
+    .then((res) => ({ locations: res.data.data.locations }));
+
+export const reqQueryWritingSimilarity = async ({
+  caseId,
+  query,
+}: {
+  caseId?: number;
+  query: string;
+}): Promise<{ locations: TQueryLocation[] }> =>
+  axios
+    .post(`${getGideonApiUrl()}/v1/ai/query-writing-similarity`, {
+      case_id: caseId,
+      query: query,
     })
     .then((res) => ({ locations: res.data.data.locations }));

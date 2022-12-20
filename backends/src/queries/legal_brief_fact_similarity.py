@@ -3,7 +3,7 @@ from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.sa_models import Case, Embedding
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 from logger import logger
-from queries.utils.search_vector_to_location import search_vector_to_location
+from queries.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
 
 async def legal_brief_fact_similarity(session, case_id):
     logger.info(f'legal_brief_fact_similarity')
@@ -35,7 +35,7 @@ async def legal_brief_fact_similarity(session, case_id):
     # 2. Maps
     logger.info(f"search_embeddings count: {len(lbf_search_embeddings)}")
     # --- search vectors
-    locations = list(map(lambda sv: search_vector_to_location(sv, lbf_search_embeddings), lbf_search_vectors))
+    locations = list(map(lambda sv: location_from_search_vector_embedding(sv, lbf_search_embeddings), lbf_search_vectors))
     locations = list(filter(lambda loc: loc != None, locations))
 
     # 3. RETURN (serialized?)

@@ -2,7 +2,8 @@ def serialize_location(location):
     # setup
     serial = dict(
         score=location.get('score'),
-        case_id=location.get('case_id'))
+        case_id=location.get('case_id'),
+        writing_id=location.get('writing_id'))
     # --- if documents exist
     if location.get('document'):
         serial['document'] = location.get('document').serialize()

@@ -3,7 +3,7 @@ from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_document_content_from_search_vectors, get_embeddings_from_search_vectors
 from models.gpt import gpt_completion, gpt_summarize
 from models.gpt_prompts import gpt_prompt_answer_question
-from queries.utils.search_vector_to_location import search_vector_to_location
+from queries.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
 
 
 # QUERY
@@ -50,7 +50,7 @@ async def question_answer(session, query_text, case_id):
     # 3b. Summarize Final
     final_answer = gpt_summarize('\n\n'.join(results), max_length=650)
     # 3c. Locations for content that lead to summary
-    locations = list(map(lambda sv: search_vector_to_location(sv, text_search_embeddings), search_vectors))
+    locations = list(map(lambda sv: location_from_search_vector_embedding(sv, text_search_embeddings), search_vectors))
     locations = list(filter(lambda loc: loc != None, locations))
 
     # 4. return answer/no answer

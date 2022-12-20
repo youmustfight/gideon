@@ -28,6 +28,7 @@ from indexers.utils.index_document_prep import index_document_prep
 from queries.legal_brief_fact_similarity import legal_brief_fact_similarity
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
+from queries.writing_similarity import writing_similarity
 from queries.utils.serialize_location import serialize_location
 from queries.write_template_with_ai import write_template_with_ai
 from queues import indexing_queue
@@ -89,6 +90,25 @@ async def app_route_auth_user(request):
 
 
 # AI ACTIONS/QUERIES
+@app.route('/v1/ai/fill-writing-template', methods = ['POST'])
+@auth_route
+async def app_route_ai_fill_writing_template(request):
+    session = request.ctx.session
+    # setup writing model
+    writing_model = Writing(
+        case_id=request.json.get('case_id'),
+        is_template=request.json.get('is_template'),
+        name=request.json.get('name'),
+        organization_id=request.json.get('organization_id'),
+        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
+    )
+    # pass it to ai writer
+    updated_writing_model = await write_template_with_ai(session, writing_model)
+    # save
+    session.add(updated_writing_model)
+    await session.commit()
+    return json({ 'status': 'success' })
+
 @app.route('/v1/ai/query-document-answer', methods = ['POST'])
 @auth_route
 async def app_route_ai_query_document_answer(request):
@@ -129,24 +149,21 @@ async def app_route_ai_query_legal_brief_fact_similarity(request):
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
 
-@app.route('/v1/ai/fill-writing-template', methods = ['POST'])
+@app.route('/v1/ai/query-writing-similarity', methods = ['POST'])
 @auth_route
-async def app_route_ai_fill_writing_template(request):
+async def app_route_ai_query_writing_similarity(request):
     session = request.ctx.session
-    # setup writing model
-    writing_model = Writing(
-        case_id=request.json.get('case_id'),
-        is_template=request.json.get('is_template'),
-        name=request.json.get('name'),
-        organization_id=request.json.get('organization_id'),
-        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
-    )
-    # pass it to ai writer
-    updated_writing_model = await write_template_with_ai(session, writing_model)
-    # save
-    session.add(updated_writing_model)
-    await session.commit()
-    return json({ 'status': 'success' })
+    async with session.begin():
+        # Fetch
+        case_id = request.json.get('case_id')
+        locations = await writing_similarity(
+            session,
+            case_id=int(case_id) if case_id != None else None,
+            query=request.json.get('query'))
+        # Serialize (TODO): make 'Location' class rather than plain dict
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'locations': locations } })
+
 
 
 # CASES
@@ -557,6 +574,7 @@ async def app_route_writing_put(request, writing_id):
             writing.body_html = request.json['writing']['body_html']
         if (request.json.get('writing').get('body_text')):
             writing.body_text = request.json['writing']['body_text']
+        writing.updated_at = datetime.now()
         session.add(writing)
     return json({ 'status': 'success' })
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+import { reqQueryWritingSimilarity } from "../data/useQueryAI";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { useWritings } from "../data/useWritings";
 import { SlimBox } from "./styled/StyledBox";
@@ -32,6 +33,17 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
     }
     writingCreate({ params: writingParams, runAIWriter });
   };
+  // --- search helper
+  const [searchQueryWriting, setSearchQueryWriting] = useState<string>("");
+  const [similarWritingIds, setSimilarWritingIds] = useState<number[]>();
+  const searchQueryWritingHelper = async () => {
+    const { locations } = await reqQueryWritingSimilarity({ caseId, query: searchQueryWriting });
+    setSimilarWritingIds(locations?.map((l) => l.writing_id));
+  };
+  const clearSearch = () => {
+    setSearchQueryWriting("");
+    setSimilarWritingIds(undefined);
+  };
 
   // RENDER
   return (
@@ -51,8 +63,24 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
           {!isTemplate && <button onClick={() => onWritingCreate(true)}>+ Fill with AI</button>}
         </div>
       </StyledWritingsBoxLead>
+      <StyledWritingsBoxSearch>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <input
+            placeholder="Search writings..."
+            value={searchQueryWriting}
+            onChange={(e) => setSearchQueryWriting(e.target.value)}
+          />
+          <button type="submit" disabled={!searchQueryWriting} onClick={searchQueryWritingHelper}>
+            Search
+          </button>
+          <button onClick={clearSearch}>Clear</button>
+        </form>
+      </StyledWritingsBoxSearch>
       <StyledWritingsBox>
-        {writings?.map((w) => (
+        {(similarWritingIds
+          ? similarWritingIds?.map((writingId) => writings?.find((w) => w.id === writingId))
+          : writings
+        )?.map((w) => (
           <SlimBox key={w.id}>
             <p>
               <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
@@ -87,8 +115,19 @@ const StyledWritingsBoxLead = styled.div`
   }
 `;
 
+const StyledWritingsBoxSearch = styled.div`
+  margin: 0 4px;
+  form {
+    display: flex;
+    width: 100%;
+  }
+  input {
+    width: 100%;
+  }
+`;
+
 const StyledWritingsBox = styled.div`
-  margin: 20px 4px;
+  margin: 8px 4px 20px;
   button {
     width: 100%;
   }
