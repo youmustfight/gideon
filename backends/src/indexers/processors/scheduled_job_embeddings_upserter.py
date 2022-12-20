@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 import pinecone
 import pydash as _
@@ -34,13 +35,15 @@ async def scheduled_job_embeddings_upserter():
         cs = embedding.case or embedding.document_content.document.case
         # --- setup metadata (do getter checks bc None type gives API errors w/ pinecone)
         metadata = {
-            "case_id": int(cs.id),
+            "case_id": cs.id,
             "case_uuid": str(cs.uuid), # casting bc UUID class -> str
-            "embedding_id": int(em.id) # just in case at some point we can't use vector id
+            "embedding_id": em.id, # just in case at some point we can't use vector id
         }
         if _.get(dc, 'document_id'): metadata['document_id'] = dc.document_id
+        if em.writing_id: metadata['writing_id'] = em.writing_id
         # --- form upsert
         upsert_record = (str(em.id), em.vector_json, metadata)
+        print('INFO (scheduled_job_embeddings_upserter) upsert_record:', (upsert_record[0], upsert_record[2]))
         # --- add to tuple dict so we can batch insert
         if (upserts_tuple_dict.get((embedding.index_id, embedding.index_partition_id)) == None):
             upserts_tuple_dict[(embedding.index_id, embedding.index_partition_id)] = [upsert_record]
@@ -59,7 +62,7 @@ async def scheduled_job_embeddings_upserter():
         await session.execute(
             sa.update(Embedding)
                 .where(Embedding.id.in_(embedding_ids))
-                .values(indexed_status='completed'))
+                .values(indexed_status='completed',updated_at=datetime.now()))
         # --- commit after each batch in case one fails
         await session.commit()
 

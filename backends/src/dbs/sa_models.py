@@ -61,6 +61,8 @@ class User(BaseModel):
 class Organization(BaseModel):
     __tablename__ = "organization"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     name = Column(Text())
     cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
@@ -96,6 +98,8 @@ class Case(BaseModel):
     writings = relationship("Writing", back_populates="case")
     legal_brief_facts = relationship("LegalBriefFact", back_populates="case")
     ai_action_locks = relationship("AIActionLock", back_populates="case")
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,
@@ -118,6 +122,8 @@ class AIActionLock(BaseModel):
 class Document(BaseModel):
     __tablename__ = "document"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="documents")
     name = Column(Text())
@@ -193,6 +199,8 @@ class DocumentContent(BaseModel):
 class Embedding(BaseModel):
     __tablename__ = "embedding"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     # --- relations
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="embeddings")
@@ -269,6 +277,8 @@ class LegalBriefFact(BaseModel):
 class Writing(BaseModel):
     __tablename__ = "writing"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="writings")
     organization_id = Column(Integer, ForeignKey("organization.id"))
@@ -280,7 +290,6 @@ class Writing(BaseModel):
     generated_body_html = Column(Text())
     generated_body_text = Column(Text())
     forked_writing_id = Column(Integer, ForeignKey("writing.id"))
-    created_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,
