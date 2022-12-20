@@ -2,6 +2,7 @@ import schedule
 import time
 from indexers.processors.scheduled_job_embeddings_upserter import scheduled_job_embeddings_upserter
 from indexers.processors.scheduled_job_index_legal_brief_facts import scheduled_job_index_legal_brief_facts
+from indexers.processors.scheduled_job_index_writing import scheduled_job_index_writing
 from queues import indexing_queue
 
 # HACK: this should be a well integrated option of our worker/queue lib. rq doesn't support crontab yet, and celery+arq were beconing an immense pain
@@ -16,6 +17,10 @@ def start_scheduled():
   schedule.every(1).minute.do(lambda: indexing_queue.enqueue(
     scheduled_job_index_legal_brief_facts,
     job_id="scheduled_job_index_legal_brief_facts"))
+  # --- Writing
+  schedule.every(1).minute.do(lambda: indexing_queue.enqueue(
+    scheduled_job_index_writing,
+    job_id="scheduled_job_index_writing"))
 
   # RUN
   while True:

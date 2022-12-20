@@ -24,6 +24,8 @@ class AI_ACTIONS(Enum):
     case_similarity_text_sentences_20_search = 'case_similarity_text_sentences_20_search'
     case_similarity_text_max_size_search = 'case_similarity_text_max_size_search'
     case_similarity_text_to_image_search = 'case_similarity_text_to_image_search'
+    writing_similarity_embed = 'writing_similarity_embed'
+    writing_similarity_search = 'writing_similarity_search'
 
 class AI_MODELS(Enum):
     all_MiniLM_L6_v2 = 'all-MiniLM-L6-v2'
@@ -277,6 +279,19 @@ def generate_ai_action_locks(case_id = None):
         model_name=AI_MODELS.ViT_L_14_336px.value,
         index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_image_embed.value,
+        case_id=case_id),
+    # WRITING EMBED
+    AIActionLock(
+        action=AI_ACTIONS.writing_similarity_embed.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.writing_similarity_embed.value,
+        case_id=case_id),
+    AIActionLock(
+        action=AI_ACTIONS.writing_similarity_search.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.writing_similarity_embed.value,
         case_id=case_id),
   ]
 

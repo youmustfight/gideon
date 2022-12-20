@@ -208,6 +208,8 @@ class Embedding(BaseModel):
     document = relationship("Document", back_populates="embeddings")
     document_content_id = Column(Integer, ForeignKey("document_content.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
+    writing_id = Column(Integer, ForeignKey("writing.id"))
+    writing = relationship("Writing", back_populates="embeddings")
     # --- encoding model/engine info
     encoded_model_type = Column(Text()) # DEPRECATED: gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
@@ -283,6 +285,7 @@ class Writing(BaseModel):
     case = relationship("Case", back_populates="writings")
     organization_id = Column(Integer, ForeignKey("organization.id"))
     organization = relationship("Organization", back_populates="writing_templates")
+    embeddings = relationship("Embedding", back_populates="writing")
     name = Column(Text())
     is_template = Column(Boolean())
     body_html = Column(Text())
