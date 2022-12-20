@@ -11,9 +11,9 @@ async def question_answer(session, query_text, case_id):
     print(f'INFO (question_answer.py): querying with question "{query_text}"')
     # 1. get similar vectors
     aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentences_20_search, case_id=case_id)
-    search_vectors = aigent_location_text_searcher.query_search_vectors(
+    search_vectors = aigent_location_text_searcher.index_query(
         query_text,
-        query_filters={ "string_length": { "$gt": 480 } },
+        # query_filters={ "string_length": { "$gt": 480 } }, # DEPRECATED: idk if we need this anymore, tokenizing is better now and ensures min lengths
         top_k=3, # was 8, I feel like only focusing on high matches will get less noisy answers + be faster
         score_min=0.5,
         score_max=1.2,

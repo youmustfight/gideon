@@ -9,9 +9,9 @@ async def search_locations(session, query_text, case_id):
     # 1. SEARCH & SERIALIZE
     # --- pdfs/transcripts
     aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentence_search, case_id=case_id)
-    text_search_vectors = aigent_location_text_searcher.query_search_vectors(
+    text_search_vectors = aigent_location_text_searcher.index_query(
         query_text,
-        query_filters={ "string_length": { "$gt": 80 } }, # ensure a minimum
+        # query_filters={ "string_length": { "$gt": 80 } }, # DEPRECATED: do we need to ensure a minimum anymore? we should be catch this when embedding
         top_k=10,
         score_max=1,
         score_max_diff_percent=0.2,
@@ -20,7 +20,7 @@ async def search_locations(session, query_text, case_id):
 
     # --- images (including video frames)
     aigent_location_image_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_to_image_search, case_id=case_id)
-    image_search_vectors = aigent_location_image_searcher.query_search_vectors(
+    image_search_vectors = aigent_location_image_searcher.index_query(
         query_text,
         top_k=5,
         score_max=1,
