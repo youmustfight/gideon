@@ -11,27 +11,19 @@ pinecone.init(
   environment=env.env_get_database_pinecone_environment()
 )
 class VECTOR_INDEX_ID(Enum):
-    documents_clip_768 = 'documents-clip-768'
-    documents_text_384 = 'documents-text-384'
-    documents_text_1024 = 'documents-text-1024'
-    documents_text_4096 = 'documents-text-4096'
-    documents_text_12288 = 'documents-text-12288'
+    index_384_cosine = 'development-384-cosine' # sentence encoder
+    index_768_cosine = 'development-768-cosine' # clip (and also will be used by a better sentence encoder)
+    index_1024_cosine = 'development-1024-cosine' # DEPRECATED ada 001
+    index_1536_cosine = 'development-1536-cosine' # ada 002
+    index_4096_euclidean = 'development-4096-euclidean' # DEPRECATED curie
+    index_12288_euclidean = 'development-12288-euclidean' # DEPRECATED davinci
 
 
 # HELPERS
-# --- index fetching
-def get_vector_indexes():
-    return {
-        VECTOR_INDEX_ID.documents_clip_768.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_clip_768.value), # cosine
-        VECTOR_INDEX_ID.documents_text_384.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_384.value), # cosine (prev euclidian bc higher dimensionality)
-        VECTOR_INDEX_ID.documents_text_1024.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_1024.value), # cosine (prev euclidian bc higher dimensionality)
-        VECTOR_INDEX_ID.documents_text_4096.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_4096.value), # euclidan bc higher dimensionality
-        VECTOR_INDEX_ID.documents_text_12288.value: pinecone.Index(index_name=VECTOR_INDEX_ID.documents_text_12288.value), # euclidan bc higher dimensionality
-    }
-
 # --- search vectors 2 embedding models
 async def get_embeddings_from_search_vectors(session, search_vectors):
     print(f'INFO (vectordb_pinecone.py:get_embeddings_from_search_vectors): search_vectors ', search_vectors)
+    # we upsert search vectors w/ database embedding.id as the pinecone vector db
     search_text_embedding_ids = list(map(lambda v: int(v['metadata']['embedding_id']), search_vectors))
     print(f'INFO (vectordb_pinecone.py:get_embeddings_from_search_vectors): search_text_embedding_ids ', search_text_embedding_ids)
     embedding_query = await session.execute(

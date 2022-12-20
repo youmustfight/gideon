@@ -1,15 +1,15 @@
 import sqlalchemy as sa
-from dbs.sa_models import CaseFact, Writing
+from dbs.sa_models import LegalBriefFact, Writing
 from models.gpt import GTP3_COMPLETION_MODEL_ENGINE, gpt_completion
 
 
 async def write_template_with_ai(session, writing_model):
     # FETCH
     # --- grab case facts
-    query_case_facts = await session.execute(
-        sa.select(CaseFact).where(CaseFact.case_id == writing_model.case_id))
-    case_facts = query_case_facts.scalars().all()
-    FACTS = "\n".join(map(lambda cf: cf.text, case_facts))
+    query_legal_brief_facts = await session.execute(
+        sa.select(LegalBriefFact).where(LegalBriefFact.case_id == writing_model.case_id))
+    legal_brief_facts = query_legal_brief_facts.scalars().all()
+    FACTS = "\n".join(map(lambda cf: cf.text, legal_brief_facts))
     # --- grab template text
     query_template = await session.execute(
         sa.select(Writing).where(Writing.id == writing_model.forked_writing_id))

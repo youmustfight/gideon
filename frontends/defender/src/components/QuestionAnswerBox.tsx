@@ -1,95 +1,11 @@
 import axios from "axios";
 import { orderBy } from "lodash";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
-import { TQueryLocation } from "../data/useDocuments";
+import { reqQueryDocument, reqQueryDocumentLocations, TQueryLocation } from "../data/useQueryAI";
 import { getGideonApiUrl } from "../env";
-import { formatSecondToTime } from "./formatSecondToTime";
-import { formatHashForSentenceHighlight } from "./hashUtils";
-
-const StyledAnswerLocationBox = styled.div`
-  margin-top: 4px;
-  min-height: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  background: white;
-  padding: 8px;
-  border-radius: 6px;
-  & > div.answer-location-box__text {
-    flex-grow: 1;
-    b {
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
-    }
-    p {
-      margin: 8px 0 0;
-    }
-  }
-`;
-
-const StyledAnswerLocationBoxImage = styled.div<{ imageSrc: string }>`
-  width: 100%;
-  max-width: 120px;
-  min-height: 60px;
-  max-height: 60px;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-image: url(${(props) => props.imageSrc});
-  margin-left: 8px;
-`;
-
-export const AnswerLocationBox = ({ location }: { location: TQueryLocation }) => {
-  const { focusedCaseId } = useAppStore();
-  return (
-    <StyledAnswerLocationBox>
-      <div className="answer-location-box__text">
-        <b>
-          <Link to={`/case/${focusedCaseId}/document/${location.document.id}`}>{location.document.name ?? "n/a"}</Link>
-          <span>
-            {location.document.type === "pdf" ? (
-              <>
-                <Link
-                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
-                    location.document_content.sentence_number ?? location.document_content.sentence_start,
-                    location.document_content.sentence_end
-                  )}`}
-                >
-                  {location.document_content.page_number
-                    ? `page ${location.document_content.page_number}`
-                    : `${formatHashForSentenceHighlight(
-                        location.document_content.sentence_number ?? location.document_content.sentence_start,
-                        location.document_content.sentence_end
-                      )}`}
-                </Link>
-              </>
-            ) : null}
-            {["audio", "video"].includes(location.document.type) ? (
-              <>
-                <Link
-                  to={`/case/${focusedCaseId}/document/${location.document.id}#${formatHashForSentenceHighlight(
-                    location.document_content.sentence_number ?? location.document_content.sentence_start,
-                    location.document_content.sentence_end
-                  )}`}
-                >
-                  {formatSecondToTime(location.document_content.second_start ?? 0)}
-                </Link>
-              </>
-            ) : null}
-          </span>
-        </b>
-        {location.document_content.text && location.document_content.tokenizing_strategy === "sentence" ? (
-          <p>"...{location.document_content.text}..."</p>
-        ) : null}
-      </div>
-      {location.image_file ? <StyledAnswerLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
-    </StyledAnswerLocationBox>
-  );
-};
+import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 
 export const QuestionAnswerBox = () => {
   const { focusedCaseId } = useAppStore();
@@ -99,26 +15,19 @@ export const QuestionAnswerBox = () => {
   // --- answers
   const [answerQuestion, setAnswerQuestion] = useState("");
   const [infoLocationQuestion, setInfoLocationQuestion] = useState("");
-  const [highlightSearchQuery, setHighlightSearchQuery] = useState("");
-  const [userToSummarize, setUserToSummarize] = useState("");
-  const [userOneToContrast, setUserOneToContrast] = useState("");
-  const [userTwoToContrast, setUserTwoToContrast] = useState("");
   // --- q1 : Ask Question
   // @ts-ignore
   const handleQuestion = (e) => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/document-query`, {
-        case_id: focusedCaseId,
-        question: answerQuestion,
-        index_type: "discovery",
-      })
-      .then((res) => {
-        setAnswer({ answer: res.data.data.answer, locations: res.data.data.locations });
-        setIsAnswerPending(false);
-      });
+    return reqQueryDocument({
+      caseId: focusedCaseId,
+      query: answerQuestion,
+    }).then(({ answer, locations }) => {
+      setAnswer({ answer, locations });
+      setIsAnswerPending(false);
+    });
   };
   // --- q2 : Search for Detail
   // @ts-ignore
@@ -126,33 +35,10 @@ export const QuestionAnswerBox = () => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/documents-locations`, {
-        case_id: focusedCaseId,
-        query: infoLocationQuestion,
-        index_type: "discovery",
-      })
-      .then((res) => {
-        setAnswer({ locations: res.data.data.locations });
-        setIsAnswerPending(false);
-      });
-  };
-  // --- q3 : Search Highlights
-  // @ts-ignore
-  const handleHighlightSearch = (e) => {
-    e.preventDefault();
-    setAnswer(null);
-    setIsAnswerPending(true);
-    return axios
-      .post(`${getGideonApiUrl()}/v1/queries/highlights-query`, {
-        case_id: focusedCaseId,
-        query: highlightSearchQuery,
-      })
-      .then((res) => {
-        // @ts-ignore
-        setAnswer({ highlights: res.data.highlights });
-        setIsAnswerPending(false);
-      });
+    return reqQueryDocumentLocations({ caseId: focusedCaseId, query: infoLocationQuestion }).then(({ locations }) => {
+      setAnswer({ locations });
+      setIsAnswerPending(false);
+    });
   };
 
   // RENDER
@@ -252,7 +138,7 @@ export const QuestionAnswerBox = () => {
                   <ul>
                     {orderBy(answer?.locations, ["score"], ["desc"])?.map((l) => (
                       <li key={l.document_content.id}>
-                        <AnswerLocationBox location={l} />
+                        <DocumentContentLocationBox location={l} />
                       </li>
                     ))}
                   </ul>

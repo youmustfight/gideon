@@ -7,7 +7,7 @@ class TOKENIZING_STRATEGY(Enum):
     sentences_20 = "sentences_20"
     max_size = "max_size"
 
-TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH = 40
+TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH = 80 # fyi, tried 40 but was too short. Better to err longer than split sentences
 
 # TOKENIZING
 def tokenize_string(text, strategy):
@@ -18,7 +18,7 @@ def tokenize_string(text, strategy):
         # --- try to consolidate splits where it may have been on an accronym or address. Ex) ["probable cause, see Fed","R","Crim P","41(c)(1)-(2), at the premises located at 1100 S",...]
         splits_consolidated = []
         for idx, split in enumerate(splits_init):
-            if idx == 0 or len(split) > TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH: # making 40 to be safe in capturing addresses, legal statute codes
+            if idx == 0 or len(split) > TOKENIZING_STRING_SENTENCE_SPLIT_MIN_LENGTH:
                 splits_consolidated.append(split + ".") # add back period
             else:
                 splits_consolidated[-1] = splits_consolidated[-1] + f" {split}."

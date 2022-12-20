@@ -1,7 +1,7 @@
+import pinecone
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 from dbs.sa_models import Document, DocumentContent, Embedding
-from dbs.vectordb_pinecone import get_vector_indexes
 
 async def deindex_document(session, document_id):
     '''
@@ -24,14 +24,16 @@ async def deindex_document(session, document_id):
     embeddings_ids_strs = list(map(lambda id: str(id), embeddings_ids_ints))
 
     # DELETE INDEX VECTORS (via embedidngs)
-    if (len(embeddings_ids_strs) > 0):
-        print('INFO (deindex_document.py) Deleting Embeddings: ', embeddings_ids_strs)
-        for index in get_vector_indexes().values():
-            print('INFO (deindex_document.py) Deleting Embeddings on Index:', index)
-            try:
-                index.delete(ids=embeddings_ids_strs)
-            except Exception as err:
-                print('ERROR (deindex_document.py) Error:', err)
+    deletes_tuple_dict = {}
+    for embedding in embeddings:
+        if (deletes_tuple_dict.get((embedding.index_id, embedding.index_partition_id)) == None):
+            deletes_tuple_dict[(embedding.index_id, embedding.index_partition_id)] = [str(embedding.id)]
+        else:
+            deletes_tuple_dict[(embedding.index_id, embedding.index_partition_id)].append(str(embedding.id))
+
+    print('INFO (deindex_document.py) Deleting Embeddings: ', deletes_tuple_dict)
+    for delete_tuple in deletes_tuple_dict:
+        pinecone.Index(index_name=delete_tuple[0]).delete(ids=embeddings_ids_strs, namespace=delete_tuple[1])
 
     # DELETE MODELS/DATA
     # --- embeddings

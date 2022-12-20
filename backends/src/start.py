@@ -1,9 +1,8 @@
 from multiprocessing import Process
 import torch
-import env
-import logger
 from api import start_api
 from worker import start_worker
+from scheduled import start_scheduled
 
 # INIT
 # Restrict PyTorch Processor Usage (blocks other processors):
@@ -12,6 +11,7 @@ from worker import start_worker
 torch.set_num_threads(1)
 
 if __name__ == "__main__":
+    print("INFO (start.py) start")
     # # V2 SERVICES (better than multi-process bc eats extra cpu + background processes don't cause container to exit)
     # if (env.env_target_service() == 'api'):
     #   start_api()
@@ -28,9 +28,11 @@ if __name__ == "__main__":
     #     ])
 
     # v4 PROCESSES (start api + worker, only wait for worker to resolve, that way if it errors, i think the whole container stops?)
-    p1 = Process(target=start_api)
-    p2 = Process(target=start_worker)
-    p1.start()
-    p2.start()
+    pApi = Process(target=start_api)
+    pWorker = Process(target=start_worker)
+    pCron = Process(target=start_scheduled)
+    pApi.start()
+    pWorker.start()
+    pCron.start()
     # --- block till return (if worker returns re-start. load balancer health check will check api)
-    p2.join()
+    pWorker.join()

@@ -61,6 +61,8 @@ class User(BaseModel):
 class Organization(BaseModel):
     __tablename__ = "organization"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     name = Column(Text())
     cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
@@ -92,9 +94,12 @@ class Case(BaseModel):
     organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
+    embeddings = relationship("Embedding", back_populates="case")
     writings = relationship("Writing", back_populates="case")
-    case_facts = relationship("CaseFact", back_populates="case")
+    legal_brief_facts = relationship("LegalBriefFact", back_populates="case")
     ai_action_locks = relationship("AIActionLock", back_populates="case")
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,
@@ -103,22 +108,22 @@ class Case(BaseModel):
             # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
         }
 
-class CaseFact(BaseModel):
-    __tablename__ = "case_fact"
-    id = Column(Integer, primary_key=True)
-    case_id = Column(Integer, ForeignKey("case.id"))
-    case = relationship("Case", back_populates="case_facts")
-    text = Column(Text())
-    def serialize(self):
-        return {
-            "id": self.id,
-            "case_id": self.case_id,
-            "text": self.text
-        }
+class AIActionLock(BaseModel):
+    __tablename__ = "ai_action_lock"
+    action = Column(Text())
+    model_name = Column(Text())
+    index_id = Column(Text())
+    index_partition_id = Column(Text())
+    params = Column(JSON()) # DEPRECATE
+    case_id = Column(Integer, ForeignKey('case.id'))
+    case = relationship("Case", back_populates="ai_action_locks")
+    created_at = Column(DateTime(timezone=True))
 
 class Document(BaseModel):
     __tablename__ = "document"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="documents")
     name = Column(Text())
@@ -194,18 +199,29 @@ class DocumentContent(BaseModel):
 class Embedding(BaseModel):
     __tablename__ = "embedding"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
+    # --- relations
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="embeddings")
     document_id = Column(Integer, ForeignKey("document.id"))
     document = relationship("Document", back_populates="embeddings")
     document_content_id = Column(Integer, ForeignKey("document_content.id"))
     document_content = relationship("DocumentContent", back_populates="embedding")
+    writing_id = Column(Integer, ForeignKey("writing.id"))
+    writing = relationship("Writing", back_populates="embeddings")
     # --- encoding model/engine info
-    encoded_model_type = Column(Text()) # gpt3, clip
+    encoded_model_type = Column(Text()) # DEPRECATED: gpt3, clip
     encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
-    encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram, user_request_question
-    # --- post-encoding
+    encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram
+    # --- post-encoding/index
+    ai_action = Column(Text()) # enum value
+    index_id = Column(Text()) # aka Pinecone DB index id
+    index_partition_id = Column(Text()) # aka Pinecone DB namespace
+    indexed_status = Column(String()) # 'error', 'completed', 'queued'
     vector_dimensions=Column(Integer())
     vector_json=Column(JSONB) # for storing raw values to easily access later
-    npy_url = Column(Text()) # save npy binary to S3? probably unnecessary so now doing vector_json
+    npy_url = Column(Text()) # DEPRECATED: save npy binary to S3? probably unnecessary so now doing vector_json
     def serialize(self):
         return {
             "id": self.id,
@@ -214,6 +230,8 @@ class Embedding(BaseModel):
             "encoded_model_type": self.encoded_model_type,
             "encoded_model_engine": self.encoded_model_engine,
             "encoding_strategy": self.encoding_strategy,
+            "ai_action": self.ai_action,
+            "indexed_status": self.indexed_status,
         }
 
 class File(BaseModel):
@@ -241,22 +259,33 @@ class File(BaseModel):
             "upload_thumbnail_url": self.upload_thumbnail_url,
         }
 
-class AIActionLock(BaseModel):
-    __tablename__ = "ai_action_lock"
-    action = Column(Text())
-    model_name = Column(Text())
-    params = Column(JSON())
-    case_id = Column(Integer, ForeignKey('case.id'))
-    case = relationship("Case", back_populates="ai_action_locks")
+class LegalBriefFact(BaseModel):
+    __tablename__ = "legal_brief_fact"
+    id = Column(Integer, primary_key=True)
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="legal_brief_facts")
+    text = Column(Text())
     created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
+    def serialize(self):
+        return {
+            "id": self.id,
+            "case_id": self.case_id,
+            "text": self.text,
+            "created_at": self.created_at.isoformat() if self.created_at != None else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at != None else None,
+        }
 
 class Writing(BaseModel):
     __tablename__ = "writing"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="writings")
     organization_id = Column(Integer, ForeignKey("organization.id"))
     organization = relationship("Organization", back_populates="writing_templates")
+    embeddings = relationship("Embedding", back_populates="writing")
     name = Column(Text())
     is_template = Column(Boolean())
     body_html = Column(Text())
@@ -264,7 +293,6 @@ class Writing(BaseModel):
     generated_body_html = Column(Text())
     generated_body_text = Column(Text())
     forked_writing_id = Column(Integer, ForeignKey("writing.id"))
-    created_at = Column(DateTime(timezone=True))
     def serialize(self):
         return {
             "id": self.id,

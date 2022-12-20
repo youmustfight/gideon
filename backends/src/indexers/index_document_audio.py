@@ -92,6 +92,10 @@ async def _index_document_audio_process_embeddings(session, document_id: int) ->
             encoding_strategy="text",
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
+            ai_action=aiagent_sentence_embeder.ai_action.value,
+            index_id=aiagent_sentence_embeder.index_id,
+            index_partition_id=aiagent_sentence_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(sentence_embeddings_as_models)
     # --- batch sentences (batch processing to avoid rate limits/throttles)
@@ -106,6 +110,10 @@ async def _index_document_audio_process_embeddings(session, document_id: int) ->
             encoding_strategy="text",
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(),
+            ai_action=aiagent_sentences_20_embeder.ai_action.value,
+            index_id=aiagent_sentences_20_embeder.index_id,
+            index_partition_id=aiagent_sentences_20_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(sentences_20_embeddings_as_models)
     # --- SAVE

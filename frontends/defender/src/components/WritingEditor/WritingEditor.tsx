@@ -42,6 +42,7 @@ export const WritingEditor: React.FC<TWriterEditor> = ({ html, onChange }) => {
   }, []);
   // --- Lexical -> HTML
   const onEditorChange = (editorState: EditorState, editor: LexicalEditor) => {
+    // TODO: an update gets triggered when this component mounts
     editor.update(() => {
       const raw = $generateHtmlFromNodes(editor, null);
       onChange({

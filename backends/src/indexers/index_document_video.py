@@ -164,6 +164,10 @@ async def _index_document_video_process_embeddings(session, document_id: int) ->
             encoding_strategy="text",
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(), # converts ndarry -> list (but also makes serializable data)
+            ai_action=aiagent_sentence_embeder.ai_action.value,
+            index_id=aiagent_sentence_embeder.index_id,
+            index_partition_id=aiagent_sentence_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(sentence_embeddings_as_models)
     # --- batch sentences (batch processing to avoid rate limits/throttles)
@@ -178,6 +182,10 @@ async def _index_document_video_process_embeddings(session, document_id: int) ->
             encoding_strategy="text",
             vector_dimensions=len(embedding),
             vector_json=embedding.tolist(),
+            ai_action=aiagent_sentences_20_embeder.ai_action.value,
+            index_id=aiagent_sentences_20_embeder.index_id,
+            index_partition_id=aiagent_sentences_20_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(sentences_20_embeddings_as_models)
     # --- images
@@ -196,6 +204,10 @@ async def _index_document_video_process_embeddings(session, document_id: int) ->
             encoded_model_engine=aiagent_image_embeder.model_name,
             encoding_strategy="image",
             vector_json=image_embeddings[0].tolist(),
+            ai_action=aiagent_image_embeder.ai_action.value,
+            index_id=aiagent_image_embeder.index_id,
+            index_partition_id=aiagent_image_embeder.index_partition_id,
+            indexed_status='queued'
         ))
     session.add_all(image_embeddings_as_models)
     # --- SAVE

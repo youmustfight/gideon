@@ -30,7 +30,7 @@ const reqWritingPost = async (
   runAIWriter: boolean
 ): Promise<any> =>
   axios
-    .post(runAIWriter ? `${getGideonApiUrl()}/v1/writing/ai` : `${getGideonApiUrl()}/v1/writing`, {
+    .post(runAIWriter ? `${getGideonApiUrl()}/v1/ai/fill-writing-template` : `${getGideonApiUrl()}/v1/writing`, {
       body_html: bodyHtml,
       body_text: bodyText,
       case_id: caseId,
@@ -72,7 +72,6 @@ export const reqWritingDelete = async (writingId: number | string): Promise<void
 export const useWritingDelete = () =>
   useMutation(async (writingId: number) => reqWritingDelete(writingId), {
     onSuccess: () => {
-      queryClient.invalidateQueries(["writing"]);
       queryClient.invalidateQueries(["writings"]);
     },
   });

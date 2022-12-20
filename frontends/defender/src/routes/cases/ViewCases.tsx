@@ -16,7 +16,7 @@ export const ViewCases = () => {
   // RENDER
   return !organizations || !focusedOrgId ? null : (
     <StyledViewCases key={focusedOrgId}>
-      <div>
+      <div className="view-cases__panels">
         <OrganizationPanel organization={organizations?.find((o) => o.id === focusedOrgId)} />
         <CasesDriver />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
@@ -34,6 +34,11 @@ const StyledViewCases = styled.div`
   flex-direction: column;
   justify-content: space-between;
   min-height: 100vh;
+  .view-cases__panels {
+    & > * {
+      padding: 12px;
+    }
+  }
   .view-cases__buttons {
     display: flex;
     flex-direction: column;

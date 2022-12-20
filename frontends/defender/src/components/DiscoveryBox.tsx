@@ -125,7 +125,7 @@ export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
   return (
     <>
       <StyledDiscoveryBoxLead>
-        <h2>Documents</h2>
+        <h2>Discovery</h2>
         <form className="discovery-box__file-uploader" onSubmit={(e) => onSubmitFile(e)}>
           <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.doc,.docx" />
           <button type="submit">+ Upload</button>

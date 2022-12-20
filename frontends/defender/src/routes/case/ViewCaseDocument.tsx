@@ -1,8 +1,8 @@
-import { orderBy } from "lodash";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
@@ -307,9 +307,12 @@ export const ViewCaseDocument = () => {
       {/* DELETES */}
       <hr />
       <section>
-        <button disabled={isDeleting} onClick={deleteHandler} style={{ width: "100%" }}>
-          Delete Document
-        </button>
+        <ConfirmDeleteButton
+          prompts={["Delete Document", "Yes, Delete Document"]}
+          onClick={deleteHandler}
+          disabled={isDeleting}
+          style={{ width: "100%" }}
+        />
       </section>
     </StyledViewCaseDocument>
   );

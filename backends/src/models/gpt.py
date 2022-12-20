@@ -20,7 +20,7 @@ OPENAI_THROTTLE = 1.2
 
 # EMBEDDING
 def gpt_embedding(content, engine):
-    print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content}")
+    print(f"INFO (GPT3): gpt_embedding [{engine}] start = {content[0:100]}...")
     try:
         # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
         response = requests.post(
@@ -29,6 +29,7 @@ def gpt_embedding(content, engine):
             json={ 'model': engine, 'input': content }
         )
         response = response.json()
+        # print(f"INFO (GPT3): gpt_embedding [{engine}] response:", response)
         # v1 --- setup using faiss (was single embedding)
         # v2 --- setup with easy to use np arrays in a list, handling batch embeddings
         return list(map(lambda d: numpy.asarray(d['embedding'], dtype='float32'), response['data']))
