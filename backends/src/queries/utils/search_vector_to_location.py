@@ -5,6 +5,7 @@ def search_vector_to_location(sv, all_embeddings):
     # --- some embeddings don't have attrs (could be bad data)
     if (hasattr(sv_embedding, 'document_content') and hasattr(sv_embedding.document_content, 'document')):
         location = dict(
+            case_id=int(sv['metadata']['case_id']),
             document=sv_embedding.document_content.document,
             document_content=sv_embedding.document_content,
             image_file=sv_embedding.document_content.image_file if sv_embedding.document_content.image_file != None else None,

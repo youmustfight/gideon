@@ -25,6 +25,7 @@ from indexers.processors.job_index_document_image import job_index_document_imag
 from indexers.processors.job_index_document_pdf import job_index_document_pdf
 from indexers.processors.job_index_document_video import job_index_document_video
 from indexers.utils.index_document_prep import index_document_prep
+from queries.legal_brief_fact_similarity import legal_brief_fact_similarity
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
 from queries.utils.serialize_location import serialize_location
@@ -109,6 +110,19 @@ async def app_route_ai_query_document_locations(request):
         locations = await search_locations(
             session,
             query_text=request.json.get('query'),
+            case_id=request.json.get('case_id'))
+        # Serialize (TODO): make 'Location' class rather than plain dict
+        locations = list(map(serialize_location, locations))
+    return json({ 'status': 'success', 'data': { 'locations': locations } })
+
+@app.route('/v1/ai/query-legal-brief-fact-similiarty', methods = ['POST'])
+@auth_route
+async def app_route_ai_query_legal_brief_fact_similarity(request):
+    session = request.ctx.session
+    async with session.begin():
+        # Fetch
+        locations = await legal_brief_fact_similarity(
+            session,
             case_id=request.json.get('case_id'))
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
