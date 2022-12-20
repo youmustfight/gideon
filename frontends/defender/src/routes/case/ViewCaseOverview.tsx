@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { CaseFacts } from "../../components/CaseFacts";
+import { LegalBriefFacts } from "../../components/LegalBriefFacts";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
@@ -19,7 +19,7 @@ export const ViewCaseOverview = () => {
 
       {/* CASE FACTS */}
       <section>
-        <CaseFacts caseId={focusedCaseId} />
+        <LegalBriefFacts caseId={focusedCaseId} />
       </section>
 
       {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
