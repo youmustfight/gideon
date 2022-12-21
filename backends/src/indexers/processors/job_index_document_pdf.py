@@ -1,7 +1,7 @@
 from dbs.sa_sessions import create_sqlalchemy_session
 from indexers.index_document_pdf import index_document_pdf
 
-async def job_index_document_pdf(document_id):
+async def job_index_document_pdf(job_ctx, document_id):
     session = create_sqlalchemy_session()
     # --- process embeddings/extractions
     async with session.begin():
