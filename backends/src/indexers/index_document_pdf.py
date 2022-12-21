@@ -156,7 +156,7 @@ async def _index_document_pdf_process_extractions(session, document_id: int) -> 
     #  TODO: await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
     print('INFO (index_document_pdf.py:_index_document_pdf_process_extractions): events')
-    document.document_events = await extract_document_events_v1(document_content_text)
+    # document.document_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
     #  TODO: await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document
