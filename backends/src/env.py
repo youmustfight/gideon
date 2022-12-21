@@ -46,6 +46,11 @@ def env_get_database_pinecone_api_key():
     return _env_getter('DATABASE_PINECONE_API_KEY')
 def env_get_database_pinecone_environment():
     return _env_getter('DATABASE_PINECONE_ENVIRONMENT')
+def env_get_database_pinecone_index_1536_cosine():
+    return _env_getter('DATABASE_PINECONE_INDEX_1536_COSINE')
+def env_get_database_pinecone_index_768_cosine():
+    return _env_getter('DATABASE_PINECONE_INDEX_768_COSINE')
+
 
 # ENV
 def env_target_service() -> str: # 'api' or 'worker'
