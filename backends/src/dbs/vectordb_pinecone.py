@@ -12,9 +12,9 @@ pinecone.init(
 )
 class VECTOR_INDEX_ID(Enum):
     index_384_cosine = 'development-384-cosine' # sentence encoder
-    index_768_cosine = 'development-768-cosine' # clip (and also will be used by a better sentence encoder)
+    index_768_cosine = env.env_get_database_pinecone_index_768_cosine() # clip (and also will be used by a better sentence encoder)
     index_1024_cosine = 'development-1024-cosine' # DEPRECATED ada 001
-    index_1536_cosine = 'development-1536-cosine' # ada 002
+    index_1536_cosine = env.env_get_database_pinecone_index_1536_cosine() # ada 002
     index_4096_euclidean = 'development-4096-euclidean' # DEPRECATED curie
     index_12288_euclidean = 'development-12288-euclidean' # DEPRECATED davinci
 
