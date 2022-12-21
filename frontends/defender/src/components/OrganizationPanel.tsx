@@ -2,8 +2,10 @@ import React from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
+import { TOrganization } from "../data/useOrganizations";
+import { TUser } from "../data/useUser";
 
-export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization: any }> = ({
+export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
   allowNavigate,
   organization,
 }) => {
@@ -14,7 +16,7 @@ export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization
   return (
     <StyledOrganizationPanel>
       <h2>Name: {organization.name}</h2>
-      <p>{organization.users.map((u) => u.name).join(", ")}</p>
+      <p>{organization?.users?.map((u) => u.name).join(", ")}</p>
       {allowNavigate === true && (
         <button
           onClick={() => {
