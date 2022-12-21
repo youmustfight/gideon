@@ -9,7 +9,7 @@ from dbs.sa_sessions import create_sqlalchemy_session
 from dbs.sa_models import Document, DocumentContent, Embedding
 
 # Schedule to run every ??? minute (see scheduled.py)
-async def scheduled_job_embeddings_upserter():
+async def job_cron_embeddings_upserter(job_ctx):
     print('INFO (scheduled_job_embeddings_upserter) start')
     session = create_sqlalchemy_session()
     
