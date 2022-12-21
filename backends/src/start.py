@@ -2,7 +2,6 @@ from multiprocessing import Process
 import torch
 from api import start_api
 from worker import start_worker
-from scheduled import start_scheduled
 
 # INIT
 # Restrict PyTorch Processor Usage (blocks other processors):
@@ -30,9 +29,7 @@ if __name__ == "__main__":
     # v4 PROCESSES (start api + worker, only wait for worker to resolve, that way if it errors, i think the whole container stops?)
     pApi = Process(target=start_api)
     pWorker = Process(target=start_worker)
-    pCron = Process(target=start_scheduled)
     pApi.start()
     pWorker.start()
-    pCron.start()
     # --- block till return (if worker returns re-start. load balancer health check will check api)
     pWorker.join()
