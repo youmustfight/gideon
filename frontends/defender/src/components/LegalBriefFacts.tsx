@@ -21,7 +21,7 @@ const LegalBriefFactBox: React.FC<{ legalBriefFact: TLegalBriefFact; caseId: num
   const [legalBriefFactLocations, setLegalBriefFactLocations] = useState<TQueryLocation[]>();
   const { mutateAsync: legalBriefFactUpdate } = useLegalBriefFactUpdate();
   const { mutateAsync: legalBriefFactDelete } = useLegalBriefFactDelete();
-  useDebounce(() => legalBriefFactUpdate({ id: legalBriefFact.id, caseId, text: newLegalBriefFactText }), 1000 * 2, [
+  useDebounce(() => legalBriefFactUpdate({ id: legalBriefFact.id, text: newLegalBriefFactText }), 1000 * 2, [
     newLegalBriefFactText,
   ]);
 

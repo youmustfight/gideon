@@ -1,7 +1,7 @@
 from dbs.sa_sessions import create_sqlalchemy_session
 from indexers.index_document_audio import index_document_audio
 
-async def job_index_document_audio(document_id):
+async def job_index_document_audio(job_ctx, document_id):
     session = create_sqlalchemy_session()
     # --- process embeddings/extractions
     async with session.begin():

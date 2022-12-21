@@ -6,16 +6,19 @@
 import React, { useEffect } from "react";
 import htmlToPdfmake from "html-to-pdfmake";
 import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+// import pdfFonts from "pdfmake/build/vfs_fonts";
 import styled from "styled-components";
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-export const PdfPreview = ({ html }) => {
+type TPdfPreviewProps = { html: string };
+
+export const PdfPreview: React.FC<TPdfPreviewProps> = ({ html }) => {
   // ON HTML CHANGE
   useEffect(() => {
     // --- convert html to content stack
     const content = htmlToPdfmake(html, {
       tableAutoSize: true,
+      // @ts-ignore
       customTag: (params) => {
         var ret = params.ret;
         var element = params.element;
@@ -36,7 +39,9 @@ export const PdfPreview = ({ html }) => {
       },
     };
     console.log("PdfPreview documentDefinition", documentDefinition);
-    pdfMake.createPdf(documentDefinition).getDataUrl((dataStr) => {
+    // @ts-ignore
+    pdfMake.createPdf(documentDefinition).getDataUrl((dataStr: string) => {
+      // @ts-ignore
       document.getElementById("pdfmake-iframe").src = dataStr;
     });
   }, [html]);

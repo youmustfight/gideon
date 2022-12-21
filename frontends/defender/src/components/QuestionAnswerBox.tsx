@@ -22,7 +22,7 @@ export const QuestionAnswerBox = () => {
     setAnswer(null);
     setIsAnswerPending(true);
     return reqQueryDocument({
-      caseId: focusedCaseId,
+      caseId: focusedCaseId!,
       query: answerQuestion,
     }).then(({ answer, locations }) => {
       setAnswer({ answer, locations });
@@ -35,7 +35,7 @@ export const QuestionAnswerBox = () => {
     e.preventDefault();
     setAnswer(null);
     setIsAnswerPending(true);
-    return reqQueryDocumentLocations({ caseId: focusedCaseId, query: infoLocationQuestion }).then(({ locations }) => {
+    return reqQueryDocumentLocations({ caseId: focusedCaseId!, query: infoLocationQuestion }).then(({ locations }) => {
       setAnswer({ locations });
       setIsAnswerPending(false);
     });

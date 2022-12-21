@@ -1,10 +1,12 @@
 import axios from "axios";
 import { useQuery } from "react-query";
 import { getGideonApiUrl } from "../env";
+import { TUser } from "./useUser";
 
 export type TOrganization = {
   id: number;
   name?: string;
+  users?: TUser[];
 };
 
 // Filters for user via forOrgnaization

@@ -1,10 +1,9 @@
 from contextvars import ContextVar
 from datetime import datetime
-import logging
+from typing import List
 from sanic import Sanic
 from sanic.response import json
 from sanic_cors import CORS
-from strawberry.sanic.views import GraphQLView
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
@@ -19,11 +18,6 @@ from indexers.index_document_audio import _index_document_audio_process_extracti
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
-from indexers.processors.job_index_cap_caselaw import job_index_cap_caselaw
-from indexers.processors.job_index_document_audio import job_index_document_audio
-from indexers.processors.job_index_document_image import job_index_document_image
-from indexers.processors.job_index_document_pdf import job_index_document_pdf
-from indexers.processors.job_index_document_video import job_index_document_video
 from indexers.utils.index_document_prep import index_document_prep
 from queries.legal_brief_fact_similarity import legal_brief_fact_similarity
 from queries.question_answer import question_answer
@@ -31,23 +25,23 @@ from queries.search_locations import search_locations
 from queries.writing_similarity import writing_similarity
 from queries.utils.serialize_location import serialize_location
 from queries.write_template_with_ai import write_template_with_ai
-from queues import indexing_queue
+from worker import create_queue_pool
 
 # INIT
-app = Sanic('api')
-app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing outside the api endpoints, disallowing 503 timeout responses now
+api_app = Sanic('api')
+api_app.config['RESPONSE_TIMEOUT'] = 60 * 30 # HACK: until we move pdf processing outside the api endpoints, disallowing 503 timeout responses now
 
 
 # MIDDLEWARE
 # --- cors
-CORS(app)
+CORS(api_app)
 # --- db driver + session context (https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.params.autocommit)
 _base_model_session_ctx = ContextVar('session')
-@app.middleware('request')
+@api_app.middleware('request')
 async def inject_session(request):
     request.ctx.session = create_sqlalchemy_session()
     request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
-@app.middleware('response')
+@api_app.middleware('response')
 async def close_session(request, response):
     if hasattr(request.ctx, "session_ctx_token"):
         _base_model_session_ctx.reset(request.ctx.session_ctx_token)
@@ -55,7 +49,7 @@ async def close_session(request, response):
 
     
 # AUTH
-@app.route('/v1/auth/login', methods = ['POST'])
+@api_app.route('/v1/auth/login', methods = ['POST'])
 async def app_route_auth_login(request):
     session = request.ctx.session
     async with session.begin():
@@ -74,7 +68,7 @@ async def app_route_auth_login(request):
                 'message': 'No user found.' if user == None else 'Bad password.',
             }, status=400)
 
-@app.route('/v1/auth/user', methods = ['GET'])
+@api_app.route('/v1/auth/user', methods = ['GET'])
 async def app_route_auth_user(request):
     session = request.ctx.session 
     async with session.begin():
@@ -90,7 +84,7 @@ async def app_route_auth_user(request):
 
 
 # AI ACTIONS/QUERIES
-@app.route('/v1/ai/fill-writing-template', methods = ['POST'])
+@api_app.route('/v1/ai/fill-writing-template', methods = ['POST'])
 @auth_route
 async def app_route_ai_fill_writing_template(request):
     session = request.ctx.session
@@ -109,7 +103,7 @@ async def app_route_ai_fill_writing_template(request):
     await session.commit()
     return json({ 'status': 'success' })
 
-@app.route('/v1/ai/query-document-answer', methods = ['POST'])
+@api_app.route('/v1/ai/query-document-answer', methods = ['POST'])
 @auth_route
 async def app_route_ai_query_document_answer(request):
     session = request.ctx.session
@@ -121,7 +115,7 @@ async def app_route_ai_query_document_answer(request):
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
-@app.route('/v1/ai/query-document-locations', methods = ['POST'])
+@api_app.route('/v1/ai/query-document-locations', methods = ['POST'])
 @auth_route
 async def app_route_ai_query_document_locations(request):
     session = request.ctx.session
@@ -135,7 +129,7 @@ async def app_route_ai_query_document_locations(request):
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
 
-@app.route('/v1/ai/query-legal-brief-fact-similiarty', methods = ['POST'])
+@api_app.route('/v1/ai/query-legal-brief-fact-similiarty', methods = ['POST'])
 @auth_route
 async def app_route_ai_query_legal_brief_fact_similarity(request):
     session = request.ctx.session
@@ -149,7 +143,7 @@ async def app_route_ai_query_legal_brief_fact_similarity(request):
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
 
-@app.route('/v1/ai/query-writing-similarity', methods = ['POST'])
+@api_app.route('/v1/ai/query-writing-similarity', methods = ['POST'])
 @auth_route
 async def app_route_ai_query_writing_similarity(request):
     session = request.ctx.session
@@ -167,7 +161,7 @@ async def app_route_ai_query_writing_similarity(request):
 
 
 # CASES
-@app.route('/v1/cases', methods = ['GET'])
+@api_app.route('/v1/cases', methods = ['GET'])
 @auth_route
 async def app_route_cases(request):
     session = request.ctx.session
@@ -182,7 +176,7 @@ async def app_route_cases(request):
         cases_json = serialize_list(user.cases)
     return json({ 'status': 'success', "cases": cases_json })
 
-@app.route('/v1/case/<case_id>', methods = ['GET'])
+@api_app.route('/v1/case/<case_id>', methods = ['GET'])
 @auth_route
 async def app_route_case_get(request, case_id):
     session = request.ctx.session
@@ -193,7 +187,7 @@ async def app_route_case_get(request, case_id):
         case_json = case.serialize()
     return json({ 'status': 'success', "case": case_json })
 
-@app.route('/v1/case/<case_id>', methods = ['PUT'])
+@api_app.route('/v1/case/<case_id>', methods = ['PUT'])
 @auth_route
 async def app_route_case_put(request, case_id):
     session = request.ctx.session
@@ -206,7 +200,7 @@ async def app_route_case_put(request, case_id):
         session.add(case)
     return json({ 'status': 'success' })
 
-@app.route('/v1/case/<case_id>/ai_action_locks_reset', methods = ['PUT'])
+@api_app.route('/v1/case/<case_id>/ai_action_locks_reset', methods = ['PUT'])
 @auth_route
 async def app_route_case_put_action_locks(request, case_id):
     session = request.ctx.session
@@ -219,30 +213,31 @@ async def app_route_case_put_action_locks(request, case_id):
         session.add_all(generate_ai_action_locks(case_id))
     return json({ 'status': 'success' })
 
-@app.route('/v1/case/<case_id>/reindex_all_documents', methods = ['PUT'])
+@api_app.route('/v1/case/<case_id>/reindex_all_documents', methods = ['PUT'])
 @auth_route
 async def app_route_case_put_reprocess_all_data(request, case_id):
     session = request.ctx.session
     async with session.begin():
         case_id = int(case_id)
         query_documents = await session.execute(sa.select(Document).where(Document.case_id == case_id))
-        documents = query_documents.scalars().all()
+        documents: List[Document] = query_documents.scalars().all()
         # --- for each document, delete embeddings, document content, remove from vector dbs/indexes
         for document in documents:
             await deindex_document(session, document.id)
     # --- for each document, re-run document processing + embedding + vector db/index upsertion
+    arq_pool = await create_queue_pool()
     for document in documents:
         if document.type == 'pdf':
-            indexing_queue.enqueue(job_index_document_pdf, document.id)
+            await arq_pool.enqueue_job('job_index_document_pdf', document.id)
         if document.type == 'image':
-            indexing_queue.enqueue(job_index_document_image, document.id)
+            await arq_pool.enqueue_job('job_index_document_image', document.id)
         if document.type == 'audio':
-            indexing_queue.enqueue(job_index_document_audio, document.id)
+            await arq_pool.enqueue_job('job_index_document_audio', document.id)
         if document.type == 'video':
-            indexing_queue.enqueue(job_index_document_video, document.id)
+            await arq_pool.enqueue_job('job_index_document_video', document.id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/case', methods = ['POST'])
+@api_app.route('/v1/case', methods = ['POST'])
 @auth_route
 async def app_route_case_post(request):
     session = request.ctx.session
@@ -260,7 +255,7 @@ async def app_route_case_post(request):
 
 
 # CASE FACTS
-@app.route('/v1/legal_brief_facts', methods = ['GET'])
+@api_app.route('/v1/legal_brief_facts', methods = ['GET'])
 @auth_route
 async def app_route_legal_brief_facts_get(request):
     session = request.ctx.session
@@ -274,7 +269,7 @@ async def app_route_legal_brief_facts_get(request):
         legal_brief_facts_json = serialize_list(legal_brief_facts)
     return json({ 'status': 'success', 'data': { 'legal_brief_facts': legal_brief_facts_json } })
 
-@app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['GET'])
+@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['GET'])
 @auth_route
 async def app_route_legal_brief_fact_get(request, legal_brief_fact_id):
     session = request.ctx.session
@@ -285,7 +280,7 @@ async def app_route_legal_brief_fact_get(request, legal_brief_fact_id):
         legal_brief_fact_json = legal_brief_fact.serialize()
     return json({ 'status': 'success', "legal_brief_fact": legal_brief_fact_json })
 
-@app.route('/v1/legal_brief_fact', methods = ['POST'])
+@api_app.route('/v1/legal_brief_fact', methods = ['POST'])
 @auth_route
 async def app_route_legal_brief_facts_post(request):
     session = request.ctx.session
@@ -296,7 +291,7 @@ async def app_route_legal_brief_facts_post(request):
     await session.commit()
     return json({ 'status': 'success', })
 
-@app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['PUT'])
+@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['PUT'])
 @auth_route
 async def app_route_legal_brief_fact_put(request, legal_brief_fact_id):
     session = request.ctx.session
@@ -311,7 +306,7 @@ async def app_route_legal_brief_fact_put(request, legal_brief_fact_id):
         session.add(legal_brief_fact)
     return json({ 'status': 'success' })
 
-@app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['DELETE'])
+@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['DELETE'])
 @auth_route
 async def app_route_legal_brief_fact_delete(request, legal_brief_fact_id):
     session = request.ctx.session
@@ -323,19 +318,20 @@ async def app_route_legal_brief_fact_delete(request, legal_brief_fact_id):
 
 
 # CASELAW
-@app.route('/v1/cap/caselaw/index', methods = ['POST'])
+@api_app.route('/v1/cap/caselaw/index', methods = ['POST'])
 @auth_route
 async def app_route_cap_caselaw_index(request):
     session = request.ctx.session
     async with session.begin():
         cap_ids = request.json['cap_ids']
+        arq_pool = await create_queue_pool()
         for cap_id in cap_ids:
-            indexing_queue.enqueue(job_index_cap_caselaw, cap_id)
+            await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
     return json({ 'status': 'success' })
 
 
 # DOCUMENTS
-@app.route('/v1/document/<document_id>', methods = ['GET'])
+@api_app.route('/v1/document/<document_id>', methods = ['GET'])
 @auth_route
 async def app_route_document_get(request, document_id):
     session = request.ctx.session
@@ -360,7 +356,7 @@ async def app_route_document_get(request, document_id):
         document_json['files'] = serialize_list(document.files)
     return json({ 'status': 'success', 'data': { 'document': document_json } })
 
-@app.route('/v1/document/<document_id>', methods = ['DELETE'])
+@api_app.route('/v1/document/<document_id>', methods = ['DELETE'])
 @auth_route
 async def app_route_document_delete(request, document_id):
     session = request.ctx.session
@@ -376,7 +372,7 @@ async def app_route_document_delete(request, document_id):
             .where(Document.id == int(document_id)))
     return json({ 'status': 'success' })
 
-@app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
+@api_app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
 @auth_route
 async def app_route_document_extractions(request, document_id):
     session = request.ctx.session
@@ -394,7 +390,7 @@ async def app_route_document_extractions(request, document_id):
             await _index_document_video_process_extractions(session=session, document_id=document.id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/documents', methods = ['GET'])
+@api_app.route('/v1/documents', methods = ['GET'])
 @auth_route
 async def app_route_documents(request):
     session = request.ctx.session
@@ -418,7 +414,7 @@ async def app_route_documents(request):
 
 
 # INDEXERS
-@app.route('/v1/index/document/pdf', methods = ['POST'])
+@api_app.route('/v1/index/document/pdf', methods = ['POST'])
 @auth_route
 async def app_route_index_document_pdf(request):
     pyfile = request.files['file'][0]
@@ -428,10 +424,11 @@ async def app_route_index_document_pdf(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_document_pdf, document_id)
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_index_document_pdf', document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/index/document/image', methods = ['POST'])
+@api_app.route('/v1/index/document/image', methods = ['POST'])
 @auth_route
 async def app_route_index_document_image(request):
     pyfile = request.files['file'][0]
@@ -441,10 +438,11 @@ async def app_route_index_document_image(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_document_image, document_id)
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_index_document_image', document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/index/document/audio', methods = ['POST'])
+@api_app.route('/v1/index/document/audio', methods = ['POST'])
 @auth_route
 async def app_route_index_document_audio(request):
     pyfile = request.files['file'][0]
@@ -454,10 +452,11 @@ async def app_route_index_document_audio(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_document_audio, document_id)
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_index_document_audio', document_id)
     return json({ 'status': 'success' })
 
-@app.route('/v1/index/document/video', methods = ['POST'])
+@api_app.route('/v1/index/document/video', methods = ['POST'])
 @auth_route
 async def app_route_index_document_video(request):
     pyfile = request.files['file'][0]
@@ -467,18 +466,19 @@ async def app_route_index_document_video(request):
     document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
     await session.commit()
     # --- queue processing
-    indexing_queue.enqueue(job_index_document_video, document_id)
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_index_document_video', document_id)
     return json({ 'status': 'success' })
 
 
 # HEALTH
-@app.route('/health', methods = ['GET'])
+@api_app.route('/health', methods = ['GET'])
 def app_route_health(request):
     return json({ 'status': 'success' })
 
 
 # HIGHLIGHTS (TODO: removed this concept, will re-introduce when desired)
-@app.route('/v1/highlights', methods = ['GET'])
+@api_app.route('/v1/highlights', methods = ['GET'])
 @auth_route
 async def app_route_highlights(request):
     highlights = []
@@ -486,7 +486,7 @@ async def app_route_highlights(request):
 
 
 # ORGANIZATIONS
-@app.route('/v1/organizations', methods = ['GET'])
+@api_app.route('/v1/organizations', methods = ['GET'])
 @auth_route
 async def app_route_organizations(request):
     session = request.ctx.session
@@ -508,7 +508,7 @@ async def app_route_organizations(request):
 
 
 # WRITING
-@app.route('/v1/writings', methods = ['GET'])
+@api_app.route('/v1/writings', methods = ['GET'])
 @auth_route
 async def app_route_writings_get(request):
     session = request.ctx.session
@@ -531,7 +531,7 @@ async def app_route_writings_get(request):
         writings_json = serialize_list(writings)
     return json({ 'status': 'success', 'data': { 'writings': writings_json } })
 
-@app.route('/v1/writing/<writing_id>', methods = ['GET'])
+@api_app.route('/v1/writing/<writing_id>', methods = ['GET'])
 @auth_route
 async def app_route_writing_get(request, writing_id):
     session = request.ctx.session
@@ -542,7 +542,7 @@ async def app_route_writing_get(request, writing_id):
         writing_json = writing.serialize()
     return json({ 'status': 'success', "writing": writing_json })
 
-@app.route('/v1/writing', methods = ['POST'])
+@api_app.route('/v1/writing', methods = ['POST'])
 @auth_route
 async def app_route_writings_post(request):
     session = request.ctx.session
@@ -559,7 +559,7 @@ async def app_route_writings_post(request):
     await session.commit()
     return json({ 'status': 'success' })
 
-@app.route('/v1/writing/<writing_id>', methods = ['PUT'])
+@api_app.route('/v1/writing/<writing_id>', methods = ['PUT'])
 @auth_route
 async def app_route_writing_put(request, writing_id):
     session = request.ctx.session
@@ -578,7 +578,7 @@ async def app_route_writing_put(request, writing_id):
         session.add(writing)
     return json({ 'status': 'success' })
 
-@app.route('/v1/writing/<writing_id>', methods = ['DELETE'])
+@api_app.route('/v1/writing/<writing_id>', methods = ['DELETE'])
 @auth_route
 async def app_route_writing_delete(request, writing_id):
     session = request.ctx.session
@@ -590,7 +590,7 @@ async def app_route_writing_delete(request, writing_id):
 
 
 # USERS
-@app.route('/v1/user/<user_id>', methods = ['GET'])
+@api_app.route('/v1/user/<user_id>', methods = ['GET'])
 @auth_route
 async def app_route_user(request, user_id):
     session = request.ctx.session
@@ -601,7 +601,7 @@ async def app_route_user(request, user_id):
         user_json = user.serialize() 
     return json({ 'status': 'success', "user": user_json })
 
-@app.route('/v1/users', methods = ['GET'])
+@api_app.route('/v1/users', methods = ['GET'])
 @auth_route
 async def app_route_users(request):
     session = request.ctx.session
@@ -617,7 +617,7 @@ def start_api():
     host = env.env_get_gideon_api_host()
     port = env.env_get_gideon_api_port()
     # RUN API WORKERS
-    app.run(
+    api_app.run(
         host=host,
         port=port,
         auto_reload=False, # auto-reload only for dev. done via watchdog pkg in docker-compose file

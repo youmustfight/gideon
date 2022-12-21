@@ -5,7 +5,7 @@ from dbs.sa_models import Writing
 from indexers.index_writing import index_writing
 
 # Schedule to run every ??? minute (see scheduled.py)
-async def scheduled_job_index_writing():
+async def job_cron_index_writing(job_ctx):
     print('INFO (scheduled_job_index_writing) start')
     session = create_sqlalchemy_session()
 

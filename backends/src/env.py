@@ -74,10 +74,10 @@ def env_get_open_ai_api_key():
     return _env_getter('OPEN_AI_API_KEY')
 
 # QUEUE
-def env_queue_rq_host():
-    return _env_getter('QUEUE_RQ_HOST')
-def env_queue_rq_port():
-    return _env_getter('QUEUE_RQ_PORT')
+def env_queue_host():
+    return _env_getter('QUEUE_HOST')
+def env_queue_port():
+    return _env_getter('QUEUE_PORT')
 
 # INITIALIZE (V2)
 def set_secrets_on_env():

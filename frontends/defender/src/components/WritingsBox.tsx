@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { reqQueryWritingSimilarity } from "../data/useQueryAI";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
-import { useWritings } from "../data/useWritings";
+import { TWriting, useWritings } from "../data/useWritings";
 import { SlimBox } from "./styled/StyledBox";
 
 type TWritingsBoxProps = {
@@ -38,6 +38,7 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
   const [similarWritingIds, setSimilarWritingIds] = useState<number[]>();
   const searchQueryWritingHelper = async () => {
     const { locations } = await reqQueryWritingSimilarity({ caseId, query: searchQueryWriting });
+    // @ts-ignore
     setSimilarWritingIds(locations?.map((l) => l.writing_id));
   };
   const clearSearch = () => {
@@ -76,18 +77,22 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
           <button onClick={clearSearch}>Clear</button>
         </form>
       </StyledWritingsBoxSearch>
-      <StyledWritingsBox>
-        {(similarWritingIds
-          ? similarWritingIds?.map((writingId) => writings?.find((w) => w.id === writingId))
-          : writings
-        )?.map((w) => (
-          <SlimBox key={w.id}>
-            <p>
-              <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
-            </p>
-          </SlimBox>
-        ))}
-      </StyledWritingsBox>
+      {writings && (
+        <StyledWritingsBox>
+          {(similarWritingIds
+            ? similarWritingIds
+                .map((writingId) => writings.find((w) => w.id === writingId))
+                .filter((wr) => wr !== undefined)
+            : writings
+          )?.map((w: any) => (
+            <SlimBox key={w.id}>
+              <p>
+                <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
+              </p>
+            </SlimBox>
+          ))}
+        </StyledWritingsBox>
+      )}
     </div>
   );
 };

@@ -12,12 +12,13 @@ export const ViewCases = () => {
   const { mutateAsync: logout } = useUserLogout();
   const { data: organizations } = useOrganizations();
   const { focusedOrgId } = useAppStore();
+  const focusedOrg = organizations?.find((o) => o.id === focusedOrgId);
 
   // RENDER
   return !organizations || !focusedOrgId ? null : (
     <StyledViewCases key={focusedOrgId}>
       <div className="view-cases__panels">
-        <OrganizationPanel organization={organizations?.find((o) => o.id === focusedOrgId)} />
+        {focusedOrg && <OrganizationPanel organization={focusedOrg} />}
         <CasesDriver />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
       </div>

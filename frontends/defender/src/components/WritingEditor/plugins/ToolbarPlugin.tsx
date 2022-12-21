@@ -1,3 +1,6 @@
+// @ts-nocheck
+// TODO: should actually check, so remove this occassionaly but this is gonna be busted/weird for a bit
+
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {

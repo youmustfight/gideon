@@ -5,7 +5,7 @@ from indexers.index_legal_brief_facts import index_legal_brief_facts
 from dbs.sa_models import LegalBriefFact
 
 # Schedule to run every ??? minute (see scheduled.py)
-async def scheduled_job_index_legal_brief_facts():
+async def job_cron_index_legal_brief_facts(job_ctx):
     print('INFO (scheduled_job_index_legal_brief_facts) start')
     session = create_sqlalchemy_session()
 

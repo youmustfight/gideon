@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { useCaseCreate } from "../data/useCase";
+import { TCase, useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
 import { reqQueryLegalBriefFactSimilarity } from "../data/useQueryAI";
 import { useUser } from "../data/useUser";
@@ -22,9 +22,10 @@ export const CasesDriver: React.FC = () => {
   // --- cases similarity
   const [similarComparisonCaseId, setSimilarComparisonCaseId] = useState<Number>();
   const [similarCaseIds, setSimilarCaseIds] = useState<Number[]>();
-  const viewSimilarCasesHandler = async (caseId) => {
+  const viewSimilarCasesHandler = async (caseId: number) => {
     setSimilarComparisonCaseId(caseId);
     const locations = await reqQueryLegalBriefFactSimilarity({ caseId }).then(({ locations }) => locations);
+    // @ts-ignore
     setSimilarCaseIds(locations?.map((l) => l.case_id));
   };
   const clearSimilarCasesView = () => {
@@ -39,52 +40,59 @@ export const CasesDriver: React.FC = () => {
         <h2>Cases</h2>
         {user ? <button onClick={() => caseCreationHelper()}>+ Add Case</button> : null}
       </div>
-      {/* CASES LISTS */}
-      {similarComparisonCaseId ? (
+      {cases && (
         <>
-          {/* SIMILARITY LIST */}
-          {((c) => (
-            <BoxWithRightSideButton>
-              <span>
-                {c.name ?? "Untitled Case"} (#{c.id})
-              </span>
-              <div>
-                <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-              </div>
-            </BoxWithRightSideButton>
-          ))(cases?.find((c) => c.id === similarComparisonCaseId))}
-          <button onClick={clearSimilarCasesView} style={{ width: "100%" }}>
-            Clear Case Similarity Search
-          </button>
-          <hr />
-          {similarCaseIds
-            ?.map((caseId) => cases?.find((c) => c.id === caseId))
-            ?.map((c) => (
-              <BoxWithRightSideButton key={c.id}>
-                <span>
-                  {c.name ?? "Untitled Case"} (#{c.id})
-                </span>
-                <div>
-                  <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-                </div>
-              </BoxWithRightSideButton>
-            ))}
-        </>
-      ) : (
-        <>
-          {/* REGULAR CASES LIST */}
-          {cases?.map((c) => (
-            <BoxWithRightSideButton key={c.id}>
-              <span>
-                {c.name ?? "Untitled Case"} (#{c.id})
-              </span>
-              <div>
-                <button onClick={() => viewSimilarCasesHandler(c.id)}>View Cases Like This</button>
-                &ensp;
-                <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-              </div>
-            </BoxWithRightSideButton>
-          ))}
+          {/* CASES LISTS */}
+          {similarComparisonCaseId ? (
+            <>
+              {/* SIMILARITY LIST */}
+              {((c: any) => (
+                <BoxWithRightSideButton>
+                  <span>
+                    {c.name ?? "Untitled Case"} (#{c.id})
+                  </span>
+                  <div>
+                    <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
+                  </div>
+                </BoxWithRightSideButton>
+              ))(cases.find((c) => c.id === similarComparisonCaseId))}
+              <button onClick={clearSimilarCasesView} style={{ width: "100%" }}>
+                Clear Case Similarity Search
+              </button>
+              <hr />
+              {similarCaseIds
+                ? similarCaseIds
+                    .map((caseId) => cases.find((c) => c.id === caseId))
+                    .filter((c) => c != null)
+                    .map((c: any) => (
+                      <BoxWithRightSideButton key={c.id}>
+                        <span>
+                          {c.name ?? "Untitled Case"} (#{c.id})
+                        </span>
+                        <div>
+                          <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
+                        </div>
+                      </BoxWithRightSideButton>
+                    ))
+                : null}
+            </>
+          ) : (
+            <>
+              {/* REGULAR CASES LIST */}
+              {cases.map((c) => (
+                <BoxWithRightSideButton key={c.id}>
+                  <span>
+                    {c.name ?? "Untitled Case"} (#{c.id})
+                  </span>
+                  <div>
+                    <button onClick={() => viewSimilarCasesHandler(c.id)}>View Cases Like This</button>
+                    &ensp;
+                    <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
+                  </div>
+                </BoxWithRightSideButton>
+              ))}
+            </>
+          )}
         </>
       )}
     </StyledCasesDriver>
