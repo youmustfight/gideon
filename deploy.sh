@@ -218,20 +218,25 @@ function update_api_task () {
   AWS_ECS_TASK_API=$(get_secret ".AWS_ECS_TASK_API")
   AWS_ECS_TASK_API_CPU=$(get_secret ".AWS_ECS_TASK_API_CPU")
   AWS_ECS_TASK_API_MEMORY=$(get_secret ".AWS_ECS_TASK_API_MEMORY")
+  DATADOG_API_KEY=$(get_secret ".DATADOG_API_KEY")
+  DATADOG_SITE=$(get_secret ".DATADOG_SITE")
   # Setup
   API_IMAGE_TARGET="$AWS_ECR_REGISTRY/$AWS_ECR_REPO_API:$GIT_SHA"
   API_NGINX_IMAGE_TARGET="$AWS_ECR_REGISTRY/$AWS_ECR_REPO_API_NGINX:latest"
   GIDEON_API_PORT=$(get_secret ".GIDEON_API_PORT")
   DOCKER_IMAGE_NAME_API=$(get_secret ".DOCKER_IMAGE_NAME_API")
-  CONTAINER_DEFINITION_API="{\"name\":\"$DOCKER_IMAGE_NAME_API\",\"image\":\"$API_IMAGE_TARGET\",\"essential\":true,\"memoryReservation\":995,\"portMappings\":[{\"containerPort\":$GIDEON_API_PORT,\"hostPort\":$GIDEON_API_PORT}],\"dependsOn\":[],\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/api/api\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"ecs\"}}}"
+  CONTAINER_DEFINITION_API="{\"name\":\"$DOCKER_IMAGE_NAME_API\",\"image\":\"$API_IMAGE_TARGET\",\"essential\":true,\"memoryReservation\":995,\"portMappings\":[{\"containerPort\":$GIDEON_API_PORT,\"hostPort\":$GIDEON_API_PORT}],\"dependsOn\":[{\"containerName\":\"datadog-agent\",\"condition\":\"START\"}],\"logConfiguration\":{\"logDriver\":\"awsfirelens\",\"options\":{\"Name\":\"datadog\",\"apikey\":\"$DATADOG_API_KEY\",\"Host\":\"http-intake.logs.datadoghq.com\",\"dd_service\":\"$DOCKER_IMAGE_NAME_API\",\"dd_source\":\"$DOCKER_IMAGE_NAME_API\",\"dd_message_key\":\"log\",\"TLS\":\"on\",\"provider\":\"ecs\"}}}"
+  CONTAINER_DEFINITION_DATADOG="{\"portMappings\":[{\"hostPort\":8126,\"protocol\":\"tcp\",\"containerPort\":8126}],\"cpu\":10,\"environment\":[{\"name\":\"DD_APM_NON_LOCAL_TRAFFIC\",\"value\":\"true\"},{\"name\":\"DD_API_KEY\",\"value\":\"$DATADOG_API_KEY\"},{\"name\":\"DD_APM_IGNORE_RESOURCES\",\"value\":\"BRPOPLPUSH,EVALSHA,brpoplpush,evalsha\"},{\"name\":\"DD_SITE\",\"value\":\"$DATADOG_SITE\"},{\"name\":\"DD_IGNORE_RESOURCES\",\"value\":\"BRPOPLPUSH,EVALSHA,brpoplpush,evalsha\"},{\"name\":\"DD_PROCESS_AGENT_ENABLED\",\"value\":\"true\"},{\"name\":\"ECS_FARGATE\",\"value\":\"true\"},{\"name\":\"DD_APM_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_LOGS_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL\",\"value\":\"true\"}],\"memoryReservation\":256,\"image\":\"datadog/agent:latest\",\"essential\":true,\"name\":\"datadog-agent\"}"
+  CONTAINER_DEFINITION_FLUENT_BIT="{\"essential\":true,\"image\":\"amazon/aws-for-fluent-bit:latest\",\"name\":\"log_router\",\"firelensConfiguration\":{\"type\":\"fluentbit\",\"options\":{\"enable-ecs-log-metadata\":\"true\",\"config-file-type\":\"file\",\"config-file-value\":\"/fluent-bit/configs/parse-json.conf\"}}}"
   CONTAINER_DEFINITION_NGINX="{\"name\":\"nginx\",\"image\":\"$API_NGINX_IMAGE_TARGET\",\"essential\":true,\"cpu\":256,\"memory\":100,\"portMappings\":[{\"hostPort\":80,\"protocol\":\"tcp\",\"containerPort\":80}],\"dependsOn\":[],\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/api/nginx\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"ecs\"}}}"
   # Run
   aws ecs register-task-definition \
     --family $AWS_ECS_TASK_API \
-    --container-definitions "[$CONTAINER_DEFINITION_API,$CONTAINER_DEFINITION_NGINX]" \
+    --container-definitions "[$CONTAINER_DEFINITION_API,$CONTAINER_DEFINITION_DATADOG,$CONTAINER_DEFINITION_FLUENT_BIT,$CONTAINER_DEFINITION_NGINX]" \
     --requires-compatibilities 'FARGATE' \
     --cpu $AWS_ECS_TASK_API_CPU \
     --memory $AWS_ECS_TASK_API_MEMORY \
+    --ephemeral-storage 'sizeInGiB=40' \
     --network-mode 'awsvpc' \
     --task-role-arn $AWS_EXECUTION_ROLE_ARN \
     --execution-role-arn $AWS_EXECUTION_ROLE_ARN \
