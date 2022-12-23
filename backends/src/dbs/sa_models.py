@@ -13,17 +13,11 @@ class BaseModel(Base):
     id = Column(Integer(), primary_key=True)
 
 # helper func to run serialize on a list of models
-def serialize_list(models):
-    return list(map(lambda model: model.serialize(), to_list(models)))
+def serialize_list(models, serialize_relationships=[]):
+    return list(map(lambda model: model.serialize(serialize_relationships), to_list(models)))
 
 # JUNCTION TABLES
 
-organization_case_junction = Table(
-    "organization_case",
-    Base.metadata,
-    Column("case_id", ForeignKey("case.id"), primary_key=True),
-    Column("organization_id", ForeignKey("organization.id"), primary_key=True),
-)
 organization_user_junction = Table(
     "organization_user",
     Base.metadata,
@@ -49,7 +43,7 @@ class User(BaseModel):
     created_at = Column(DateTime(timezone=True))
     cases = relationship("Case", secondary=case_user_junction, back_populates="users")
     organizations = relationship("Organization", secondary=organization_user_junction, back_populates="users")
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "name": self.name,
@@ -64,10 +58,10 @@ class Organization(BaseModel):
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
     name = Column(Text())
-    cases = relationship("Case", secondary=organization_case_junction, back_populates="organizations")
+    cases = relationship("Case", back_populates="organization")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
     writing_templates = relationship("Writing", back_populates="organization")
-    def serialize(self, serialize_relationships):
+    def serialize(self, serialize_relationships=[]):
         cases = None
         users = None
         writing_templates = None
@@ -91,7 +85,8 @@ class Case(BaseModel):
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
     name = Column(Text())
-    organizations = relationship("Organization", secondary=organization_case_junction, back_populates="cases")
+    organization_id = Column(Integer, ForeignKey("organization.id"))
+    organization = relationship("Organization", back_populates="cases")
     users = relationship("User", secondary=case_user_junction, back_populates="cases")
     documents = relationship("Document", back_populates="case")
     embeddings = relationship("Embedding", back_populates="case")
@@ -100,12 +95,15 @@ class Case(BaseModel):
     ai_action_locks = relationship("AIActionLock", back_populates="case")
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
+        users = None
+        if 'users' in serialize_relationships:
+            users = serialize_list(self.users)
         return {
             "id": self.id,
             "name": self.name,
             # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
-            # "users": list(map(lambda user: user.serialize(), to_list(self.users))),
+            "users": users,
         }
 
 class AIActionLock(BaseModel):
@@ -146,7 +144,7 @@ class Document(BaseModel):
     # TEMPORARY for citing slavery experiment
     document_citing_slavery_summary = Column(Text()) 
     document_citing_slavery_summary_one_liner = Column(Text()) 
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "case_id": self.case_id,
@@ -182,7 +180,7 @@ class DocumentContent(BaseModel):
     # --- audio/video
     second_start = Column(Integer)
     second_end = Column(Integer)
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "document_id": self.document_id,
@@ -222,7 +220,7 @@ class Embedding(BaseModel):
     vector_dimensions=Column(Integer())
     vector_json=Column(JSONB) # for storing raw values to easily access later
     npy_url = Column(Text()) # DEPRECATED: save npy binary to S3? probably unnecessary so now doing vector_json
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "document_id": self.document_id,
@@ -248,7 +246,7 @@ class File(BaseModel):
     upload_key = Column(Text())
     upload_url = Column(Text())
     upload_thumbnail_url = Column(Text())
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "document_id": self.document_id,
@@ -267,7 +265,7 @@ class LegalBriefFact(BaseModel):
     text = Column(Text())
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "case_id": self.case_id,
@@ -293,7 +291,7 @@ class Writing(BaseModel):
     generated_body_html = Column(Text())
     generated_body_text = Column(Text())
     forked_writing_id = Column(Integer, ForeignKey("writing.id"))
-    def serialize(self):
+    def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
             "case_id": self.case_id,
