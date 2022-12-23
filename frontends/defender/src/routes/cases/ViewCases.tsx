@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { CasesDriver } from "../../components/CasesDriver";
+import { OrgCasesList } from "../../components/OrgCasesList";
 import { OrganizationDriver } from "../../components/OrganizationDriver";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
@@ -17,7 +17,7 @@ export const ViewCases = () => {
     <StyledViewCases key={focusedOrgId}>
       <div className="view-cases__panels">
         {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
-        <CasesDriver />
+        <OrgCasesList />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
       </div>
     </StyledViewCases>

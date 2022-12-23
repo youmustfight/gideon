@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { TOrganization, useOrganizationUserUpdate } from "../data/useOrganizations";
-import { TUser, useUserUpdate } from "../data/useUser";
+import { TUser, useUser, useUserUpdate } from "../data/useUser";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
 
 export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
@@ -12,6 +12,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
 }) => {
   const navigate = useNavigate();
   const app = useAppStore();
+  const { data: user } = useUser();
   const { mutateAsync: updateUser } = useUserUpdate();
   const { mutateAsync: updateOrganizationUser } = useOrganizationUserUpdate();
   const [showDetails, setShowDetails] = useState(false);
@@ -103,7 +104,8 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                   </td>
                   <td className="row-actions">
                     <ConfirmDeleteButton
-                      prompts={["Remove", "Yes, Remove"]}
+                      disabled={user.id === u.id}
+                      prompts={user.id === u.id ? ["You"] : ["Remove", "Yes, Remove"]}
                       onClick={() =>
                         updateOrganizationUser({ action: "remove", organization_id: app.focusedOrgId, user_id: u.id })
                       }
