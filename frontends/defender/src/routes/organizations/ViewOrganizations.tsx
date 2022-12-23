@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { OrganizationPanel } from "../../components/OrganizationPanel";
+import { OrganizationDriver } from "../../components/OrganizationDriver";
 import { useOrganizations } from "../../data/useOrganizations";
 
 export const ViewOrganizations = () => {
@@ -10,7 +10,7 @@ export const ViewOrganizations = () => {
   return (
     <StyledViewOrganizations>
       {organizations?.map((org) => (
-        <OrganizationPanel key={org.id} allowNavigate organization={org} />
+        <OrganizationDriver key={org.id} allowNavigate organization={org} />
       ))}
     </StyledViewOrganizations>
   );

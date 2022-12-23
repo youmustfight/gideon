@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { CasesDriver } from "../../components/CasesDriver";
-import { OrganizationPanel } from "../../components/OrganizationPanel";
+import { OrganizationDriver } from "../../components/OrganizationDriver";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
 import { useOrganizations } from "../../data/useOrganizations";
@@ -16,7 +16,7 @@ export const ViewCases = () => {
   return !organizations || !focusedOrgId ? null : (
     <StyledViewCases key={focusedOrgId}>
       <div className="view-cases__panels">
-        {focusedOrg && <OrganizationPanel organization={focusedOrg} />}
+        {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
         <CasesDriver />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
       </div>

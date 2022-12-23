@@ -6,7 +6,7 @@ import { TOrganization, useOrganizationUserUpdate } from "../data/useOrganizatio
 import { TUser, useUserUpdate } from "../data/useUser";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
 
-export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
+export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
   allowNavigate,
   organization,
 }) => {
@@ -18,7 +18,7 @@ export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization
 
   // RENDER
   return (
-    <StyledOrganizationPanel>
+    <StyledOrganizationDriver>
       <div className="org-panel__lead">
         <div className="org-panel__lead__text">
           <h5>{organization.name}</h5>
@@ -114,11 +114,11 @@ export const OrganizationPanel: React.FC<{ allowNavigate?: boolean; organization
           </table>
         </div>
       )}
-    </StyledOrganizationPanel>
+    </StyledOrganizationDriver>
   );
 };
 
-const StyledOrganizationPanel = styled.div`
+const StyledOrganizationDriver = styled.div`
   background: white;
   border-radius: 6px;
   margin: 12px;
