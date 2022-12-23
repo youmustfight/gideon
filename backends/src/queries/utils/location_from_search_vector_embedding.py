@@ -8,7 +8,7 @@ def location_from_search_vector_embedding(sv, all_embeddings):
     # --- form document/documentcontent
     if (hasattr(embedding, 'document_content') and hasattr(embedding.document_content, 'document')):
         return dict(
-            case_id=embedding.case_id,
+            case_id=embedding.document.case_id,
             document=embedding.document_content.document,
             document_content=embedding.document_content,
             image_file=embedding.document_content.image_file if embedding.document_content.image_file != None else None,

@@ -4,13 +4,13 @@ import { getGideonApiUrl } from "../env";
 import { TCase } from "./useCase";
 
 type TUseCasesParams = {
-  userId?: number;
+  organizationId?: number;
 };
 
 const reqCasesGet = async (params: TUseCasesParams): Promise<TCase[]> => {
   return axios
-    .get(`${getGideonApiUrl()}/v1/cases`, { params: { user_id: params.userId } })
-    .then((res) => res.data.cases);
+    .get(`${getGideonApiUrl()}/v1/cases`, { params: { organization_id: params.organizationId } })
+    .then((res) => res.data.data.cases);
 };
 
 export const useCases = (params: TUseCasesParams) => {

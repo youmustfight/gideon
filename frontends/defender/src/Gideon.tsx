@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Route, Routes, useNavigate } from "react-router";
+import { Navigate, Route, Routes, useNavigate } from "react-router";
 import { ViewCase } from "./routes/case/ViewCase";
 import { ViewLogin } from "./routes/login/ViewLogin";
 import { useUser } from "../src/data/useUser";
@@ -12,6 +12,7 @@ import { ViewOrganizations } from "./routes/organizations/ViewOrganizations";
 import { useOrganizations } from "./data/useOrganizations";
 import { useAppStore } from "./data/AppStore";
 import { ViewWriting } from "./routes/writing/ViewWriting";
+import { ViewProfile } from "./routes/profile/ViewProfile";
 
 export const Gideon: React.FC = () => {
   const navigate = useNavigate();
@@ -87,7 +88,19 @@ export const Gideon: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      {/* SETTINGS/PROFILE */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute user={user}>
+            <ToolWindow>
+              <ViewProfile />
+            </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
       {/* NO MATCH */}
+      <Route path="/" element={<Navigate to="/cases" />} />
       <Route
         path="*"
         element={

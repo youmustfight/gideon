@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { getGideonApiUrl } from "../env";
 import { TUser } from "./useUser";
 
@@ -19,3 +19,21 @@ export const useOrganizations = () => {
     refetchInterval: 1000 * 60 * 15,
   });
 };
+
+// USER UPDATE
+type TUseOrganizationUserParams = {
+  action: "add" | "remove";
+  organization_id: number;
+  user_id?: number;
+  user?: TUser;
+};
+
+const reqOrganizationUserPost = async (params: TUseOrganizationUserParams): Promise<TUser> =>
+  axios.post(`${getGideonApiUrl()}/v1/organization/${params.organization_id}/user`, params);
+
+export const useOrganizationUserUpdate = () =>
+  useMutation(async (data: TUseOrganizationUserParams) => reqOrganizationUserPost(data), {
+    onSuccess: () => {
+      // TODO
+    },
+  });

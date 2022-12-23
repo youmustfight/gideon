@@ -1,15 +1,13 @@
 import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { CasesDriver } from "../../components/CasesDriver";
-import { OrganizationPanel } from "../../components/OrganizationPanel";
+import { OrgCasesList } from "../../components/OrgCasesList";
+import { OrganizationDriver } from "../../components/OrganizationDriver";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
 import { useOrganizations } from "../../data/useOrganizations";
 import { useUserLogout } from "../../data/useUser";
 
 export const ViewCases = () => {
-  const navigate = useNavigate();
-  const { mutateAsync: logout } = useUserLogout();
   const { data: organizations } = useOrganizations();
   const { focusedOrgId } = useAppStore();
   const focusedOrg = organizations?.find((o) => o.id === focusedOrgId);
@@ -18,13 +16,9 @@ export const ViewCases = () => {
   return !organizations || !focusedOrgId ? null : (
     <StyledViewCases key={focusedOrgId}>
       <div className="view-cases__panels">
-        {focusedOrg && <OrganizationPanel organization={focusedOrg} />}
-        <CasesDriver />
+        {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
+        <OrgCasesList />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
-      </div>
-      <div className="view-cases__buttons">
-        <button onClick={() => navigate("/organizations")}>Go to Organizations</button>
-        <button onClick={() => logout()}>Logout</button>
       </div>
     </StyledViewCases>
   );

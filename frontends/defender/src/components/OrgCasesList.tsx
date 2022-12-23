@@ -1,21 +1,27 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
+import { useAppStore } from "../data/AppStore";
 import { TCase, useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
 import { reqQueryLegalBriefFactSimilarity } from "../data/useQueryAI";
 import { useUser } from "../data/useUser";
 import { BoxWithRightSideButton } from "./styled/StyledBox";
 
-export const CasesDriver: React.FC = () => {
+export const OrgCasesList: React.FC = () => {
   const navigate = useNavigate();
+  const app = useAppStore();
   const { data: user } = useUser();
-  const { data: cases } = useCases({ userId: user?.id });
+  const { data: cases } = useCases({ organizationId: app.focusedOrgId });
   const { mutateAsync: caseCreate } = useCaseCreate();
   // --- case creation post navigation
   const caseCreationHelper = async () => {
     if (user) {
-      const cse = await caseCreate({ userId: user.id });
+      const cse = await caseCreate({
+        name: prompt("Name of Case:") ?? "",
+        organization_id: app.focusedOrgId,
+        user_id: user.id,
+      });
       navigate(`/case/${cse.id}`);
     }
   };
@@ -35,7 +41,7 @@ export const CasesDriver: React.FC = () => {
 
   // RENDER
   return (
-    <StyledCasesDriver>
+    <StyledOrgCasesList>
       <div className="cases-driver__section-lead">
         <h2>Cases</h2>
         {user ? <button onClick={() => caseCreationHelper()}>+ Add Case</button> : null}
@@ -48,9 +54,7 @@ export const CasesDriver: React.FC = () => {
               {/* SIMILARITY LIST */}
               {((c: any) => (
                 <BoxWithRightSideButton>
-                  <span>
-                    {c.name ?? "Untitled Case"} (#{c.id})
-                  </span>
+                  <span>{c.name ?? "Untitled Case"}</span>
                   <div>
                     <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
                   </div>
@@ -67,7 +71,11 @@ export const CasesDriver: React.FC = () => {
                     .map((c: any) => (
                       <BoxWithRightSideButton key={c.id}>
                         <span>
-                          {c.name ?? "Untitled Case"} (#{c.id})
+                          {c.name ?? "Untitled Case"}
+                          <small className="case-panel__users">
+                            <span className="case-panel__users__assigned">👩‍💼:</span>{" "}
+                            {c.users?.map((u) => u.name).join(", ")}
+                          </small>
                         </span>
                         <div>
                           <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
@@ -82,7 +90,10 @@ export const CasesDriver: React.FC = () => {
               {cases.map((c) => (
                 <BoxWithRightSideButton key={c.id}>
                   <span>
-                    {c.name ?? "Untitled Case"} (#{c.id})
+                    {c.name ?? "Untitled Case"}
+                    <small className="case-panel__users">
+                      <span className="case-panel__users__assigned">👩‍💼:</span> {c.users?.map((u) => u.name).join(", ")}
+                    </small>
                   </span>
                   <div>
                     <button onClick={() => viewSimilarCasesHandler(c.id)}>View Cases Like This</button>
@@ -95,11 +106,11 @@ export const CasesDriver: React.FC = () => {
           )}
         </>
       )}
-    </StyledCasesDriver>
+    </StyledOrgCasesList>
   );
 };
 
-const StyledCasesDriver = styled.div`
+const StyledOrgCasesList = styled.div`
   .cases-driver__section-lead {
     display: flex;
     justify-content: space-between;
@@ -116,5 +127,12 @@ const StyledCasesDriver = styled.div`
       min-width: 100px;
       max-width: 100px;
     }
+  }
+  .case-panel__users {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .case-panel__users__assigned {
   }
 `;
