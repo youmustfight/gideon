@@ -182,10 +182,13 @@ async def app_route_case_get(request, case_id):
     session = request.ctx.session
     async with session.begin():
         query_case = await session.execute(
-            sa.select(Case).where(Case.id == int(case_id)))
-        case = query_case.scalar_one_or_none()
-        case_json = case.serialize()
-    return json({ 'status': 'success', "case": case_json })
+            sa.select(Case)
+                .options(joinedload(Case.users))
+                .where(Case.id == int(case_id))
+        )
+        case = query_case.scalars().unique().one()
+        case_json = case.serialize(['users'])
+    return json({ 'status': 'success', 'data': { 'case': case_json } })
 
 @api_app.route('/v1/case/<case_id>', methods = ['PUT'])
 @auth_route
@@ -256,6 +259,30 @@ async def app_route_case_post(request):
         session.add(case_to_insert)
     return json({ 'status': 'success', 'data': { "case": { "id": case_to_insert.id } } })
 
+@api_app.route('/v1/case/<case_id>/user', methods = ['POST'])
+@auth_route
+async def app_route_organization_user(request, case_id):
+    session = request.ctx.session
+    action = request.json.get('action')
+    query_case = await session.execute(
+        sa.select(Case)
+            .options(joinedload(Case.users))
+            .where(Case.id == int(case_id)))
+    case = query_case.scalars().unique().one()
+    user_id = request.json.get('user_id')
+    query_user = await session.execute(sa.select(User).where(User.id == int(user_id)))
+    user = query_user.scalars().one()
+    # --- if adding
+    if action == 'add':
+        case.users.append(user)
+        session.add(case)
+    # --- if removing
+    elif action == 'remove':
+        case.users.remove(user)
+        session.add(case)
+    # --- save
+    await session.commit()
+    return json({ 'status': 'success' })
 
 # CASE FACTS
 @api_app.route('/v1/legal_brief_facts', methods = ['GET'])

@@ -102,7 +102,7 @@ class Case(BaseModel):
         return {
             "id": self.id,
             "name": self.name,
-            # "organizations": list(map(lambda org: org.serialize(), to_list(self.organizations))),
+            "organization_id": self.organization_id,
             "users": users,
         }
 
