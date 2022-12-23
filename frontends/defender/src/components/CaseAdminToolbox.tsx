@@ -17,8 +17,6 @@ export const CaseAdminToolbox: React.FC = () => {
       {isVisible ? (
         <>
           <CAPCaseLawDriver />
-          <button onClick={() => navigate("/organizations")}>Go to Organizations</button>
-          <br />
           <button onClick={() => reqCaseAILocksReset(focusedCaseId)}>Reset AI Action Locks</button>
           <br />
           <button onClick={() => reqCaseReindexAllDocuments(focusedCaseId)}>Re-Index All Documents</button>
