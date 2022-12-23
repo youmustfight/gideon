@@ -8,8 +8,6 @@ import { useOrganizations } from "../../data/useOrganizations";
 import { useUserLogout } from "../../data/useUser";
 
 export const ViewCases = () => {
-  const navigate = useNavigate();
-  const { mutateAsync: logout } = useUserLogout();
   const { data: organizations } = useOrganizations();
   const { focusedOrgId } = useAppStore();
   const focusedOrg = organizations?.find((o) => o.id === focusedOrgId);
@@ -21,10 +19,6 @@ export const ViewCases = () => {
         {focusedOrg && <OrganizationPanel organization={focusedOrg} />}
         <CasesDriver />
         <WritingsBox isTemplate organizationId={focusedOrgId} />
-      </div>
-      <div className="view-cases__buttons">
-        <button onClick={() => navigate("/organizations")}>Go to Organizations</button>
-        <button onClick={() => logout()}>Logout</button>
       </div>
     </StyledViewCases>
   );
