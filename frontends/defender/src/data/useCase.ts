@@ -3,11 +3,13 @@ import { useMutation, useQuery } from "react-query";
 import { getGideonApiUrl } from "../env";
 import { appStore } from "./AppStore";
 import { queryClient } from "./queryClient";
+import { TUser } from "./useUser";
 
 export type TCase = {
   id: number;
   name?: string;
   organization_id?: number;
+  users: TUser[];
 };
 
 // GET

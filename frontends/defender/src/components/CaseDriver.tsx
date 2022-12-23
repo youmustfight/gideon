@@ -81,7 +81,7 @@ export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
   );
 };
 
-const StyledCaseDriver = styled.div<{ isViewingCase: boolean }>`
+const StyledCaseDriver = styled.div`
   background: white;
   border-radius: 4px;
   margin: 12px;

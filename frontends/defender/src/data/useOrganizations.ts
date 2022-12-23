@@ -6,7 +6,7 @@ import { TUser } from "./useUser";
 export type TOrganization = {
   id: number;
   name?: string;
-  users?: TUser[];
+  users: TUser[];
 };
 
 // Filters for user via forOrgnaization
@@ -25,7 +25,7 @@ type TUseOrganizationUserParams = {
   action: "add" | "remove";
   organization_id: number;
   user_id?: number;
-  user?: TUser;
+  user?: Partial<TUser>;
 };
 
 const reqOrganizationUserPost = async (params: TUseOrganizationUserParams): Promise<TUser> =>

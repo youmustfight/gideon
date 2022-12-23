@@ -67,21 +67,24 @@ export const OrgCasesList: React.FC = () => {
               {similarCaseIds
                 ? similarCaseIds
                     .map((caseId) => cases.find((c) => c.id === caseId))
-                    .filter((c) => c != null)
-                    .map((c: any) => (
-                      <BoxWithRightSideButton key={c.id}>
-                        <span>
-                          {c.name ?? "Untitled Case"}
-                          <small className="case-panel__users">
-                            <span className="case-panel__users__assigned">👩‍💼:</span>{" "}
-                            {c.users?.map((u) => u.name).join(", ")}
-                          </small>
-                        </span>
-                        <div>
-                          <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-                        </div>
-                      </BoxWithRightSideButton>
-                    ))
+                    .filter((c) => c !== undefined)
+                    .map((c) => {
+                      const cse: TCase = c!;
+                      return (
+                        <BoxWithRightSideButton key={cse.id}>
+                          <span>
+                            {cse.name ?? "Untitled Case"}
+                            <small className="case-panel__users">
+                              <span className="case-panel__users__assigned">👩‍💼:</span>{" "}
+                              {cse.users.map((u) => u.name).join(", ")}
+                            </small>
+                          </span>
+                          <div>
+                            <button onClick={() => navigate(`/case/${cse.id}`)}>➡</button>
+                          </div>
+                        </BoxWithRightSideButton>
+                      );
+                    })
                 : null}
             </>
           ) : (
