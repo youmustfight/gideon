@@ -7,6 +7,7 @@ import { queryClient } from "./queryClient";
 export type TCase = {
   id: number;
   name?: string;
+  organization_id?: number;
 };
 
 // GET
@@ -21,11 +22,17 @@ export const useCase = (caseId: number) => {
 };
 
 // CREATE
-const reqCasePost = async ({ userId }: any): Promise<any> =>
-  axios.post(`${getGideonApiUrl()}/v1/case`, { userId }).then((res) => res.data.case);
+export type TCaseCreate = {
+  name?: string;
+  organization_id?: number;
+  user_id?: number;
+};
+
+const reqCasePost = async (data: TCaseCreate): Promise<any> =>
+  axios.post(`${getGideonApiUrl()}/v1/case`, data).then((res) => res.data.data.case);
 
 export const useCaseCreate = () =>
-  useMutation(async ({ userId }: { userId: number }) => reqCasePost({ userId }), {
+  useMutation(async (data: TCaseCreate) => reqCasePost(data), {
     onSuccess: (data) => {
       // Refetch data
       queryClient.invalidateQueries(["case"]);

@@ -167,14 +167,14 @@ async def app_route_cases(request):
     session = request.ctx.session
     async with session.begin():
         cases_json = []
-        query_user = await session.execute(
-            sa.select(User)
-                .options(selectinload(User.cases))
-                .where(User.id == int(request.args.get('user_id')))
+        query_cases = await session.execute(
+            sa.select(Case)
+                .options(joinedload(Case.users))
+                .where(Case.organization_id == int(request.args.get('organization_id')))
         )
-        user = query_user.scalar_one_or_none()
-        cases_json = serialize_list(user.cases)
-    return json({ 'status': 'success', "cases": cases_json })
+        cases = query_cases.scalars().unique().all()
+        cases_json = serialize_list(cases, ['users'])
+    return json({ 'status': 'success', 'data': { 'cases': cases_json } })
 
 @api_app.route('/v1/case/<case_id>', methods = ['GET'])
 @auth_route
@@ -243,15 +243,18 @@ async def app_route_case_post(request):
     session = request.ctx.session
     async with session.begin():
         # --- get user for relation
-        query_user = await session.execute(sa.select(User).where(User.id == int(request.json['userId'])))
+        query_user = await session.execute(sa.select(User).where(User.id == int(request.json['user_id'])))
         user = query_user.scalars().one()
         # --- insert case w/ user (model mapping/definition knows how to insert w/ junction table)
         case_to_insert = Case(
             ai_action_locks=generate_ai_action_locks(),
+            created_at=datetime.now(),
+            name=request.json['name'],
+            organization_id=request.json['organization_id'],
             users=[user]
         )
         session.add(case_to_insert)
-    return json({ 'status': 'success', "case": { "id": case_to_insert.id } })
+    return json({ 'status': 'success', 'data': { "case": { "id": case_to_insert.id } } })
 
 
 # CASE FACTS
@@ -506,6 +509,45 @@ async def app_route_organizations(request):
         organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
     return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
 
+@api_app.route('/v1/organization/<organization_id>/user', methods = ['POST'])
+@auth_route
+async def app_route_organization_user(request, organization_id):
+    session = request.ctx.session
+    action = request.json.get('action')
+    query_org = await session.execute(
+        sa.select(Organization)
+            .options(joinedload(Organization.users))
+            .where(Organization.id == int(organization_id)))
+    organization = query_org.scalars().unique().one()
+    # --- if adding
+    if action == 'add':
+        # --- check if user exists or not via email (TODO: user_id)
+        user_email = request.json.get('user').get('email')
+        query_user = await session.execute(sa.select(User).where(User.email == user_email))
+        user = query_user.scalar_one_or_none()
+        if user != None:
+            organization.users.append(user)
+            session.add(organization)
+        else:
+            user_to_insert = User(
+                name=request.json.get('user').get('name'),
+                email=request.json.get('user').get('email'),
+                organizations=[organization]
+            )
+            session.add(user_to_insert)
+    # --- if removing
+    elif action == 'remove':
+        user_id = request.json.get('user_id')
+        query_user = await session.execute(sa.select(User).where(User.id == int(user_id)))
+        user = query_user.scalars().one()
+        for u in organization.users:
+            if u.id == user.id:
+                organization.users.remove(u)
+                session.add(organization)
+    # --- save
+    await session.commit()
+    return json({ 'status': 'success' })
+
 
 # WRITING
 @api_app.route('/v1/writings', methods = ['GET'])
@@ -590,6 +632,16 @@ async def app_route_writing_delete(request, writing_id):
 
 
 # USERS
+@api_app.route('/v1/users', methods = ['GET'])
+@auth_route
+async def app_route_users(request):
+    session = request.ctx.session
+    async with session.begin():
+        query_user = await session.execute(sa.select(User))
+        users = query_user.scalars()
+        user_json = serialize_list(users)
+    return json({ 'status': 'success', "users": user_json })
+
 @api_app.route('/v1/user/<user_id>', methods = ['GET'])
 @auth_route
 async def app_route_user(request, user_id):
@@ -601,15 +653,21 @@ async def app_route_user(request, user_id):
         user_json = user.serialize() 
     return json({ 'status': 'success', "user": user_json })
 
-@api_app.route('/v1/users', methods = ['GET'])
+@api_app.route('/v1/user/<user_id>', methods = ['PUT'])
 @auth_route
-async def app_route_users(request):
+async def app_route_user_put(request, user_id):
     session = request.ctx.session
     async with session.begin():
-        query_user = await session.execute(sa.select(User))
-        users = query_user.scalars()
-        user_json = serialize_list(users)
-    return json({ 'status': 'success', "users": user_json })
+        query_user = await session.execute(
+            sa.select(User).where(User.id == int(user_id)))
+        user = query_user.scalars().one()
+        # TODO: make better lol
+        if (request.json.get('user').get('name')):
+            user.name = request.json['user']['name']
+        if (request.json.get('user').get('password')):
+            user.password = request.json['user']['password']
+        session.add(user)
+    return json({ 'status': 'success' })
 
 
 # RUN

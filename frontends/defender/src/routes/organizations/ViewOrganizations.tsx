@@ -10,7 +10,7 @@ export const ViewOrganizations = () => {
   return (
     <StyledViewOrganizations>
       {organizations?.map((org) => (
-        <OrganizationPanel allowNavigate organization={org} />
+        <OrganizationPanel key={org.id} allowNavigate organization={org} />
       ))}
     </StyledViewOrganizations>
   );
@@ -20,5 +20,4 @@ const StyledViewOrganizations = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 24px;
 `;

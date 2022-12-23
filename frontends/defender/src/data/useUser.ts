@@ -8,9 +8,10 @@ export type TUser = {
   id: number;
   name?: string;
   email?: string;
+  password?: string;
 };
 
-// FETCH
+// GET
 const reqUserGet = async (): Promise<TUser | null> =>
   axios.get(`${Env.getGideonApiUrl()}/v1/auth/user`).then((res) => res.data.user);
 
@@ -19,6 +20,20 @@ export const useUser = () => {
     refetchInterval: 1000 * 60,
   });
 };
+
+// UPDATE
+const reqUserPut = async (user: any): Promise<TUser> =>
+  axios.put(`${Env.getGideonApiUrl()}/v1/user/${user.id}`, { user }).then(() => {
+    // TODO
+    return user;
+  });
+
+export const useUserUpdate = () =>
+  useMutation(async (data: Partial<TUser>) => reqUserPut({ id: data.id, ...data }), {
+    onSuccess: () => {
+      // TODO
+    },
+  });
 
 // AUTH - LOGIN
 export type TUserLoginParams = {
