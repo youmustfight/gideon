@@ -12,7 +12,7 @@ export type TCase = {
 
 // GET
 const reqCaseGet = async (caseId: number): Promise<TCase> => {
-  return axios.get(`${getGideonApiUrl()}/v1/case/${caseId}`).then((res) => res.data.case);
+  return axios.get(`${getGideonApiUrl()}/v1/case/${caseId}`).then((res) => res.data.data.case);
 };
 
 export const useCase = (caseId: number) => {
@@ -62,3 +62,22 @@ export const reqCaseAILocksReset = async (caseId: number): Promise<TCase> => {
 export const reqCaseReindexAllDocuments = async (caseId: number): Promise<TCase> => {
   return axios.put(`${getGideonApiUrl()}/v1/case/${caseId}/reindex_all_documents`).then((res) => res.data);
 };
+
+// USER UPDATE
+type TUseCaseUserParams = {
+  action: "add" | "remove";
+  case_id: number;
+  user_id: number;
+};
+
+const reqCaseUser = async (params: TUseCaseUserParams): Promise<void> =>
+  axios.post(`${getGideonApiUrl()}/v1/case/${params.case_id}/user`, params);
+
+export const useCaseUserUpdate = () =>
+  useMutation(async (data: TUseCaseUserParams) => reqCaseUser(data), {
+    onSuccess: () => {
+      // TODO? other things?
+      queryClient.invalidateQueries(["case"]);
+      queryClient.invalidateQueries(["cases"]);
+    },
+  });

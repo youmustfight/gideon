@@ -19,12 +19,9 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
   // RENDER
   return (
     <StyledOrganizationDriver>
-      <div className="org-panel__lead">
-        <div className="org-panel__lead__text">
+      <div className="org-driver__lead">
+        <div className="org-driver__lead__text">
           <h5>{organization.name}</h5>
-          <small className="toggle-details" onClick={() => setShowDetails(!showDetails)}>
-            {showDetails ? "Hide" : "Show"} Details
-          </small>
         </div>
         {allowNavigate === true ? (
           <button
@@ -35,12 +32,16 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
           >
             Go&nbsp;to&nbsp;Organization
           </button>
-        ) : (
-          <button onClick={() => navigate("/profile")}>My&nbsp;Profile</button>
-        )}
+        ) : null}
+      </div>
+      <div className="org-driver__toggle-details">
+        <small>Attorneys 👩‍💼: {organization?.users.map((u) => u.name).join(", ")}</small>
+        <small className="" onClick={() => setShowDetails(!showDetails)}>
+          {showDetails ? "Hide" : "Show"} Details
+        </small>
       </div>
       {showDetails && (
-        <div className="org-panel__staff">
+        <div className="org-driver__staff">
           <table>
             <thead>
               <tr>
@@ -123,14 +124,14 @@ const StyledOrganizationDriver = styled.div`
   border-radius: 6px;
   margin: 12px;
   padding: 0 !important;
-  .org-panel__lead {
+  .org-driver__lead {
     display: flex;
     align-items: center;
     button {
       margin: 0 12px;
     }
   }
-  .org-panel__lead__text {
+  .org-driver__lead__text {
     display: flex;
     align-items: center;
     padding: 12px;
@@ -147,7 +148,15 @@ const StyledOrganizationDriver = styled.div`
       opacity: 0.5;
     }
   }
-  .org-panel__staff {
+  .org-driver__toggle-details {
+    font-size: 12px;
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 0 12px 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .org-driver__staff {
     border-top: 1px solid #ddd;
     padding: 0 12px 12px;
     table,
@@ -164,14 +173,14 @@ const StyledOrganizationDriver = styled.div`
     button {
       font-size: 13px;
     }
+    th {
+      font-weight: 900;
+    }
     form {
       display: flex;
       input {
         max-width: 100px;
       }
-    }
-    th {
-      font-weight: 900;
     }
     .row-actions {
       text-align: right;
