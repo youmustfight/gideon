@@ -3,7 +3,6 @@ import { Routes, Route, useParams } from "react-router";
 import styled from "styled-components";
 import { CaseAdminToolbox } from "../../components/CaseAdminToolbox";
 import { CaseDriver } from "../../components/CaseDriver";
-import { QuestionAnswerBox } from "../../components/QuestionAnswerBox";
 import { useAppStore } from "../../data/AppStore";
 import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
@@ -24,11 +23,6 @@ export const ViewCase = () => {
     <>
       <CaseDriver caseId={caseId} />
       <StyledViewCase>
-        {/* --- AI inputs --- */}
-        <section>
-          <QuestionAnswerBox />
-        </section>
-
         {/* --- CASE VIEWS ---  */}
         <Routes>
           {/* --- document inspection */}
@@ -40,17 +34,13 @@ export const ViewCase = () => {
           {/* --- default overview showing. TODO: figure out relative path version */}
           {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
         </Routes>
-
-        {/* --- ADMIN ---  */}
-        <hr />
-        <br />
-        <CaseAdminToolbox />
       </StyledViewCase>
     </>
   );
 };
 
 const StyledViewCase = styled.div`
+  margin-top: 20px;
   a,
   a:active a:visited,
   a:hover {
@@ -85,9 +75,9 @@ const StyledViewCase = styled.div`
   }
   section {
     box-shadow: rgb(0 0 0 / 4%) 0px 0 60px 0px;
-    border-radius: 24px;
+    border-radius: 4px;
     padding: 12px;
-    margin: 10px 24px;
+    margin: 10px 12px;
     &:first-of-type {
       margin-top: 0;
     }

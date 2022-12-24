@@ -13,40 +13,52 @@ export type TQueryLocation = {
 
 export const reqQueryDocument = async ({
   caseId,
+  documentId,
   query,
 }: {
   caseId: number;
+  documentId?: number;
   query: string;
 }): Promise<{ answer: string; locations: TQueryLocation[] }> =>
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-document-answer`, {
       case_id: caseId,
+      document_id: documentId,
       question: query,
     })
     .then((res) => ({ answer: res.data.data.answer, locations: res.data.data.locations }));
 
 export const reqQueryDocumentLocations = async ({
   caseId,
+  documentId,
   query,
 }: {
   caseId: number;
+  documentId?: number;
   query: string;
 }): Promise<{ locations: TQueryLocation[] }> =>
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-document-locations`, {
       case_id: caseId,
+      document_id: documentId,
       query,
     })
     .then((res) => ({ locations: res.data.data.locations }));
 
 export const reqQueryLegalBriefFactSimilarity = async ({
   caseId,
+  organizationId,
+  query,
 }: {
-  caseId: number;
+  caseId?: number;
+  organizationId: number;
+  query?: string;
 }): Promise<{ locations: TQueryLocation[] }> =>
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-legal-brief-fact-similiarty`, {
       case_id: caseId,
+      organization_id: organizationId,
+      query,
     })
     .then((res) => ({ locations: res.data.data.locations }));
 

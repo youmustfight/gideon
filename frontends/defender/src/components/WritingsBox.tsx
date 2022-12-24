@@ -64,7 +64,7 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
           {!isTemplate && <button onClick={() => onWritingCreate(true)}>+ Fill with AI</button>}
         </div>
       </StyledWritingsBoxLead>
-      <StyledWritingsBoxSearch>
+      {/* <StyledWritingsBoxSearch>
         <form onSubmit={(e) => e.preventDefault()}>
           <input
             placeholder="Search writings..."
@@ -76,7 +76,7 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
           </button>
           <button onClick={clearSearch}>Clear</button>
         </form>
-      </StyledWritingsBoxSearch>
+      </StyledWritingsBoxSearch> */}
       {writings && (
         <StyledWritingsBox>
           {(similarWritingIds

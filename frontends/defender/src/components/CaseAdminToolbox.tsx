@@ -1,27 +1,33 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
-import { useAppStore } from "../data/AppStore";
+import styled from "styled-components";
 import { reqCaseAILocksReset, reqCaseReindexAllDocuments } from "../data/useCase";
-import { CAPCaseLawDriver } from "./CAPCaseLawDriver";
 
-export const CaseAdminToolbox: React.FC = () => {
-  const navigate = useNavigate();
-  const { focusedCaseId } = useAppStore();
+export const CaseAdminToolbox: React.FC<{ caseId: number }> = ({ caseId }) => {
   const [isVisible, setIsVisible] = useState(false);
-
-  return !focusedCaseId ? null : (
-    <section className="section-admin">
+  // RENDER
+  return !caseId ? null : (
+    <StyledCaseAdminToolbox>
       <u onClick={() => setIsVisible(!isVisible)}>
         <small>Show/Hide Admin Tools</small>
       </u>
       {isVisible ? (
-        <>
-          <CAPCaseLawDriver />
-          <button onClick={() => reqCaseAILocksReset(focusedCaseId)}>Reset AI Action Locks</button>
-          <br />
-          <button onClick={() => reqCaseReindexAllDocuments(focusedCaseId)}>Re-Index All Documents</button>
-        </>
+        <div>
+          <button onClick={() => reqCaseAILocksReset(caseId)}>Reset AI Action Locks</button>
+          <button onClick={() => reqCaseReindexAllDocuments(caseId)}>Re-Index All Documents</button>
+        </div>
       ) : null}
-    </section>
+    </StyledCaseAdminToolbox>
   );
 };
+
+const StyledCaseAdminToolbox = styled.div`
+  small,
+  button {
+    font-size: 12px;
+  }
+  div {
+    display: flex;
+    flex-direction: column;
+    margin-top: 4px;
+  }
+`;
