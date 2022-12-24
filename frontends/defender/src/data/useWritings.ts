@@ -8,11 +8,12 @@ export type TWriting = {
   name: string;
   body_html: string;
   body_text: string;
+  is_template: boolean;
 };
 
 type TWritingFilterParams = {
   caseId?: number;
-  isTemplate: boolean;
+  isTemplate?: boolean;
   organizationId?: number;
 };
 
