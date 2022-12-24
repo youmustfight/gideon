@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { ViewCase } from "./routes/case/ViewCase";
 import { ViewLogin } from "./routes/login/ViewLogin";
 import { useUser } from "../src/data/useUser";
@@ -15,15 +15,17 @@ import { ViewWriting } from "./routes/writing/ViewWriting";
 import { ViewProfile } from "./routes/profile/ViewProfile";
 
 export const Gideon: React.FC = () => {
-  const navigate = useNavigate();
   const { data: user, isSuccess: isSuccessUserFetch } = useUser();
   const { data: organizations } = useOrganizations();
-  const { focusedCaseId, focusedOrgId, setFocusedOrgId } = useAppStore();
+  const { focusedOrgId, setFocusedOrgId } = useAppStore();
   // ON MOUNT
-  // --- set focused org if none
   useEffect(() => {
-    if (!focusedOrgId && organizations?.[0]?.id) setFocusedOrgId(organizations?.[0]?.id);
-  }, [organizations]);
+    // --- set focused org if none
+    if (!focusedOrgId && organizations && user) {
+      const userOrgId = organizations?.find((o) => o.users.some((u) => u.id === user.id))?.id;
+      if (userOrgId) setFocusedOrgId(userOrgId);
+    }
+  }, [organizations, user]);
 
   // RENDER
   return !isSuccessUserFetch ? null : (

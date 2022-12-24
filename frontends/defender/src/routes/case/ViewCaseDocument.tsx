@@ -4,6 +4,7 @@ import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
+import { InquiryBox } from "../../components/InquiryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { TDocument } from "../../data/useDocuments";
@@ -160,10 +161,6 @@ export const ViewCaseDocument = () => {
   const caseId = Number(params?.caseId);
   const documentId = Number(params?.documentId);
   const { data: document, isFetched: isFetchedDocument } = useDocument(documentId);
-  // const {mutateAsync: updateDocument} = useDocumentUpdate();
-  // --- highlights
-  // const { data: highlights = [] } = useHighlights();
-  // const hasHighlights = false; // TODO: refactor highlights.some((hl) => hl.filename === filename);
   // --- deletion
   const [isDeleting, setIsDeleting] = useState(false);
   const deleteHandler = async () => {
@@ -184,30 +181,32 @@ export const ViewCaseDocument = () => {
 
   // RENDER
   return !document ? null : (
-    <StyledViewCaseDocument>
-      {/* HEAD */}
-      <div className="document-title">
-        <h4>
-          <b>{document.document_description}</b>
-        </h4>
-      </div>
-      <div className="document-header">
-        <Link to={`/case/${caseId}`}>
-          <button>←</button>
-        </Link>
-        <input
-          placeholder="Untitled Name"
-          value={document?.name}
-          disabled
-          // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
-        />
-      </div>
+    <>
+      <InquiryBox />
+      <StyledViewCaseDocument>
+        {/* HEAD */}
+        <div className="document-title">
+          <h4>
+            <b>{document.document_description}</b>
+          </h4>
+        </div>
+        <div className="document-header">
+          <Link to={`/case/${caseId}`}>
+            <button>←</button>
+          </Link>
+          <input
+            placeholder="Untitled Name"
+            value={document?.name}
+            disabled
+            // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
+          />
+        </div>
 
-      {/* SUMMARY */}
-      <section>
-        <DocumentViewSummary document={document} />
-        {/* TODO */}
-        {/* {document.mentions_people?.length > 0 ? (
+        {/* SUMMARY */}
+        <section>
+          <DocumentViewSummary document={document} />
+          {/* TODO */}
+          {/* {document.mentions_people?.length > 0 ? (
           <>
             <small style={{ fontSize: "12px", fontWeight: "900" }}>Mentioned People</small>
             <ul>
@@ -229,23 +228,23 @@ export const ViewCaseDocument = () => {
             </ul>
           </>
         ) : null} */}
-      </section>
+        </section>
 
-      {/* EVENTS */}
-      {document.document_events && document.document_events?.length > 0 ? (
-        <>
-          <div className="section-lead">
-            <h4>Timeline/Events</h4>
-          </div>
-          <section className="no-shadow">
-            <TimelineSummary caseId={caseId} documentId={document.id} />
-          </section>
-        </>
-      ) : null}
+        {/* EVENTS */}
+        {document.document_events && document.document_events?.length > 0 ? (
+          <>
+            <div className="section-lead">
+              <h4>Timeline/Events</h4>
+            </div>
+            <section className="no-shadow">
+              <TimelineSummary caseId={caseId} documentId={document.id} />
+            </section>
+          </>
+        ) : null}
 
-      {/* HIGHLIGHTS */}
-      {/* TODO */}
-      {/* {hasHighlights ? (
+        {/* HIGHLIGHTS */}
+        {/* TODO */}
+        {/* {hasHighlights ? (
         <>
           <div className="section-lead">
             <h4>Highlights</h4>
@@ -256,65 +255,66 @@ export const ViewCaseDocument = () => {
         </>
       ) : null} */}
 
-      {/* AUDIO */}
-      {document.type === "audio" ? (
-        <>
-          <div className="section-lead">
-            <h4>Audio Player</h4>
-          </div>
-          <section>
-            <audio src={document?.files?.[0]?.upload_url ?? ""} controls style={{ width: "100%" }}></audio>
-          </section>
-        </>
-      ) : null}
+        {/* AUDIO */}
+        {document.type === "audio" ? (
+          <>
+            <div className="section-lead">
+              <h4>Audio Player</h4>
+            </div>
+            <section>
+              <audio src={document?.files?.[0]?.upload_url ?? ""} controls style={{ width: "100%" }}></audio>
+            </section>
+          </>
+        ) : null}
 
-      {/* VIDEO */}
-      {document.type === "video" ? (
-        <>
-          <div className="section-lead">
-            <h4>Video Player</h4>
-          </div>
-          <section>
-            <ReactPlayer
-              width="100%"
-              height="100%"
-              controls
-              url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
-            />
-          </section>
-        </>
-      ) : null}
+        {/* VIDEO */}
+        {document.type === "video" ? (
+          <>
+            <div className="section-lead">
+              <h4>Video Player</h4>
+            </div>
+            <section>
+              <ReactPlayer
+                width="100%"
+                height="100%"
+                controls
+                url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
+              />
+            </section>
+          </>
+        ) : null}
 
-      {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
-      {document.type !== "image" && (
-        <>
-          <div className="section-lead">
-            <h4>Source Text/Transcript</h4>
-          </div>
-          <section>
-            <DocumentViewTranscript document={document} />
-          </section>
-        </>
-      )}
+        {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
+        {document.type !== "image" && (
+          <>
+            <div className="section-lead">
+              <h4>Source Text/Transcript</h4>
+            </div>
+            <section>
+              <DocumentViewTranscript document={document} />
+            </section>
+          </>
+        )}
 
-      {/* IMAGE TEXT BY PAGE/MINUTE */}
-      {document.type === "image" && document.files?.[0] && (
+        {/* IMAGE TEXT BY PAGE/MINUTE */}
+        {document.type === "image" && document.files?.[0] && (
+          <section>
+            <DocumentViewImage imageSrc={document.files[0].upload_url} />
+          </section>
+        )}
+
+        {/* DELETES */}
+        <hr />
         <section>
-          <DocumentViewImage imageSrc={document.files[0].upload_url} />
+          <ConfirmDeleteButton
+            prompts={["Delete Document", "Yes, Delete Document"]}
+            onClick={deleteHandler}
+            disabled={isDeleting}
+            style={{ width: "100%" }}
+          />
         </section>
-      )}
-
-      {/* DELETES */}
-      <hr />
-      <section>
-        <ConfirmDeleteButton
-          prompts={["Delete Document", "Yes, Delete Document"]}
-          onClick={deleteHandler}
-          disabled={isDeleting}
-          style={{ width: "100%" }}
-        />
-      </section>
-    </StyledViewCaseDocument>
+      </StyledViewCaseDocument>
+    </>
   );
 };
 

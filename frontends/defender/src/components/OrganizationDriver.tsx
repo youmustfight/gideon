@@ -5,6 +5,7 @@ import { useAppStore } from "../data/AppStore";
 import { TOrganization, useOrganizationUserUpdate } from "../data/useOrganizations";
 import { TUser, useUser, useUserUpdate } from "../data/useUser";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
+import { OrganizationAdminToolbox } from "./OrgAdminToolbox";
 
 export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
   allowNavigate,
@@ -19,7 +20,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
 
   // RENDER
   return (
-    <StyledOrganizationDriver>
+    <StyledOrganizationDriver onMouseLeave={() => setShowDetails(false)}>
       <div className="org-driver__lead">
         <div className="org-driver__lead__text">
           <h5>{organization.name}</h5>
@@ -55,6 +56,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                     onClick={() =>
                       updateOrganizationUser({
                         action: "add",
+                        // @ts-ignore
                         organization_id: app.focusedOrgId,
                         user: { email: prompt("User Email:")?.trim(), name: prompt("User Name:")?.trim() },
                       })
@@ -70,7 +72,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                 <tr key={u.id}>
                   <td>
                     <form
-                      onSubmit={(e) => {
+                      onSubmit={(e: any) => {
                         e.preventDefault();
                         const name = new FormData(e.target).get("name");
                         if (typeof name === "string" && name.length > 0) {
@@ -86,7 +88,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                   <td>{u.email}</td>
                   <td>
                     <form
-                      onSubmit={(e) => {
+                      onSubmit={(e: any) => {
                         e.preventDefault();
                         const password = new FormData(e.target).get("password");
                         if (typeof password === "string" && password.length > 0) {
@@ -104,10 +106,10 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                   </td>
                   <td className="row-actions">
                     <ConfirmDeleteButton
-                      disabled={user.id === u.id}
-                      prompts={user.id === u.id ? ["You"] : ["Remove", "Yes, Remove"]}
+                      disabled={user?.id === u.id || !app.focusedOrgId}
+                      prompts={user?.id === u.id ? ["You"] : ["Remove", "Yes, Remove"]}
                       onClick={() =>
-                        updateOrganizationUser({ action: "remove", organization_id: app.focusedOrgId, user_id: u.id })
+                        updateOrganizationUser({ action: "remove", organization_id: app.focusedOrgId!, user_id: u.id })
                       }
                     />
                   </td>
@@ -115,6 +117,8 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
               ))}
             </tbody>
           </table>
+          <hr />
+          <OrganizationAdminToolbox organizationId={organization.id} />
         </div>
       )}
     </StyledOrganizationDriver>

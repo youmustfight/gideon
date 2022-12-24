@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { useCase, useCaseUpdate, useCaseUserUpdate } from "../data/useCase";
 import { useOrganizations } from "../data/useOrganizations";
+import { CaseAdminToolbox } from "./CaseAdminToolbox";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
 
 export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
@@ -75,13 +76,15 @@ export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
               ))}
             </tbody>
           </table>
+          <hr />
+          <CaseAdminToolbox caseId={cse.id} />
         </div>
       ) : null}
     </StyledCaseDriver>
   );
 };
 
-const StyledCaseDriver = styled.div<{ isViewingCase: boolean }>`
+const StyledCaseDriver = styled.div`
   background: white;
   border-radius: 4px;
   margin: 12px;
@@ -109,6 +112,7 @@ const StyledCaseDriver = styled.div<{ isViewingCase: boolean }>`
         margin-right: 12px;
         font-size: 16px;
         padding: 4px;
+        font-weight: 700;
       }
     }
   }

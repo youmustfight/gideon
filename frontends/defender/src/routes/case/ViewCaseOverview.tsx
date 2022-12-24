@@ -5,38 +5,43 @@ import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
+import { InquiryBox } from "../../components/InquiryBox";
 
 export const ViewCaseOverview = () => {
   const { focusedCaseId, focusedOrgId } = useAppStore();
 
   // RENDER (attaching key to force re-renders of child components, so we don't have lingering react-query data)
   return !focusedCaseId ? null : (
-    <StyledViewCaseOverview key={focusedCaseId}>
-      {/* WRITINGS */}
-      <section>
-        <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
-      </section>
+    <>
+      <InquiryBox />
+      <StyledViewCaseOverview key={focusedCaseId}>
+        {/* WRITINGS */}
+        <section>
+          <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
+        </section>
 
-      {/* CASE FACTS */}
-      <section>
-        <LegalBriefFacts caseId={focusedCaseId} />
-      </section>
+        {/* CASE FACTS */}
+        <section>
+          <LegalBriefFacts caseId={focusedCaseId} />
+        </section>
 
-      {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-      <section>
-        <DiscoveryBox caseId={focusedCaseId} />
-      </section>
+        {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
+        <section>
+          <DiscoveryBox caseId={focusedCaseId} />
+        </section>
 
-      {/* SUMMATION (timeline w/ summaries) */}
-      <section>
-        <TimelineSummary caseId={focusedCaseId} />
-      </section>
-    </StyledViewCaseOverview>
+        {/* SUMMATION (timeline w/ summaries) */}
+        <section>
+          <TimelineSummary caseId={focusedCaseId} />
+        </section>
+      </StyledViewCaseOverview>
+    </>
   );
 };
 
 const StyledViewCaseOverview = styled.div`
-  padding-bottom: 40px;
+  padding-top: 24px;
+  padding-bottom: 24px;
   .my-docs {
     margin: 12px;
     text-align: center;

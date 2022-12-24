@@ -6,6 +6,7 @@ import { TCase, useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
 import { reqQueryLegalBriefFactSimilarity } from "../data/useQueryAI";
 import { useUser } from "../data/useUser";
+import { CasePanel } from "./CasePanel";
 import { BoxWithRightSideButton } from "./styled/StyledBox";
 
 export const OrgCasesList: React.FC = () => {
@@ -67,40 +68,18 @@ export const OrgCasesList: React.FC = () => {
               {similarCaseIds
                 ? similarCaseIds
                     .map((caseId) => cases.find((c) => c.id === caseId))
-                    .filter((c) => c != null)
-                    .map((c: any) => (
-                      <BoxWithRightSideButton key={c.id}>
-                        <span>
-                          {c.name ?? "Untitled Case"}
-                          <small className="case-panel__users">
-                            <span className="case-panel__users__assigned">👩‍💼:</span>{" "}
-                            {c.users?.map((u) => u.name).join(", ")}
-                          </small>
-                        </span>
-                        <div>
-                          <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-                        </div>
-                      </BoxWithRightSideButton>
-                    ))
+                    .filter((c) => c !== undefined)
+                    .map((c) => {
+                      const cse: TCase = c!;
+                      return <CasePanel key={cse.id} cse={cse} />;
+                    })
                 : null}
             </>
           ) : (
             <>
               {/* REGULAR CASES LIST */}
               {cases.map((c) => (
-                <BoxWithRightSideButton key={c.id}>
-                  <span>
-                    {c.name ?? "Untitled Case"}
-                    <small className="case-panel__users">
-                      <span className="case-panel__users__assigned">👩‍💼:</span> {c.users?.map((u) => u.name).join(", ")}
-                    </small>
-                  </span>
-                  <div>
-                    <button onClick={() => viewSimilarCasesHandler(c.id)}>View Cases Like This</button>
-                    &ensp;
-                    <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-                  </div>
-                </BoxWithRightSideButton>
+                <CasePanel key={c.id} cse={c} />
               ))}
             </>
           )}
@@ -127,12 +106,5 @@ const StyledOrgCasesList = styled.div`
       min-width: 100px;
       max-width: 100px;
     }
-  }
-  .case-panel__users {
-    display: block;
-    margin-top: 4px;
-    font-size: 12px;
-  }
-  .case-panel__users__assigned {
   }
 `;
