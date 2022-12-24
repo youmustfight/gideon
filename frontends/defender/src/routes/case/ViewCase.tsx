@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { Routes, Route, useParams } from "react-router";
 import styled from "styled-components";
 import { CaseAdminToolbox } from "../../components/CaseAdminToolbox";
@@ -16,11 +16,11 @@ export const ViewCase = () => {
   // --- on mounting this, set the new focus
   useEffect(() => {
     if (caseId) app.setFocusedCaseId(Number(caseId));
-  }, []);
+  }, [caseId]);
 
   // RENDER
   return !caseId ? null : (
-    <>
+    <Fragment key={caseId}>
       <CaseDriver caseId={caseId} />
       <StyledViewCase>
         {/* --- CASE VIEWS ---  */}
@@ -35,7 +35,7 @@ export const ViewCase = () => {
           {/* <Route path="/*" element={<Navigate to={`/case/${caseId}/overview`} />} /> */}
         </Routes>
       </StyledViewCase>
-    </>
+    </Fragment>
   );
 };
 

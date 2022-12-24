@@ -105,6 +105,9 @@ export const InquiryBox = () => {
       <form className="inquiry-box__input" onSubmit={handleInquiry}>
         {/* @ts-ignore */}
         <select disabled={isSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
+          <option value="caselaw" disabled>
+            Case Law
+          </option>
           <option value="organization">Organization</option>
           <option value="case" disabled={params.caseId == null}>
             Case
