@@ -137,10 +137,14 @@ async def app_route_ai_query_legal_brief_fact_similarity(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
-        case_id = int(request.json.get('case_id'))
+        case_id = request.json.get('case_id')
+        organization_id = request.json.get('organization_id')
+        query_text = request.json.get('query')
         locations = await legal_brief_fact_similarity(
             session,
-            case_id=case_id)
+            case_id=int(case_id) if case_id != None else None,
+            organization_id=int(organization_id),
+            query_text=query_text)
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
@@ -537,6 +541,33 @@ async def app_route_organizations(request):
         # organizations_json = list(map(lambda o: o.to_dict(), organizations_models))
         organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
     return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
+
+@api_app.route('/v1/organization', methods = ['POST'])
+@auth_route
+async def app_route_case_post(request):
+    session = request.ctx.session
+    async with session.begin():
+        # --- insert organization w/ user (model mapping/definition knows how to insert w/ junction table)
+        organization_to_insert = Organization(
+            ai_action_locks=generate_ai_action_locks(),
+            created_at=datetime.now(),
+            name=request.json['name'],
+        )
+        session.add(organization_to_insert)
+    return json({ 'status': 'success', 'data': { "organization": { "id": organization_to_insert.id } } })
+
+@api_app.route('/v1/organization/<organization_id>/ai_action_locks_reset', methods = ['PUT'])
+@auth_route
+async def app_route_organization_put_action_locks(request, organization_id):
+    session = request.ctx.session
+    async with session.begin():
+        organization_id = int(organization_id)
+        # --- delete existing action locks
+        await session.execute(sa.delete(AIActionLock)
+            .where(AIActionLock.organization_id == organization_id))
+        # --- add new action locks
+        session.add_all(generate_ai_action_locks(organization_id=organization_id))
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/organization/<organization_id>/user', methods = ['POST'])
 @auth_route
