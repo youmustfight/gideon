@@ -5,6 +5,7 @@ import { useAppStore } from "../data/AppStore";
 import { TOrganization, useOrganizationUserUpdate } from "../data/useOrganizations";
 import { TUser, useUser, useUserUpdate } from "../data/useUser";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
+import { OrganizationAdminToolbox } from "./OrgAdminToolbox";
 
 export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
   allowNavigate,
@@ -19,7 +20,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
 
   // RENDER
   return (
-    <StyledOrganizationDriver>
+    <StyledOrganizationDriver onMouseLeave={() => setShowDetails(false)}>
       <div className="org-driver__lead">
         <div className="org-driver__lead__text">
           <h5>{organization.name}</h5>
@@ -116,6 +117,8 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
               ))}
             </tbody>
           </table>
+          <hr />
+          <OrganizationAdminToolbox organizationId={organization.id} />
         </div>
       )}
     </StyledOrganizationDriver>
