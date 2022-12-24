@@ -185,11 +185,6 @@ export const ViewCaseDocument = () => {
       <InquiryBox />
       <StyledViewCaseDocument>
         {/* HEAD */}
-        <div className="document-title">
-          <h4>
-            <b>{document.document_description}</b>
-          </h4>
-        </div>
         <div className="document-header">
           <Link to={`/case/${caseId}`}>
             <button>←</button>
@@ -200,6 +195,12 @@ export const ViewCaseDocument = () => {
             disabled
             // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
           />
+        </div>
+
+        <div className="document-title">
+          <h4>
+            <b>{document.document_description}</b>
+          </h4>
         </div>
 
         {/* SUMMARY */}
@@ -325,8 +326,12 @@ const StyledViewCaseDocument = styled.div`
     font-weight: 900;
   }
   .document-header {
-    padding: 0 24px;
+    margin: 12px 12px 0;
+    padding: 20px 24px;
     display: flex;
+    background: #fff;
+    border-radius: 4px;
+    border-bottom: 2px solid #eee;
     & > a {
       max-width: 40px;
     }
