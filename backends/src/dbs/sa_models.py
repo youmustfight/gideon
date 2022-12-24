@@ -61,6 +61,7 @@ class Organization(BaseModel):
     cases = relationship("Case", back_populates="organization")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
     writing_templates = relationship("Writing", back_populates="organization")
+    ai_action_locks = relationship("AIActionLock", back_populates="organization")
     def serialize(self, serialize_relationships=[]):
         cases = None
         users = None
@@ -115,6 +116,8 @@ class AIActionLock(BaseModel):
     params = Column(JSON()) # DEPRECATE
     case_id = Column(Integer, ForeignKey('case.id'))
     case = relationship("Case", back_populates="ai_action_locks")
+    organization_id = Column(Integer, ForeignKey('organization.id'))
+    organization = relationship("Organization", back_populates="ai_action_locks")
     created_at = Column(DateTime(timezone=True))
 
 class Document(BaseModel):
