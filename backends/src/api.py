@@ -155,10 +155,10 @@ async def app_route_ai_query_writing_similarity(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
-        case_id = request.json.get('case_id')
+        organization_id = request.json.get('organization_id')
         locations = await writing_similarity(
             session,
-            case_id=int(case_id) if case_id != None else None,
+            organization_id=int(organization_id),
             query=request.json.get('query'))
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
