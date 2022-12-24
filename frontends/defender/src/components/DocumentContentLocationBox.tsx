@@ -51,7 +51,6 @@ export const DocumentContentLocationBox = ({ location }: { location: TQueryLocat
         </div>
       )}
       {location.image_file ? <StyledDocumentContentLocationBoxImage imageSrc={location.image_file.upload_url} /> : null}
-      {location.case_id && <div>{location.case_id}</div>}
     </StyledDocumentContentLocationBox>
   );
 };
