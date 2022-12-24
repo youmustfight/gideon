@@ -6,7 +6,7 @@ import env
 # ENGINE/BiND
 _sqlalchemy_engine = create_async_engine(
     env.env_get_database_app_url(),
-    connect_args={ "timeout": 120 }, # in seconds. extending bc of pdf processing slowness
+    # connect_args={ "timeout": 120 }, # in seconds. extending bc of pdf processing slowness
     # echo=True,
     # echo_pool='debug',
     max_overflow=20,
