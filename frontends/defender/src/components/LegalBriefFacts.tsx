@@ -12,6 +12,7 @@ import { reqQueryDocumentLocations, TQueryLocation } from "../data/useQueryAI";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
 import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 import { SlimBox } from "./styled/StyledBox";
+import { TimelineSummary } from "./TimelineSummary";
 
 const LegalBriefFactBox: React.FC<{ legalBriefFact: TLegalBriefFact; caseId: number }> = ({
   legalBriefFact,
@@ -70,13 +71,23 @@ export const LegalBriefFacts: React.FC<{ caseId: number }> = ({ caseId }) => {
   return (
     <>
       <StyledLegalBriefFactsBoxLead>
-        <h2>Legal Brief - Facts</h2>
-        <button onClick={() => legalBriefFactCreate()}>+ Case Fact</button>
+        <h2>Legal Brief</h2>
+      </StyledLegalBriefFactsBoxLead>
+      <StyledLegalBriefFactsBoxLead>
+        <h3>Facts</h3>
+        <button onClick={() => legalBriefFactCreate()}>+ Fact</button>
       </StyledLegalBriefFactsBoxLead>
       <StyledLegalBriefFactsBox>
         {legalBriefFacts?.map((cf) => (
           <LegalBriefFactBox key={cf.id} caseId={caseId} legalBriefFact={cf} />
         ))}
+      </StyledLegalBriefFactsBox>
+      <br />
+      <StyledLegalBriefFactsBoxLead>
+        <h3>Events/Timeline</h3>
+      </StyledLegalBriefFactsBoxLead>
+      <StyledLegalBriefFactsBox style={{ margin: "0 4px" }}>
+        <TimelineSummary caseId={caseId} />
       </StyledLegalBriefFactsBox>
     </>
   );
@@ -87,11 +98,16 @@ const StyledLegalBriefFactsBoxLead = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   padding: 4px;
   h2 {
     font-size: 18px;
     font-weight: 900;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: underline;
   }
 `;
 const StyledLegalBriefFactsBox = styled.div``;
