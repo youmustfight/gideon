@@ -24,7 +24,7 @@ export const reqQueryDocument = async ({
     .post(`${getGideonApiUrl()}/v1/ai/query-document-answer`, {
       case_id: caseId,
       document_id: documentId,
-      question: query,
+      query,
     })
     .then((res) => ({ answer: res.data.data.answer, locations: res.data.data.locations }));
 

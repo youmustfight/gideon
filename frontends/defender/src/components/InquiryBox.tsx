@@ -1,107 +1,37 @@
 import { orderBy } from "lodash";
 import { ResetIcon } from "@radix-ui/react-icons";
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { useCases } from "../data/useCases";
-import {
-  reqQueryDocument,
-  reqQueryDocumentLocations,
-  reqQueryLegalBriefFactSimilarity,
-  reqQueryWritingSimilarity,
-  TQueryLocation,
-} from "../data/useQueryAI";
 import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 import { CasePanel } from "./CasePanel";
 import { useWritings } from "../data/useWritings";
-import { SlimBox } from "./styled/StyledBox";
 import { WritingPanel } from "./WritingsBox";
+import { useInquiryStore } from "../data/InquiryStore";
 
 export const InquiryBox = () => {
   const app = useAppStore();
   const params = useParams(); // TODO: get from props, not params
   const { data: cases } = useCases({ organizationId: app.focusedOrgId });
   const { data: writings } = useWritings({ organizationId: app.focusedOrgId });
-  // INQUIRY
-  const [inquiryScope, setInquiryScope] = useState<"organization" | "case" | "document">("organization");
-  // --- answers
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [query, setQuery] = useState("");
-  const [answerQuestion, setAnswerQuestion] = useState<{
-    answer?: string;
-    inProgress?: boolean;
-    locations?: TQueryLocation[];
-  }>();
-  const [answerDetailsLocations, setAnswerDetailsLocations] = useState<{
-    inProgress?: boolean;
-    locations?: TQueryLocation[];
-  }>();
-  const [answerCaseFactsSimilarity, setAnswerCaseFactsSimilarity] = useState<{
-    inProgress?: boolean;
-    locations?: TQueryLocation[];
-  }>();
-  const [answerWritingSimilarity, setAnswerWritingSimilarity] = useState<{
-    inProgress?: boolean;
-    locations?: TQueryLocation[];
-  }>();
-  const [focusAnswer, setFocusAnswer] = useState<"question" | "location" | "caseFacts" | "writingSimilarity">();
-  // --- handler
-  const handleInquiry = async (e: any) => {
-    e.preventDefault();
-    setIsSubmitted(true);
-    if (inquiryScope === "organization") {
-      // --- case facts
-      setAnswerCaseFactsSimilarity({ inProgress: true });
-      reqQueryLegalBriefFactSimilarity({ organizationId: app.focusedOrgId!, query: query }).then(({ locations }) =>
-        setAnswerCaseFactsSimilarity({ inProgress: false, locations })
-      );
-      // --- writing
-      setAnswerWritingSimilarity({ inProgress: true });
-      reqQueryWritingSimilarity({ organizationId: app.focusedOrgId!, query: query }).then(({ locations }) =>
-        setAnswerWritingSimilarity({ inProgress: false, locations })
-      );
-      setFocusAnswer("caseFacts");
-    } else if (inquiryScope === "case") {
-      // --- detail
-      setAnswerDetailsLocations({ inProgress: true });
-      reqQueryDocumentLocations({ caseId: Number(params.caseId), query: query }).then(({ locations }) =>
-        setAnswerDetailsLocations({ inProgress: false, locations })
-      );
-      // --- answer
-      setAnswerQuestion({ inProgress: true });
-      reqQueryDocument({
-        caseId: Number(params.caseId),
-        query: query,
-      }).then(({ answer, locations }) => setAnswerQuestion({ answer, locations }));
-      setFocusAnswer("location");
-    } else if (inquiryScope === "document") {
-      // --- detail
-      setAnswerDetailsLocations({ inProgress: true });
-      reqQueryDocumentLocations({
-        caseId: Number(params.caseId),
-        documentId: Number(params.documentId),
-        query: query,
-      }).then(({ locations }) => setAnswerDetailsLocations({ locations }));
-      // --- answer
-      setAnswerQuestion({ inProgress: true });
-      reqQueryDocument({
-        caseId: Number(params.caseId),
-        documentId: Number(params.documentId),
-        query: query,
-      }).then(({ answer, locations }) => setAnswerQuestion({ answer, locations }));
-      // set default focus
-      setFocusAnswer("location");
-    }
-  };
-  const clearResults = () => {
-    setAnswerQuestion(undefined);
-    setAnswerDetailsLocations(undefined);
-    setAnswerCaseFactsSimilarity(undefined);
-    setAnswerWritingSimilarity(undefined);
-    setIsSubmitted(false);
-    setFocusAnswer(undefined);
-  };
+
+  const {
+    inquiryScope,
+    setInquiryScope,
+    query,
+    setQuery,
+    answerQuestion,
+    answerDetailsLocations,
+    answerCaseFactsSimilarity,
+    answerWritingSimilarity,
+    isInquirySubmitted,
+    inquiry,
+    focusAnswer,
+    setFocusAnswer,
+    clearInquiry,
+  } = useInquiryStore();
 
   // ON MOUNT
   // --- update scope to whatever vars available
@@ -118,9 +48,15 @@ export const InquiryBox = () => {
   // RENDER
   return (
     <StyledInquiryBox>
-      <form className="inquiry-box__input" onSubmit={handleInquiry}>
+      <form
+        className="inquiry-box__input"
+        onSubmit={(e) => {
+          e.preventDefault();
+          inquiry({ caseId: params.caseId, documentId: params.documentId, organizationId: app.focusedOrgId });
+        }}
+      >
         {/* @ts-ignore */}
-        <select disabled={isSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
+        <select disabled={isInquirySubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
           <option value="caselaw" disabled>
             Case Law
           </option>
@@ -135,18 +71,18 @@ export const InquiryBox = () => {
         <label>
           {/* <span>Ask Question</span> */}
           <input
-            disabled={isSubmitted}
+            disabled={isInquirySubmitted}
             placeholder="Where did the search warrant authorize a raid on?"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={isSubmitted || query.length < 4}>
+        <button type="submit" disabled={isInquirySubmitted || query.length < 4}>
           Ask AI
         </button>
       </form>
 
-      {isSubmitted && (
+      {isInquirySubmitted && (
         <>
           <div className="inquiry-box__tabs">
             {answerDetailsLocations && (
@@ -172,10 +108,10 @@ export const InquiryBox = () => {
                 className={focusAnswer === "writingSimilarity" ? "active" : ""}
                 onClick={() => setFocusAnswer("writingSimilarity")}
               >
-                Writings {answerCaseFactsSimilarity?.inProgress ? "(Loading...)" : ""}
+                Writings {answerWritingSimilarity?.inProgress ? "(Loading...)" : ""}
               </label>
             )}
-            <label className="reset-inquiry-btn" onClick={clearResults}>
+            <label className="reset-inquiry-btn" onClick={clearInquiry}>
               <ResetIcon />
             </label>
           </div>

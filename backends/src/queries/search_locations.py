@@ -5,13 +5,13 @@ from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 
 
 async def search_locations(session, query_text, case_id, document_id=None):
-    logger.info(f"query all documents via '{query_text}'")
     # 0. SETUP (to allow case or document focus)
     query_filters = {}
     if case_id != None:
         query_filters.update({ 'case_id': { '$eq': int(case_id) } })
     if document_id != None:
         query_filters.update({ 'document_id': { '$eq': int(document_id) } })
+    logger.info(f"query all documents via '{query_text}'", query_filters)
     
     # 1. SEARCH & SERIALIZE
     # --- pdfs/transcripts
