@@ -1,7 +1,7 @@
 import { orderBy } from "lodash";
 import { ResetIcon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { useCases } from "../data/useCases";
@@ -9,15 +9,20 @@ import {
   reqQueryDocument,
   reqQueryDocumentLocations,
   reqQueryLegalBriefFactSimilarity,
+  reqQueryWritingSimilarity,
   TQueryLocation,
 } from "../data/useQueryAI";
 import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
 import { CasePanel } from "./CasePanel";
+import { useWritings } from "../data/useWritings";
+import { SlimBox } from "./styled/StyledBox";
+import { WritingPanel } from "./WritingsBox";
 
 export const InquiryBox = () => {
   const app = useAppStore();
-  const { data: cases } = useCases({ organizationId: app.focusedOrgId });
   const params = useParams(); // TODO: get from props, not params
+  const { data: cases } = useCases({ organizationId: app.focusedOrgId });
+  const { data: writings } = useWritings({ organizationId: app.focusedOrgId });
   // INQUIRY
   const [inquiryScope, setInquiryScope] = useState<"organization" | "case" | "document">("organization");
   // --- answers
@@ -36,15 +41,25 @@ export const InquiryBox = () => {
     inProgress?: boolean;
     locations?: TQueryLocation[];
   }>();
-  const [focusAnswer, setFocusAnswer] = useState<"question" | "location" | "caseFacts">();
+  const [answerWritingSimilarity, setAnswerWritingSimilarity] = useState<{
+    inProgress?: boolean;
+    locations?: TQueryLocation[];
+  }>();
+  const [focusAnswer, setFocusAnswer] = useState<"question" | "location" | "caseFacts" | "writingSimilarity">();
   // --- handler
   const handleInquiry = async (e: any) => {
     e.preventDefault();
     setIsSubmitted(true);
     if (inquiryScope === "organization") {
+      // --- case facts
       setAnswerCaseFactsSimilarity({ inProgress: true });
       reqQueryLegalBriefFactSimilarity({ organizationId: app.focusedOrgId!, query: query }).then(({ locations }) =>
         setAnswerCaseFactsSimilarity({ inProgress: false, locations })
+      );
+      // --- writing
+      setAnswerWritingSimilarity({ inProgress: true });
+      reqQueryWritingSimilarity({ organizationId: app.focusedOrgId!, query: query }).then(({ locations }) =>
+        setAnswerWritingSimilarity({ inProgress: false, locations })
       );
       setFocusAnswer("caseFacts");
     } else if (inquiryScope === "case") {
@@ -83,6 +98,7 @@ export const InquiryBox = () => {
     setAnswerQuestion(undefined);
     setAnswerDetailsLocations(undefined);
     setAnswerCaseFactsSimilarity(undefined);
+    setAnswerWritingSimilarity(undefined);
     setIsSubmitted(false);
     setFocusAnswer(undefined);
   };
@@ -103,7 +119,11 @@ export const InquiryBox = () => {
   return (
     <StyledInquiryBox>
       <form className="inquiry-box__input" onSubmit={handleInquiry}>
+        {/* @ts-ignore */}
         <select disabled={isSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
+          <option value="caselaw" disabled>
+            Case Law
+          </option>
           <option value="organization">Organization</option>
           <option value="case" disabled={params.caseId == null}>
             Case
@@ -131,7 +151,7 @@ export const InquiryBox = () => {
           <div className="inquiry-box__tabs">
             {answerDetailsLocations && (
               <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
-                Details {answerDetailsLocations?.inProgress ? "(Loading...)" : ""}
+                Detail Locations {answerDetailsLocations?.inProgress ? "(Loading...)" : ""}
               </label>
             )}
             {answerQuestion && (
@@ -145,6 +165,14 @@ export const InquiryBox = () => {
                 onClick={() => setFocusAnswer("caseFacts")}
               >
                 Similar Case Facts {answerCaseFactsSimilarity?.inProgress ? "(Loading...)" : ""}
+              </label>
+            )}
+            {answerWritingSimilarity && (
+              <label
+                className={focusAnswer === "writingSimilarity" ? "active" : ""}
+                onClick={() => setFocusAnswer("writingSimilarity")}
+              >
+                Writings {answerCaseFactsSimilarity?.inProgress ? "(Loading...)" : ""}
               </label>
             )}
             <label className="reset-inquiry-btn" onClick={clearResults}>
@@ -181,8 +209,19 @@ export const InquiryBox = () => {
             {focusAnswer === "caseFacts" ? (
               <>
                 {orderBy(answerCaseFactsSimilarity?.locations, ["score"], ["desc"])?.map((l) => (
-                  <CasePanel key={l.case_id} cse={cases?.find((c) => c.id === l.case_id)} />
+                  <CasePanel key={l.case_id} cse={cases?.find((c) => c.id === l.case_id)!} />
                 ))}
+              </>
+            ) : null}
+            {/* WRITING SIMILARITY */}
+            {focusAnswer === "writingSimilarity" && writings ? (
+              <>
+                {orderBy(answerWritingSimilarity?.locations, ["score"], ["desc"])
+                  ?.map((l) => writings.find((w) => w.id === l.writing_id))
+                  ?.map((wr) => (
+                    // @ts-ignore
+                    <WritingPanel key={wr.id} writing={wr} />
+                  ))}
               </>
             ) : null}
           </div>
@@ -240,8 +279,8 @@ const StyledInquiryBox = styled.div`
       font-size: 14px;
       background: #eee;
       &.active {
-        border-bottom: 2px solid black;
-        background: #000;
+        border-bottom: 2px solid blue;
+        background: blue;
         color: white;
       }
     }

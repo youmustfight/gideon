@@ -17,6 +17,7 @@ async def job_cron_embeddings_upserter(job_ctx):
     query_embeddings = await session.execute(
         sa.select(Embedding).options(
             joinedload(Embedding.case),
+            joinedload(Embedding.writing),
             joinedload(Embedding.document_content).options(
                 joinedload(DocumentContent.document).options(
                     joinedload(Document.case)
@@ -32,15 +33,22 @@ async def job_cron_embeddings_upserter(job_ctx):
         # --- get relations
         em = embedding
         dc = embedding.document_content
-        cs = embedding.case or embedding.document_content.document.case
+        case_id = embedding.case_id
+        organization_id = None
+        if case_id == None and embedding.document_content != None:
+            case_id = embedding.document_content.document.case.id
+            organization_id = embedding.document_content.document.case.organization_id
+        if embedding.writing != None:
+            case_id = embedding.writing.case_id
+            organization_id = embedding.writing.organization_id
         # --- setup metadata (do getter checks bc None type gives API errors w/ pinecone)
         metadata = {
-            "case_id": cs.id,
-            "case_uuid": str(cs.uuid), # casting bc UUID class -> str
             "embedding_id": em.id, # just in case at some point we can't use vector id
         }
-        if _.get(dc, 'document_id'): metadata['document_id'] = dc.document_id
+        if case_id: metadata['case_id'] = case_id
+        if organization_id: metadata['organization_id'] = organization_id
         if em.writing_id: metadata['writing_id'] = em.writing_id
+        if _.get(dc, 'document_id'): metadata['document_id'] = dc.document_id
         # --- form upsert
         upsert_record = (str(em.id), em.vector_json, metadata)
         print('INFO (scheduled_job_embeddings_upserter) upsert_record:', (upsert_record[0], upsert_record[2]))

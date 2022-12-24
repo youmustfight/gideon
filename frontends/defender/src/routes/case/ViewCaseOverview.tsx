@@ -15,24 +15,20 @@ export const ViewCaseOverview = () => {
     <>
       <InquiryBox />
       <StyledViewCaseOverview key={focusedCaseId}>
-        {/* WRITINGS */}
-        <section>
-          <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
-        </section>
-
-        {/* CASE FACTS */}
+        {/* LEGAL BRIEF */}
         <section>
           <LegalBriefFacts caseId={focusedCaseId} />
         </section>
 
-        {/* DISCOVERY/INDEXED DOCS + UPLOAD */}
-        <section>
-          <DiscoveryBox caseId={focusedCaseId} />
-        </section>
+        <br />
+        <hr />
+        <br />
 
-        {/* SUMMATION (timeline w/ summaries) */}
         <section>
-          <TimelineSummary caseId={focusedCaseId} />
+          {/* --- writings */}
+          <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
+          {/* --- discovery */}
+          <DiscoveryBox caseId={focusedCaseId} />
         </section>
       </StyledViewCaseOverview>
     </>

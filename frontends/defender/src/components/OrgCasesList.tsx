@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
-import { TCase, useCaseCreate } from "../data/useCase";
+import { useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
-import { reqQueryLegalBriefFactSimilarity } from "../data/useQueryAI";
 import { useUser } from "../data/useUser";
 import { CasePanel } from "./CasePanel";
-import { BoxWithRightSideButton } from "./styled/StyledBox";
 
 export const OrgCasesList: React.FC = () => {
   const navigate = useNavigate();
@@ -26,19 +24,6 @@ export const OrgCasesList: React.FC = () => {
       navigate(`/case/${cse.id}`);
     }
   };
-  // --- cases similarity
-  const [similarComparisonCaseId, setSimilarComparisonCaseId] = useState<Number>();
-  const [similarCaseIds, setSimilarCaseIds] = useState<Number[]>();
-  const viewSimilarCasesHandler = async (caseId: number) => {
-    setSimilarComparisonCaseId(caseId);
-    const locations = await reqQueryLegalBriefFactSimilarity({ caseId }).then(({ locations }) => locations);
-    // @ts-ignore
-    setSimilarCaseIds(locations?.map((l) => l.case_id));
-  };
-  const clearSimilarCasesView = () => {
-    setSimilarComparisonCaseId(undefined);
-    setSimilarCaseIds(undefined);
-  };
 
   // RENDER
   return (
@@ -50,39 +35,9 @@ export const OrgCasesList: React.FC = () => {
       {cases && (
         <>
           {/* CASES LISTS */}
-          {similarComparisonCaseId ? (
-            <>
-              {/* SIMILARITY LIST */}
-              {((c: any) => (
-                <BoxWithRightSideButton>
-                  <span>{c.name ?? "Untitled Case"}</span>
-                  <div>
-                    <button onClick={() => navigate(`/case/${c.id}`)}>➡</button>
-                  </div>
-                </BoxWithRightSideButton>
-              ))(cases.find((c) => c.id === similarComparisonCaseId))}
-              <button onClick={clearSimilarCasesView} style={{ width: "100%" }}>
-                Clear Case Similarity Search
-              </button>
-              <hr />
-              {similarCaseIds
-                ? similarCaseIds
-                    .map((caseId) => cases.find((c) => c.id === caseId))
-                    .filter((c) => c !== undefined)
-                    .map((c) => {
-                      const cse: TCase = c!;
-                      return <CasePanel key={cse.id} cse={cse} />;
-                    })
-                : null}
-            </>
-          ) : (
-            <>
-              {/* REGULAR CASES LIST */}
-              {cases.map((c) => (
-                <CasePanel key={c.id} cse={c} />
-              ))}
-            </>
-          )}
+          {cases.map((c) => (
+            <CasePanel key={c.id} cse={c} />
+          ))}
         </>
       )}
     </StyledOrgCasesList>

@@ -14,6 +14,7 @@ from dbs.sa_models import serialize_list, AIActionLock, Case, LegalBriefFact, Do
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
+from indexers.deindex_writing import deindex_writing
 from indexers.index_document_audio import _index_document_audio_process_extractions
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
@@ -155,10 +156,10 @@ async def app_route_ai_query_writing_similarity(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
-        case_id = request.json.get('case_id')
+        organization_id = request.json.get('organization_id')
         locations = await writing_similarity(
             session,
-            case_id=int(case_id) if case_id != None else None,
+            organization_id=int(organization_id),
             query=request.json.get('query'))
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
@@ -267,7 +268,7 @@ async def app_route_case_post(request):
 
 @api_app.route('/v1/case/<case_id>/user', methods = ['POST'])
 @auth_route
-async def app_route_organization_user(request, case_id):
+async def app_route_case_user(request, case_id):
     session = request.ctx.session
     action = request.json.get('action')
     query_case = await session.execute(
@@ -544,7 +545,7 @@ async def app_route_organizations(request):
 
 @api_app.route('/v1/organization', methods = ['POST'])
 @auth_route
-async def app_route_case_post(request):
+async def app_route_organization_post(request):
     session = request.ctx.session
     async with session.begin():
         # --- insert organization w/ user (model mapping/definition knows how to insert w/ junction table)
@@ -685,7 +686,9 @@ async def app_route_writing_put(request, writing_id):
 async def app_route_writing_delete(request, writing_id):
     session = request.ctx.session
     async with session.begin():
-        # --- writing
+        # --- delete embeddings & vector db
+        await deindex_writing(session, writing_id)
+        # --- delete writing
         await session.execute(sa.delete(Writing)
             .where(Writing.id == int(writing_id)))
     return json({ 'status': 'success' })

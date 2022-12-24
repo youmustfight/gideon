@@ -1,10 +1,30 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { reqQueryWritingSimilarity } from "../data/useQueryAI";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { TWriting, useWritings } from "../data/useWritings";
 import { SlimBox } from "./styled/StyledBox";
+
+export const WritingPanel: React.FC<{ writing: TWriting }> = ({ writing }) => {
+  return (
+    <StyledWritingPanel>
+      <p>
+        <Link to={writing.case_id ? `/case/${writing.case_id}/writing/${writing.id}` : `/writing/${writing.id}`}>
+          {writing.is_template ? "[TEMPLATE] " : ""}
+          {writing.name ?? "Untitled"}
+        </Link>
+      </p>
+    </StyledWritingPanel>
+  );
+};
+
+const StyledWritingPanel = styled(SlimBox)`
+  border: 1px solid #eee;
+  transition: 250ms;
+  &:hover {
+    border: 1px solid blue;
+  }
+`;
 
 type TWritingsBoxProps = {
   caseId?: number;
@@ -33,18 +53,6 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
     }
     writingCreate({ params: writingParams, runAIWriter });
   };
-  // --- search helper
-  const [searchQueryWriting, setSearchQueryWriting] = useState<string>("");
-  const [similarWritingIds, setSimilarWritingIds] = useState<number[]>();
-  const searchQueryWritingHelper = async () => {
-    const { locations } = await reqQueryWritingSimilarity({ caseId, query: searchQueryWriting });
-    // @ts-ignore
-    setSimilarWritingIds(locations?.map((l) => l.writing_id));
-  };
-  const clearSearch = () => {
-    setSearchQueryWriting("");
-    setSimilarWritingIds(undefined);
-  };
 
   // RENDER
   return (
@@ -64,32 +72,10 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
           {!isTemplate && <button onClick={() => onWritingCreate(true)}>+ Fill with AI</button>}
         </div>
       </StyledWritingsBoxLead>
-      {/* <StyledWritingsBoxSearch>
-        <form onSubmit={(e) => e.preventDefault()}>
-          <input
-            placeholder="Search writings..."
-            value={searchQueryWriting}
-            onChange={(e) => setSearchQueryWriting(e.target.value)}
-          />
-          <button type="submit" disabled={!searchQueryWriting} onClick={searchQueryWritingHelper}>
-            Search
-          </button>
-          <button onClick={clearSearch}>Clear</button>
-        </form>
-      </StyledWritingsBoxSearch> */}
       {writings && (
         <StyledWritingsBox>
-          {(similarWritingIds
-            ? similarWritingIds
-                .map((writingId) => writings.find((w) => w.id === writingId))
-                .filter((wr) => wr !== undefined)
-            : writings
-          )?.map((w: any) => (
-            <SlimBox key={w.id}>
-              <p>
-                <Link to={caseId ? `/case/${caseId}/writing/${w.id}` : `/writing/${w.id}`}>{w.name ?? "Untitled"}</Link>
-              </p>
-            </SlimBox>
+          {writings?.map((w: any) => (
+            <WritingPanel writing={w} />
           ))}
         </StyledWritingsBox>
       )}
@@ -117,17 +103,6 @@ const StyledWritingsBoxLead = styled.div`
     input {
       max-width: 180px;
     }
-  }
-`;
-
-const StyledWritingsBoxSearch = styled.div`
-  margin: 0 4px;
-  form {
-    display: flex;
-    width: 100%;
-  }
-  input {
-    width: 100%;
   }
 `;
 
