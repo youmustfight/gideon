@@ -111,7 +111,8 @@ async def app_route_ai_query_document_answer(request):
         answer, locations = await question_answer(
             session,
             query_text=request.json.get('question'),
-            case_id=request.json.get('case_id'))
+            case_id=request.json.get('case_id'),
+            document_id=request.json.get('document_id'))
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
@@ -124,7 +125,8 @@ async def app_route_ai_query_document_locations(request):
         locations = await search_locations(
             session,
             query_text=request.json.get('query'),
-            case_id=request.json.get('case_id'))
+            case_id=request.json.get('case_id'),
+            document_id=request.json.get('document_id'))
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })

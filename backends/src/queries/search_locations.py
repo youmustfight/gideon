@@ -4,14 +4,21 @@ from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 
 
-async def search_locations(session, query_text, case_id):
+async def search_locations(session, query_text, case_id, document_id=None):
     logger.info(f"query all documents via '{query_text}'")
+    # 0. SETUP (to allow case or document focus)
+    query_filters = {}
+    if case_id != None:
+        query_filters.update({ 'case_id': { '$eq': int(case_id) } })
+    if document_id != None:
+        query_filters.update({ 'document_id': { '$eq': int(document_id) } })
+    
     # 1. SEARCH & SERIALIZE
     # --- pdfs/transcripts
     aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentence_search, case_id=case_id)
     text_search_vectors = aigent_location_text_searcher.index_query(
         query_text,
-        query_filters={ 'case_id': { '$eq': int(case_id) } },
+        query_filters=query_filters,
         # query_filters={ "string_length": { "$gt": 80 } }, # DEPRECATED: do we need to ensure a minimum anymore? we should be catch this when embedding
         top_k=10,
         score_max=1,
@@ -23,7 +30,7 @@ async def search_locations(session, query_text, case_id):
     aigent_location_image_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_to_image_search, case_id=case_id)
     image_search_vectors = aigent_location_image_searcher.index_query(
         query_text,
-        query_filters={ 'case_id': { '$eq': int(case_id) } },
+        query_filters=query_filters,
         top_k=5,
         score_max=1,
         score_min=0.15)
