@@ -109,11 +109,13 @@ async def app_route_ai_fill_writing_template(request):
 async def app_route_ai_query_document_answer(request):
     session = request.ctx.session
     async with session.begin():
+        case_id = request.json.get('case_id')
+        document_id = request.json.get('document_id')
         answer, locations = await question_answer(
             session,
-            query_text=request.json.get('question'),
-            case_id=request.json.get('case_id'),
-            document_id=request.json.get('document_id'))
+            query_text=request.json.get('query'),
+            case_id=int(case_id) if case_id != None else None,
+            document_id=int(document_id) if document_id != None else None)
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
@@ -123,11 +125,13 @@ async def app_route_ai_query_document_locations(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
+        case_id = request.json.get('case_id')
+        document_id = request.json.get('document_id')
         locations = await search_locations(
             session,
             query_text=request.json.get('query'),
-            case_id=request.json.get('case_id'),
-            document_id=request.json.get('document_id'))
+            case_id=int(case_id) if case_id != None else None,
+            document_id=int(document_id) if document_id != None else None)
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
