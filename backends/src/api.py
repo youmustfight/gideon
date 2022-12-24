@@ -14,6 +14,7 @@ from dbs.sa_models import serialize_list, AIActionLock, Case, LegalBriefFact, Do
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
+from indexers.deindex_writing import deindex_writing
 from indexers.index_document_audio import _index_document_audio_process_extractions
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
@@ -685,7 +686,9 @@ async def app_route_writing_put(request, writing_id):
 async def app_route_writing_delete(request, writing_id):
     session = request.ctx.session
     async with session.begin():
-        # --- writing
+        # --- delete embeddings & vector db
+        await deindex_writing(session, writing_id)
+        # --- delete writing
         await session.execute(sa.delete(Writing)
             .where(Writing.id == int(writing_id)))
     return json({ 'status': 'success' })
