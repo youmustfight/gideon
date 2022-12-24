@@ -103,6 +103,7 @@ export const InquiryBox = () => {
   return (
     <StyledInquiryBox>
       <form className="inquiry-box__input" onSubmit={handleInquiry}>
+        {/* @ts-ignore */}
         <select disabled={isSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
           <option value="organization">Organization</option>
           <option value="case" disabled={params.caseId == null}>
@@ -181,7 +182,7 @@ export const InquiryBox = () => {
             {focusAnswer === "caseFacts" ? (
               <>
                 {orderBy(answerCaseFactsSimilarity?.locations, ["score"], ["desc"])?.map((l) => (
-                  <CasePanel key={l.case_id} cse={cases?.find((c) => c.id === l.case_id)} />
+                  <CasePanel key={l.case_id} cse={cases?.find((c) => c.id === l.case_id)!} />
                 ))}
               </>
             ) : null}
