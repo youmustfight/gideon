@@ -267,7 +267,7 @@ async def app_route_case_post(request):
 
 @api_app.route('/v1/case/<case_id>/user', methods = ['POST'])
 @auth_route
-async def app_route_organization_user(request, case_id):
+async def app_route_case_user(request, case_id):
     session = request.ctx.session
     action = request.json.get('action')
     query_case = await session.execute(
@@ -544,7 +544,7 @@ async def app_route_organizations(request):
 
 @api_app.route('/v1/organization', methods = ['POST'])
 @auth_route
-async def app_route_case_post(request):
+async def app_route_organization_post(request):
     session = request.ctx.session
     async with session.begin():
         # --- insert organization w/ user (model mapping/definition knows how to insert w/ junction table)
