@@ -358,8 +358,8 @@ async def app_route_legal_brief_fact_delete(request, legal_brief_fact_id):
     return json({ 'status': 'success' })
 
 
-# CASELAW
-@api_app.route('/v1/cap/caselaw/index', methods = ['POST'])
+# CAP / CASELAW
+@api_app.route('/v1/cap/case/index', methods = ['POST'])
 @auth_route
 async def app_route_cap_caselaw_index(request):
     session = request.ctx.session

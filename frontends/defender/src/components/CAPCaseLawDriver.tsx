@@ -7,7 +7,7 @@ export const CAPCaseLawDriver: React.FC = () => {
   const [caseNumber, setCaseNumber] = useState("");
   const indexCAPCaseLaw = async () => {
     return axios
-      .post(`${getGideonApiUrl()}/v1/cap/caselaw/index`, {
+      .post(`${getGideonApiUrl()}/v1/cap/case/index`, {
         cap_ids: [Number(caseNumber)],
       })
       .then(() => setCaseNumber(""));

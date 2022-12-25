@@ -144,9 +144,6 @@ class Document(BaseModel):
     document_events = Column(JSON)
     document_summary = Column(Text())
     document_summary_one_liner = Column(Text())
-    # TEMPORARY for citing slavery experiment
-    document_citing_slavery_summary = Column(Text()) 
-    document_citing_slavery_summary_one_liner = Column(Text()) 
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -331,7 +328,7 @@ class CAPCaseLaw(BaseModel):
     provenance = Column(JSON()) # { date_added: string (ex: "2022-01-01"), source: string, batch: string }
     casebody = Column(JSON()) # { status, judges: string[], parties: string[], opinions: { text, type, author }[], attorneys: string[], corrections, head_matter }
     # extras
-    document_summary = Column(Text())
-    document_summary_one_liner = Column(Text())
-    document_citing_slavery_summary = Column(Text())
-    document_citing_slavery_summary_one_liner = Column(Text())
+    generated_summary = Column(Text())
+    generated_summary_one_liner = Column(Text())
+    generated_citing_slavery_summary = Column(Text())
+    generated_citing_slavery_summary_one_liner = Column(Text())
