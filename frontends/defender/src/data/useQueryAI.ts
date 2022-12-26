@@ -75,3 +75,15 @@ export const reqQueryWritingSimilarity = async ({
       query: query,
     })
     .then((res) => ({ locations: res.data.data.locations }));
+
+export const reqQueryCaselaw = async ({
+  query,
+}: {
+  organizationId?: number;
+  query: string;
+}): Promise<{ locations: TQueryLocation[] }> =>
+  axios
+    .get(`${getGideonApiUrl()}/v1/cap/case/search`, {
+      params: { query },
+    })
+    .then((res) => ({ locations: res.data.data.locations }));

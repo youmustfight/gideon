@@ -1,6 +1,7 @@
 import createVanilla from "zustand/vanilla";
 import create from "zustand";
 import {
+  reqQueryCaselaw,
   reqQueryDocument,
   reqQueryDocumentLocations,
   reqQueryLegalBriefFactSimilarity,
@@ -8,7 +9,7 @@ import {
   TQueryLocation,
 } from "./useQueryAI";
 
-type TInquiryScope = "organization" | "case" | "document";
+type TInquiryScope = "caselaw" | "organization" | "case" | "document";
 type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity";
 
 type TInquiryStore = {
@@ -35,6 +36,10 @@ type TInquiryStore = {
     inProgress?: boolean;
     locations?: TQueryLocation[];
   };
+  answerCaselaw?: {
+    inProgress?: boolean;
+    cases?: any[]; // TODO
+  };
   inquiry: (params: any) => void;
   isInquirySubmitted: boolean;
   // after
@@ -55,6 +60,7 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
   answerDetailsLocations: undefined,
   answerCaseFactsSimilarity: undefined,
   answerWritingSimilarity: undefined,
+  answerCaselaw: undefined,
   inquiry: ({ caseId, documentId, organizationId }) => {
     set({ isInquirySubmitted: true });
 
@@ -118,6 +124,13 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
       // set default focus
       set({ focusAnswer: "location" });
+
+      // CASELAW
+    } else if (get().inquiryScope === "caselaw") {
+      set({ answerCaselaw: { inProgress: true } });
+      reqQueryCaselaw({ query: get().query }).then(({ locations }) =>
+        set({ answerCaselaw: { inProgress: false, locations } })
+      );
     }
   },
   // after
@@ -129,6 +142,7 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       answerDetailsLocations: undefined,
       answerCaseFactsSimilarity: undefined,
       answerWritingSimilarity: undefined,
+      answerCaselaw: undefined,
       isInquirySubmitted: false,
       focusAnswer: undefined,
       query: "",

@@ -13,6 +13,7 @@ import { useOrganizations } from "./data/useOrganizations";
 import { useAppStore } from "./data/AppStore";
 import { ViewWriting } from "./routes/writing/ViewWriting";
 import { ViewProfile } from "./routes/profile/ViewProfile";
+import { ViewCaseLaw } from "./routes/caselaw/ViewCaseLaw";
 
 export const Gideon: React.FC = () => {
   const { data: user, isSuccess: isSuccessUserFetch } = useUser();
@@ -67,6 +68,16 @@ export const Gideon: React.FC = () => {
           <ProtectedRoute user={user}>
             <ToolWindow>
               <ViewCase />
+            </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/caselaw/*"
+        element={
+          <ProtectedRoute user={user}>
+            <ToolWindow>
+              <ViewCaseLaw />
             </ToolWindow>
           </ProtectedRoute>
         }
