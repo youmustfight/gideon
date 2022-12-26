@@ -305,7 +305,7 @@ class Writing(BaseModel):
 
 # CAP
 class CAPCaseLaw(BaseModel):
-    __tablename__ = "cap_caselaw"
+    __tablename__ = "cap_case"
     cap_id = Column(Integer()) # maps just bad to their "id"
     url = Column(Text())
     name = Column(Text())

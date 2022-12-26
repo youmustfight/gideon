@@ -20,6 +20,7 @@ from indexers.index_document_image import _index_document_image_process_extracti
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
+from queries.cap_caselaw_search import cap_caselaw_search
 from queries.legal_brief_fact_similarity import legal_brief_fact_similarity
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
@@ -361,13 +362,23 @@ async def app_route_legal_brief_fact_delete(request, legal_brief_fact_id):
 # CAP / CASELAW
 @api_app.route('/v1/cap/case/index', methods = ['POST'])
 @auth_route
-async def app_route_cap_caselaw_index(request):
+async def app_route_cap_case_index(request):
     session = request.ctx.session
     async with session.begin():
         cap_ids = request.json['cap_ids']
         arq_pool = await create_queue_pool()
         for cap_id in cap_ids:
             await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
+    return json({ 'status': 'success' })
+
+@api_app.route('/v1/cap/case/search', methods = ['GET'])
+@auth_route
+async def app_route_cap_case_search(request):
+    session = request.ctx.session
+    async with session.begin():
+        query = request.args.get('query')
+        cases = await cap_caselaw_search(session, query)
+        print(cases)
     return json({ 'status': 'success' })
 
 
