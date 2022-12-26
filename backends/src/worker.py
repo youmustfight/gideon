@@ -2,14 +2,14 @@ from arq import create_pool, cron
 from arq.connections import RedisSettings
 from arq.worker import run_worker
 from env import env_queue_host, env_queue_port
-from indexers.processors.job_cron_embeddings_upserter import job_cron_embeddings_upserter
-from indexers.processors.job_cron_index_legal_brief_facts import job_cron_index_legal_brief_facts
-from indexers.processors.job_cron_index_writing import job_cron_index_writing
-from indexers.processors.job_index_cap_caselaw import job_index_cap_caselaw
-from indexers.processors.job_index_document_audio import job_index_document_audio
-from indexers.processors.job_index_document_image import job_index_document_image
-from indexers.processors.job_index_document_pdf import job_index_document_pdf
-from indexers.processors.job_index_document_video import job_index_document_video
+from caselaw.jobs.job_index_cap_caselaw import job_index_cap_caselaw
+from indexers.jobs.job_cron_embeddings_upserter import job_cron_embeddings_upserter
+from indexers.jobs.job_cron_index_legal_brief_facts import job_cron_index_legal_brief_facts
+from indexers.jobs.job_cron_index_writing import job_cron_index_writing
+from indexers.jobs.job_index_document_audio import job_index_document_audio
+from indexers.jobs.job_index_document_pdf import job_index_document_pdf
+from indexers.jobs.job_index_document_image import job_index_document_image
+from indexers.jobs.job_index_document_video import job_index_document_video
 
 # V3 ARQ
 # --- queue creator
@@ -26,7 +26,7 @@ def start_worker():
             job_cron_embeddings_upserter,
             job_cron_index_legal_brief_facts,
             job_cron_index_writing,
-            # processors
+            # jobs
             job_index_cap_caselaw,
             job_index_document_audio,
             job_index_document_image,

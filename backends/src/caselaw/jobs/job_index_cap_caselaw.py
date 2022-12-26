@@ -1,5 +1,5 @@
 from dbs.sa_sessions import create_sqlalchemy_session
-from indexers.index_cap_caselaw import index_cap_caselaw
+from caselaw.index_cap_caselaw import index_cap_caselaw
 
 async def job_index_cap_caselaw(job_ctx, cap_id):
     session = create_sqlalchemy_session()
