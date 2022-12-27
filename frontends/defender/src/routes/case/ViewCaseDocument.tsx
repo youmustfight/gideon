@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { InquiryBox } from "../../components/InquiryBox";
+import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
 import { TDocument } from "../../data/useDocuments";
@@ -22,7 +23,7 @@ const DocumentViewImage = styled.div<{ imageSrc: string }>`
 const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   const [isFullyVisible, setIsFullyVisible] = useState(false);
   return (
-    <StyledDocumentViewSummary>
+    <div>
       <p>
         {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
@@ -31,28 +32,16 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         <>
           <br />
           <br />
-          <div style={{ display: "flex" }}>
-            <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
+          <div style={{ display: "flex", width: "100%" }}>
+            <button onClick={() => reqDocumentSummarize(document.id)} style={{ flexGrow: "1" }}>
+              Re-run Summarizing Process
+            </button>
           </div>
         </>
       ) : null}
-    </StyledDocumentViewSummary>
+    </div>
   );
 };
-
-const StyledDocumentViewSummary = styled.div`
-  padding: 4px;
-  font-size: 13px;
-  line-height: 115%;
-  u {
-    cursor: pointer;
-  }
-  h2,
-  h4,
-  h6 {
-    font-weight: 900;
-  }
-`;
 
 const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   const { hash } = useLocation();
@@ -98,10 +87,10 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
 
   // RENDER
   return (
-    <StyledDocumentViewTranscript>
+    <StyledBodyTextBox>
       {Object.keys(documentTextByGrouping)?.map((groupingNumber) => (
         <div key={`text-batch-${groupingNumber}`}>
-          <div className="document-transcript__header">
+          <div className="body-text__header">
             <h6>
               {doc.type === "pdf" ? "Page" : "▶️ Minute"} #{groupingNumber}:
             </h6>
@@ -122,37 +111,9 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
           </p>
         </div>
       ))}
-    </StyledDocumentViewTranscript>
+    </StyledBodyTextBox>
   );
 };
-
-const StyledDocumentViewTranscript = styled.div`
-  & > div {
-    margin: 8px 0;
-    padding: 8px;
-    border-radius: 4px;
-    .active {
-      background: #ffffcf;
-    }
-    h6 {
-      margin-bottom: 8px;
-      text-deocration: underline;
-      font-style: italic;
-      font-size: 12px;
-    }
-    p {
-      font-size: 13px;
-      line-height: 115%;
-    }
-    .document-transcript__header {
-      display: flex;
-      align-items: center;
-      hr {
-        flex-grow: 1;
-      }
-    }
-  }
-`;
 
 export const ViewCaseDocument = () => {
   const navigate = useNavigate();
@@ -183,7 +144,7 @@ export const ViewCaseDocument = () => {
   return !document ? null : (
     <>
       <InquiryBox />
-      <StyledViewCaseDocument>
+      <div>
         {/* HEAD */}
         <div className="document-header">
           <Link to={`/case/${caseId}`}>
@@ -197,13 +158,16 @@ export const ViewCaseDocument = () => {
           />
         </div>
 
-        <div className="document-title">
-          <h4>
+        <div className="section-lead title">
+          <h3>
             <b>{document.document_description}</b>
-          </h4>
+          </h3>
         </div>
 
         {/* SUMMARY */}
+        <div className="section-lead">
+          <h4>Document Summary</h4>
+        </div>
         <section>
           <DocumentViewSummary document={document} />
           {/* TODO */}
@@ -314,34 +278,7 @@ export const ViewCaseDocument = () => {
             style={{ width: "100%" }}
           />
         </section>
-      </StyledViewCaseDocument>
+      </div>
     </>
   );
 };
-
-const StyledViewCaseDocument = styled.div`
-  .document-title {
-    text-align: center;
-    padding: 20px 0 12px;
-    font-weight: 900;
-  }
-  .document-header {
-    margin: 12px 12px 0;
-    padding: 20px 24px;
-    display: flex;
-    background: #fff;
-    border-radius: 4px;
-    border-bottom: 2px solid #eee;
-    & > a {
-      max-width: 40px;
-    }
-    & > input {
-      flex-grow: 1;
-    }
-    & > button {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
-    }
-  }
-`;

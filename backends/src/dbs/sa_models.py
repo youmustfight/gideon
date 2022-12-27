@@ -144,9 +144,6 @@ class Document(BaseModel):
     document_events = Column(JSON)
     document_summary = Column(Text())
     document_summary_one_liner = Column(Text())
-    # TEMPORARY for citing slavery experiment
-    document_citing_slavery_summary = Column(Text()) 
-    document_citing_slavery_summary_one_liner = Column(Text()) 
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -308,7 +305,7 @@ class Writing(BaseModel):
 
 # CAP
 class CAPCaseLaw(BaseModel):
-    __tablename__ = "cap_caselaw"
+    __tablename__ = "cap_case"
     cap_id = Column(Integer()) # maps just bad to their "id"
     url = Column(Text())
     name = Column(Text())
@@ -330,8 +327,41 @@ class CAPCaseLaw(BaseModel):
     last_updated = Column(Text())
     provenance = Column(JSON()) # { date_added: string (ex: "2022-01-01"), source: string, batch: string }
     casebody = Column(JSON()) # { status, judges: string[], parties: string[], opinions: { text, type, author }[], attorneys: string[], corrections, head_matter }
+    # statuses
+    status_processing_content = Column(Text()) # queued, processing, completed, error
+    status_processing_embeddings = Column(Text()) # queued, processing, completed, error
+    status_processing_extractions = Column(Text()) # queued, processing, completed, error
     # extras
-    document_summary = Column(Text())
-    document_summary_one_liner = Column(Text())
-    document_citing_slavery_summary = Column(Text())
-    document_citing_slavery_summary_one_liner = Column(Text())
+    generated_summary = Column(Text())
+    generated_summary_one_liner = Column(Text())
+    generated_citing_slavery_summary = Column(Text())
+    generated_citing_slavery_summary_one_liner = Column(Text())
+    def serialize(self, serialize_relationships=[]):
+        return {
+            "id": self.id,
+            'cap_id': self.cap_id,
+            'url': self.url,
+            'name': self.name,
+            'name_abbreviation': self.name_abbreviation,
+            'decision_date': self.decision_date,
+            'docket_number': self.docket_number,
+            'first_page': self.first_page,
+            'last_page': self.last_page,
+            'citations': self.citations,
+            'volume': self.volume,
+            'reporter': self.reporter,
+            'court': self.court,
+            'jurisdiction': self.jurisdiction,
+            'cites_to': self.cites_to,
+            'frontend_url': self.frontend_url,
+            'frontend_pdf_url': self.frontend_pdf_url,
+            'preview': self.preview,
+            'analysis': self.analysis,
+            'last_updated': self.last_updated,
+            'provenance': self.provenance,
+            'casebody': self.casebody,
+            'generated_summary': self.generated_summary,
+            'generated_summary_one_liner': self.generated_summary_one_liner,
+            'generated_citing_slavery_summary': self.generated_citing_slavery_summary,
+            'generated_citing_slavery_summary_one_liner': self.generated_citing_slavery_summary_one_liner,
+        }

@@ -71,7 +71,7 @@ export const LegalBriefFacts: React.FC<{ caseId: number }> = ({ caseId }) => {
   return (
     <>
       <StyledLegalBriefFactsBoxLead>
-        <h2>Legal Brief</h2>
+        <h2>Case Brief</h2>
       </StyledLegalBriefFactsBoxLead>
       <StyledLegalBriefFactsBoxLead>
         <h3>Facts</h3>

@@ -10,8 +10,13 @@ import { CasePanel } from "./CasePanel";
 import { useWritings } from "../data/useWritings";
 import { WritingPanel } from "./WritingsBox";
 import { useInquiryStore } from "../data/InquiryStore";
+import { CapCasePanel } from "./CapCasePanel";
 
-export const InquiryBox = () => {
+type TInquiryBoxProps = {
+  isCaseLawSearch?: boolean;
+};
+
+export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
   const app = useAppStore();
   const params = useParams(); // TODO: get from props, not params
   const { data: cases } = useCases({ organizationId: app.focusedOrgId });
@@ -26,6 +31,7 @@ export const InquiryBox = () => {
     answerDetailsLocations,
     answerCaseFactsSimilarity,
     answerWritingSimilarity,
+    answerCaselaw,
     isInquirySubmitted,
     inquiry,
     focusAnswer,
@@ -34,12 +40,14 @@ export const InquiryBox = () => {
   } = useInquiryStore();
 
   // ON MOUNT
-  // --- update scope to whatever vars available
+  // --- set initial search scope depending on vars available
   useEffect(() => {
     if (params?.documentId != null) {
       setInquiryScope("document");
     } else if (params.caseId != null) {
       setInquiryScope("case");
+    } else if (isCaseLawSearch) {
+      setInquiryScope("caselaw");
     } else {
       setInquiryScope("organization");
     }
@@ -56,11 +64,23 @@ export const InquiryBox = () => {
         }}
       >
         {/* @ts-ignore */}
-        <select disabled={isInquirySubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
-          <option value="caselaw" disabled>
-            Case Law
+        <select
+          disabled={isInquirySubmitted}
+          value={inquiryScope}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === "caselaw") {
+              window.open("/caselaw");
+            } else {
+              // @ts-ignore
+              setInquiryScope(value);
+            }
+          }}
+        >
+          <option value="caselaw">Case Law</option>
+          <option value="organization" disabled={isCaseLawSearch}>
+            Organization
           </option>
-          <option value="organization">Organization</option>
           <option value="case" disabled={params.caseId == null}>
             Case
           </option>
@@ -72,7 +92,7 @@ export const InquiryBox = () => {
           {/* <span>Ask Question</span> */}
           <input
             disabled={isInquirySubmitted}
-            placeholder="Where did the search warrant authorize a raid on?"
+            placeholder={isCaseLawSearch ? "Gideon v. Wainwright" : "Where did the search warrant authorize a raid on?"}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -109,6 +129,11 @@ export const InquiryBox = () => {
                 onClick={() => setFocusAnswer("writingSimilarity")}
               >
                 Writings {answerWritingSimilarity?.inProgress ? "(Loading...)" : ""}
+              </label>
+            )}
+            {answerCaselaw && (
+              <label className={focusAnswer === "caselaw" ? "active" : ""} onClick={() => setFocusAnswer("caselaw")}>
+                Caselaw {answerCaselaw?.inProgress ? "(Loading...)" : ""}
               </label>
             )}
             <label className="reset-inquiry-btn" onClick={clearInquiry}>
@@ -158,6 +183,14 @@ export const InquiryBox = () => {
                     // @ts-ignore
                     <WritingPanel key={wr.id} writing={wr} />
                   ))}
+              </>
+            ) : null}
+            {/* CASELAW */}
+            {focusAnswer === "caselaw" && writings ? (
+              <>
+                {answerCaselaw?.capCases?.map((capCase) => (
+                  <CapCasePanel key={capCase.id} capCase={capCase} />
+                ))}
               </>
             ) : null}
           </div>

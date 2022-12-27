@@ -50,8 +50,6 @@ async def deindex_document(session, document_id):
     document.document_events = None
     document.document_summary = None
     document.document_summary_one_liner = None
-    document.document_citing_slavery_summary = None
-    document.document_citing_slavery_summary_one_liner = None
 
     # SAVE DOCUMENT UPDATES
     session.add(document)

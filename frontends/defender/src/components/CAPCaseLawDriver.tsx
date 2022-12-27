@@ -1,13 +1,17 @@
 import axios from "axios";
 import React, { useState } from "react";
+import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { getGideonApiUrl } from "../env";
+import { StyledDriverBox } from "./styled/StyledDriverBox";
 
 export const CAPCaseLawDriver: React.FC = () => {
+  const navigate = useNavigate();
   const [caseNumber, setCaseNumber] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
   const indexCAPCaseLaw = async () => {
     return axios
-      .post(`${getGideonApiUrl()}/v1/cap/caselaw/index`, {
+      .post(`${getGideonApiUrl()}/v1/cap/case/index`, {
         cap_ids: [Number(caseNumber)],
       })
       .then(() => setCaseNumber(""));
@@ -15,40 +19,46 @@ export const CAPCaseLawDriver: React.FC = () => {
   // RENDER
   return (
     <StyledCAPCaseLawDriver>
-      <div>
-        <label htmlFor="case-selector">Index CAP Caselaw ID</label>
-        <input id="case-selector" value={caseNumber} onChange={(e) => setCaseNumber(e.target.value)} />
-        <button onClick={() => indexCAPCaseLaw()}>+ Index Case</button>
+      <div className="driver__lead">
+        <div className="driver__lead__text">
+          <button onClick={() => navigate("/cases")}>⬅</button>
+          <h2>U. S. Caselaw Search</h2>
+        </div>
       </div>
+      <div className="driver__toggle-details">
+        <small>Source: Caselaw Access Project</small>
+        <small className="" onClick={() => setShowDetails(!showDetails)}>
+          {showDetails ? "Hide" : "Show"} Details
+        </small>
+      </div>
+
+      {showDetails ? (
+        <div className="driver__details">
+          <div className="cap-indexer">
+            <table>
+              <tbody>
+                <tr>
+                  <td>
+                    <label htmlFor="case-selector">Index CAP Caselaw ID</label>
+                  </td>
+                  <td>
+                    <input id="case-selector" value={caseNumber} onChange={(e) => setCaseNumber(e.target.value)} />
+                  </td>
+                  <td>
+                    <button onClick={() => indexCAPCaseLaw()}>+ Index Case</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
     </StyledCAPCaseLawDriver>
   );
 };
 
-const StyledCAPCaseLawDriver = styled.div`
-  // background: white;
-  // border-radius: 4px;
-  margin: 12px 0;
-  // padding: 12px;
-  select {
-    width: 100%;
-  }
-  & > div {
+const StyledCAPCaseLawDriver = styled(StyledDriverBox)`
+  .cap-indexer {
     display: flex;
-    align-items: center;
-    button {
-      margin: 0 4px;
-      white-space: pre;
-    }
-    label {
-      margin-right: 8px;
-      font-size: 13px;
-      width: 80px;
-      min-width: 80px;
-      max-width: 80px;
-    }
-    input,
-    select {
-      width: 100%;
-    }
   }
 `;

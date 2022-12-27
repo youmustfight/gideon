@@ -75,7 +75,7 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
       {writings && (
         <StyledWritingsBox>
           {writings?.map((w: any) => (
-            <WritingPanel writing={w} />
+            <WritingPanel key={w.id} writing={w} />
           ))}
         </StyledWritingsBox>
       )}

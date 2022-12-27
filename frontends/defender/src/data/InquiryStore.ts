@@ -1,15 +1,17 @@
 import createVanilla from "zustand/vanilla";
 import create from "zustand";
 import {
+  reqQueryCaselaw,
   reqQueryDocument,
   reqQueryDocumentLocations,
   reqQueryLegalBriefFactSimilarity,
   reqQueryWritingSimilarity,
   TQueryLocation,
 } from "./useQueryAI";
+import { TCapCase } from "./useCapCase";
 
-type TInquiryScope = "organization" | "case" | "document";
-type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity";
+type TInquiryScope = "caselaw" | "organization" | "case" | "document";
+type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
 
 type TInquiryStore = {
   // scopes
@@ -35,6 +37,10 @@ type TInquiryStore = {
     inProgress?: boolean;
     locations?: TQueryLocation[];
   };
+  answerCaselaw?: {
+    inProgress?: boolean;
+    capCases?: TCapCase[]; // TODO
+  };
   inquiry: (params: any) => void;
   isInquirySubmitted: boolean;
   // after
@@ -55,6 +61,7 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
   answerDetailsLocations: undefined,
   answerCaseFactsSimilarity: undefined,
   answerWritingSimilarity: undefined,
+  answerCaselaw: undefined,
   inquiry: ({ caseId, documentId, organizationId }) => {
     set({ isInquirySubmitted: true });
 
@@ -118,6 +125,14 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
       // set default focus
       set({ focusAnswer: "location" });
+
+      // CASELAW
+    } else if (get().inquiryScope === "caselaw") {
+      set({ answerCaselaw: { inProgress: true } });
+      reqQueryCaselaw({ query: get().query }).then(({ capCases }) =>
+        set({ answerCaselaw: { inProgress: false, capCases } })
+      );
+      set({ focusAnswer: "caselaw" });
     }
   },
   // after
@@ -129,6 +144,7 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       answerDetailsLocations: undefined,
       answerCaseFactsSimilarity: undefined,
       answerWritingSimilarity: undefined,
+      answerCaselaw: undefined,
       isInquirySubmitted: false,
       focusAnswer: undefined,
       query: "",

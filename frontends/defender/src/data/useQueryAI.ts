@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getGideonApiUrl } from "../env";
+import { TCapCase } from "./useCapCase";
 import { TDocument, TDocumentContent, TFile } from "./useDocuments";
 
 export type TQueryLocation = {
@@ -75,3 +76,15 @@ export const reqQueryWritingSimilarity = async ({
       query: query,
     })
     .then((res) => ({ locations: res.data.data.locations }));
+
+export const reqQueryCaselaw = async ({
+  query,
+}: {
+  organizationId?: number;
+  query: string;
+}): Promise<{ capCases: TCapCase[] }> =>
+  axios
+    .get(`${getGideonApiUrl()}/v1/cap/case/search`, {
+      params: { query },
+    })
+    .then((res) => ({ capCases: res.data.data.cap_cases }));
