@@ -10,6 +10,7 @@ import { CasePanel } from "./CasePanel";
 import { useWritings } from "../data/useWritings";
 import { WritingPanel } from "./WritingsBox";
 import { useInquiryStore } from "../data/InquiryStore";
+import { CapCasePanel } from "./CapCasePanel";
 
 type TInquiryBoxProps = {
   isCaseLawSearch?: boolean;
@@ -30,6 +31,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
     answerDetailsLocations,
     answerCaseFactsSimilarity,
     answerWritingSimilarity,
+    answerCaselaw,
     isInquirySubmitted,
     inquiry,
     focusAnswer,
@@ -129,6 +131,11 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
                 Writings {answerWritingSimilarity?.inProgress ? "(Loading...)" : ""}
               </label>
             )}
+            {answerCaselaw && (
+              <label className={focusAnswer === "caselaw" ? "active" : ""} onClick={() => setFocusAnswer("caselaw")}>
+                Caselaw {answerCaselaw?.inProgress ? "(Loading...)" : ""}
+              </label>
+            )}
             <label className="reset-inquiry-btn" onClick={clearInquiry}>
               <ResetIcon />
             </label>
@@ -176,6 +183,14 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
                     // @ts-ignore
                     <WritingPanel key={wr.id} writing={wr} />
                   ))}
+              </>
+            ) : null}
+            {/* CASELAW */}
+            {focusAnswer === "caselaw" && writings ? (
+              <>
+                {answerCaselaw?.capCases?.map((capCase) => (
+                  <CapCasePanel key={capCase.id} capCase={capCase} />
+                ))}
               </>
             ) : null}
           </div>

@@ -8,9 +8,10 @@ import {
   reqQueryWritingSimilarity,
   TQueryLocation,
 } from "./useQueryAI";
+import { TCapCase } from "./useCapCase";
 
 type TInquiryScope = "caselaw" | "organization" | "case" | "document";
-type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity";
+type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
 
 type TInquiryStore = {
   // scopes
@@ -38,7 +39,7 @@ type TInquiryStore = {
   };
   answerCaselaw?: {
     inProgress?: boolean;
-    cases?: any[]; // TODO
+    capCases?: TCapCase[]; // TODO
   };
   inquiry: (params: any) => void;
   isInquirySubmitted: boolean;
@@ -128,9 +129,10 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       // CASELAW
     } else if (get().inquiryScope === "caselaw") {
       set({ answerCaselaw: { inProgress: true } });
-      reqQueryCaselaw({ query: get().query }).then(({ locations }) =>
-        set({ answerCaselaw: { inProgress: false, locations } })
+      reqQueryCaselaw({ query: get().query }).then(({ capCases }) =>
+        set({ answerCaselaw: { inProgress: false, capCases } })
       );
+      set({ focusAnswer: "caselaw" });
     }
   },
   // after

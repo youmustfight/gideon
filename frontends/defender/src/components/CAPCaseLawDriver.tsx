@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { getGideonApiUrl } from "../env";
-import { Styledriver } from "./styled/DriverBox";
+import { StyledDriverBox } from "./styled/StyledDriverBox";
 
 export const CAPCaseLawDriver: React.FC = () => {
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export const CAPCaseLawDriver: React.FC = () => {
   );
 };
 
-const StyledCAPCaseLawDriver = styled(Styledriver)`
+const StyledCAPCaseLawDriver = styled(StyledDriverBox)`
   .cap-indexer {
     display: flex;
   }

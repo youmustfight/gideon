@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const Styledriver = styled.div`
+export const StyledDriverBox = styled.div`
   background: white;
   border-radius: 4px;
   margin: 12px;
