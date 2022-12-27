@@ -28,3 +28,6 @@ async def job_cron_index_writing(job_ctx):
 
         # 4. SAVE!
         await session.commit()
+
+    # Close
+    await session.close()

@@ -75,4 +75,5 @@ async def job_cron_embeddings_upserter(job_ctx):
             # --- commit after each batch in case one fails
             await session.commit()
 
+    await session.close()
     print('INFO (scheduled_job_embeddings_upserter) done')
