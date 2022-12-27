@@ -8,8 +8,8 @@ import { reqWriteCapCaseBrief, useCapCase } from "../../data/useCapCase";
 export const ViewCapCase = () => {
   const capRef = useRef();
   const { capId } = useParams();
-  const { data: capCase } = useCapCase(capId);
   const [isSummaryFullyVisible, setIsSummaryFullyVisible] = useState(false);
+  const { data: capCase } = useCapCase(capId);
 
   // ON MOUNT
   useEffect(() => {
@@ -22,7 +22,6 @@ export const ViewCapCase = () => {
   }, [capId, capCase, capRef]);
 
   // RENDER
-  console.log(capCase);
   // @ts-ignore
   return !capCase ? (
     <div>
@@ -31,6 +30,7 @@ export const ViewCapCase = () => {
       </div>
     </div>
   ) : (
+    // @ts-ignore
     <div ref={capRef}>
       {/* TITLE */}
       <div className="section-lead title">
@@ -64,7 +64,7 @@ export const ViewCapCase = () => {
         </div>
         <br />
         <div style={{ display: "flex", width: "100%" }}>
-          <button onClick={() => reqWriteCapCaseBrief(capId)} style={{ flexGrow: "1" }}>
+          <button onClick={() => reqWriteCapCaseBrief(capId!)} style={{ flexGrow: "1" }}>
             Write Case Brief (Takes 1-2+ Minutes)
           </button>
         </div>

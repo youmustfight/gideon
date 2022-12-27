@@ -49,16 +49,20 @@ export type TCapCase = {
 };
 
 // GET
-const reqCapCaseGet = async (capId: number): Promise<TCapCase> => {
+const reqCapCaseGet = async (capId: string | number): Promise<TCapCase> => {
   return axios.get(`${getGideonApiUrl()}/v1/cap/case/${capId}`).then((res) => res.data.data.cap_case);
 };
 
-export const useCapCase = (capId: number) => {
-  return useQuery<TCapCase | null>(["capCase", Number(capId)], async () => (capId ? reqCapCaseGet(capId) : null), {
-    refetchInterval: 1000 * 60,
-  });
+export const useCapCase = (capId: number | string | undefined) => {
+  return useQuery<TCapCase | null>(
+    ["capCase", capId ? Number(capId) : undefined],
+    async () => (capId ? reqCapCaseGet(capId) : null),
+    {
+      refetchInterval: 1000 * 60,
+    }
+  );
 };
 
 // MISC
-export const reqWriteCapCaseBrief = async (capId: number): Promise<void> =>
+export const reqWriteCapCaseBrief = async (capId: number | string): Promise<void> =>
   axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/extractions`).then((res) => res.data.document);

@@ -19,6 +19,7 @@ def run_migrations() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
+    print('INFO (env.py:run_migrations) start')
     # setting url via hack via https://github.com/sqlalchemy/alembic/issues/606#issuecomment-537729908
     config_section = config.get_section(config.config_ini_section)
     config_section["sqlalchemy.url"] = env_get_database_app_url(driver="psycopg2")
@@ -28,6 +29,7 @@ def run_migrations() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        print('INFO (env.py:run_migrations) connect')
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
