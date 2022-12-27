@@ -32,8 +32,10 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         <>
           <br />
           <br />
-          <div style={{ display: "flex" }}>
-            <button onClick={() => reqDocumentSummarize(document.id)}>Re-run Summarizing Process</button>
+          <div style={{ display: "flex", width: "100%" }}>
+            <button onClick={() => reqDocumentSummarize(document.id)} style={{ flexGrow: "1" }}>
+              Re-run Summarizing Process
+            </button>
           </div>
         </>
       ) : null}
@@ -163,6 +165,9 @@ export const ViewCaseDocument = () => {
         </div>
 
         {/* SUMMARY */}
+        <div className="section-lead">
+          <h4>Document Summary</h4>
+        </div>
         <section>
           <DocumentViewSummary document={document} />
           {/* TODO */}

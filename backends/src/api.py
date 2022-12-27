@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
+from caselaw.index_cap_caselaw import _index_cap_caselaw_process_extractions
 from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, LegalBriefFact, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
@@ -399,6 +400,14 @@ async def app_route_cap_case_get(request, cap_id):
         cap_case = query_cap_caselaw.scalars().one()
     # Return after we've executed the query when the indexing job finished
     return json({ 'status': 'success', 'data': { 'cap_case': cap_case.serialize() } })
+
+@api_app.route('/v1/cap/case/<cap_id>/extractions', methods = ['POST'])
+@auth_route
+async def app_route_cap_case_extractions(request, cap_id):
+    session = request.ctx.session
+    async with session.begin():
+        await _index_cap_caselaw_process_extractions(session=session, cap_id=int(cap_id))
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/search', methods = ['GET'])
 @auth_route

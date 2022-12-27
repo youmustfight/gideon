@@ -1,14 +1,16 @@
 import { startCase } from "lodash";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { Link } from "react-router-dom";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
-import { useCapCase } from "../../data/useCapCase";
+import { reqWriteCapCaseBrief, useCapCase } from "../../data/useCapCase";
 
 export const ViewCapCase = () => {
   const capRef = useRef();
   const { capId } = useParams();
   const { data: capCase } = useCapCase(capId);
+  const [isSummaryFullyVisible, setIsSummaryFullyVisible] = useState(false);
+
   // ON MOUNT
   useEffect(() => {
     // --- scroll to CAP case viewer
@@ -30,11 +32,45 @@ export const ViewCapCase = () => {
     </div>
   ) : (
     <div ref={capRef}>
+      {/* TITLE */}
       <div className="section-lead title">
         <h2>
           {capCase.name} ({capCase.decision_date.slice(0, 4)})
         </h2>
       </div>
+
+      {/* CASE BRIEF */}
+      <div className="section-lead">
+        <h3>Case Brief</h3>
+      </div>
+      <section>
+        <div>
+          <h4>Summary</h4>
+        </div>
+        <div>
+          <p>
+            {isSummaryFullyVisible ? capCase.generated_summary : capCase.generated_summary?.slice(0, 400)}{" "}
+            <u onClick={() => setIsSummaryFullyVisible(!isSummaryFullyVisible)}>
+              {isSummaryFullyVisible ? "...Hide more" : "...Show more"}
+            </u>{" "}
+          </p>
+        </div>
+        <hr />
+        <div>
+          <h4>Case Brief</h4>
+        </div>
+        <div>
+          <p>TODO</p>
+        </div>
+        <br />
+        <div style={{ display: "flex", width: "100%" }}>
+          <button onClick={() => reqWriteCapCaseBrief(capId)} style={{ flexGrow: "1" }}>
+            Write Case Brief (Takes 1-2+ Minutes)
+          </button>
+        </div>
+      </section>
+
+      {/* PARTIES */}
       <div className="section-lead">
         <h3>Plaintiffs, Judges, Court</h3>
       </div>
@@ -76,6 +112,8 @@ export const ViewCapCase = () => {
           <p>{capCase.decision_date}</p>
         </div>
       </section>
+
+      {/* OPINIONS */}
       <div className="section-lead">
         <h4>Opinions</h4>
       </div>
@@ -96,6 +134,8 @@ export const ViewCapCase = () => {
           ))}
         </StyledBodyTextBox>
       </section>
+
+      {/* CITATIONS */}
       <div className="section-lead">
         <h4>Citations</h4>
       </div>

@@ -58,3 +58,7 @@ export const useCapCase = (capId: number) => {
     refetchInterval: 1000 * 60,
   });
 };
+
+// MISC
+export const reqWriteCapCaseBrief = async (capId: number): Promise<void> =>
+  axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/extractions`).then((res) => res.data.document);
