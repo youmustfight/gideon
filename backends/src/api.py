@@ -1,3 +1,5 @@
+from time import sleep
+from arq.jobs import JobStatus
 from contextvars import ContextVar
 from datetime import datetime
 from typing import List
@@ -10,7 +12,7 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from dbs.sa_models import serialize_list, AIActionLock, Case, LegalBriefFact, Document, DocumentContent, File, Organization, Writing, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, LegalBriefFact, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
@@ -371,15 +373,42 @@ async def app_route_cap_case_index(request):
             await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
     return json({ 'status': 'success' })
 
+@api_app.route('/v1/cap/case/<cap_id>', methods = ['GET'])
+@auth_route
+async def app_route_cap_case_get(request, cap_id):
+    session = request.ctx.session
+    async with session.begin():
+        # --- queue if we need to process
+        arq_pool = await create_queue_pool()
+        arq_job = await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
+        is_processing_jobs = True
+        is_processing_time = 0
+        # --- check if done fetching/saving
+        while is_processing_jobs:
+            # set to false to start
+            is_processing_jobs = False
+            status = await arq_job.status()
+            # and flip if we get it once
+            is_processing_jobs = status in [JobStatus.deferred, JobStatus.queued, JobStatus.in_progress]
+            sleep(1)
+            is_processing_time += 1
+            if (is_processing_time > 10): raise 'CAP Case Query Timeout'
+        # --- query for returning data
+        query_cap_caselaw = await session.execute(
+            sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
+        cap_case = query_cap_caselaw.scalars().one()
+    # Return after we've executed the query when the indexing job finished
+    return json({ 'status': 'success', 'data': { 'cap_case': cap_case.serialize() } })
+
 @api_app.route('/v1/cap/case/search', methods = ['GET'])
 @auth_route
 async def app_route_cap_case_search(request):
     session = request.ctx.session
     async with session.begin():
         query = request.args.get('query')
-        cases = await cap_caselaw_search(session, query)
-        print(cases)
-    return json({ 'status': 'success' })
+        cap_cases = await cap_caselaw_search(session, query)
+        cap_cases = serialize_list(cap_cases)
+    return json({ 'status': 'success', 'data': { 'cap_cases': cap_cases } })
 
 
 # DOCUMENTS
