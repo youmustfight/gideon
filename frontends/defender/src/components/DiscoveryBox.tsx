@@ -49,17 +49,17 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
         </small>
         {["audio", "pdf", "video"].includes(document.type) ? (
           <>
-            <p>{document.document_description}</p>
+            <p>{document.generated_description}</p>
             <div className="discovery-box__document__actions">
               <div>
-                <small>{document.document_summary_one_liner}</small>
+                <small>{document.generated_summary_one_liner}</small>
               </div>
             </div>
           </>
         ) : null}
         {["image"].includes(document.type) ? (
           <p>
-            {capitalize(document.document_description)}. {capitalize(document.document_summary)}.
+            {capitalize(document.generated_description)}. {capitalize(document.generated_summary)}.
           </p>
         ) : null}
       </div>

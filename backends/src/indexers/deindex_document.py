@@ -46,10 +46,10 @@ async def deindex_document(session, document_id):
     document.status_processing_content = None
     # --- document properties/extractions
     document.status_processing_extractions = None
-    document.document_description = None
-    document.document_events = None
-    document.document_summary = None
-    document.document_summary_one_liner = None
+    document.generated_description = None
+    document.generated_events = None
+    document.generated_summary = None
+    document.generated_summary_one_liner = None
 
     # SAVE DOCUMENT UPDATES
     session.add(document)

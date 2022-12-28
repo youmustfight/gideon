@@ -140,10 +140,10 @@ class Document(BaseModel):
     embeddings = relationship("Embedding", back_populates="document")
     # --- content -> extracted summaries/details
     status_processing_extractions = Column(String()) # queued, processing, completed, error
-    document_description = Column(Text())
-    document_events = Column(JSON)
-    document_summary = Column(Text())
-    document_summary_one_liner = Column(Text())
+    generated_description = Column(Text())
+    generated_events = Column(JSON)
+    generated_summary = Column(Text())
+    generated_summary_one_liner = Column(Text())
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -154,10 +154,10 @@ class Document(BaseModel):
             "status_processing_content": self.status_processing_content,
             "status_processing_embeddings": self.status_processing_embeddings,
             "status_processing_extractions": self.status_processing_extractions,
-            "document_description": self.document_description,
-            "document_events": self.document_events,
-            "document_summary": self.document_summary,
-            "document_summary_one_liner": self.document_summary_one_liner,
+            "generated_description": self.generated_description,
+            "generated_events": self.generated_events,
+            "generated_summary": self.generated_summary,
+            "generated_summary_one_liner": self.generated_summary_one_liner,
         }
 
 class DocumentContent(BaseModel):

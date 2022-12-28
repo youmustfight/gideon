@@ -41,10 +41,10 @@ export type TDocument = {
   status_processing_content?: "queued" | "completed";
   status_processing_embeddings?: "queued" | "completed";
   status_processing_extractions?: "queued" | "completed";
-  document_description?: string;
-  document_events?: { date: string; event: string }[];
-  document_summary?: string;
-  document_summary_one_liner?: string;
+  generated_description?: string;
+  generated_events?: { date: string; event: string }[];
+  generated_summary?: string;
+  generated_summary_one_liner?: string;
   content?: TDocumentContent[];
   files?: TFile[];
   // v1 (when saving everything to disk as json)

@@ -132,18 +132,18 @@ async def _index_document_audio_process_extractions(session, document_id: int) -
         lambda content: content.text if content.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value else "", document_content))
     # COMPILE/EXTRACT
     # --- classification/description
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): document_description')
-    document.document_description = gpt_completion(
+    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): generated_description')
+    document.generated_description = gpt_completion(
         gpt_prompt_document_type.replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
         max_tokens=75)
     # --- summary
     print('INFO (index_document_audio.py:_index_document_audio_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
-        document.document_summary = gpt_summarize(document_content_text, max_length=1500)
-        document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
+        document.generated_summary = gpt_summarize(document_content_text, max_length=1500)
+        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
     # --- events
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): document_events')
-    document.document_events = await extract_document_events_v1(document_content_text)
+    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): generated_events')
+    document.generated_events = await extract_document_events_v1(document_content_text)
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

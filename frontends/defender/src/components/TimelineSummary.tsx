@@ -10,7 +10,7 @@ export const TimelineSummary: React.FC<{ documentId?: number; caseId: number }> 
 
   // RENDER
   const timelineEvents = orderBy(
-    flatten((documents ?? []).map((d) => (d.document_events ?? [])?.map((e) => ({ ...e, documentId: d.id })))),
+    flatten((documents ?? []).map((d) => (d.generated_events ?? [])?.map((e) => ({ ...e, documentId: d.id })))),
     ["date"],
     ["asc"]
   ).filter((e) => (documentId ? e.documentId === documentId : true));

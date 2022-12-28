@@ -142,19 +142,19 @@ async def _index_document_pdf_process_extractions(session, document_id: int) -> 
     # EXTRACT
     # --- classification/description
     print('INFO (index_document_pdf.py:_index_document_pdf_process_extractions): document_description')
-    document.document_description = extract_document_type(document_content_text)
+    document.generated_description = extract_document_type(document_content_text)
     # --- summary
     print('INFO (index_document_pdf.py:_index_document_pdf_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
-        document.document_summary = extract_document_summary(document_content_text)
-        document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
+        document.generated_summary = extract_document_summary(document_content_text)
+        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
     else:
         print('INFO (index_document_pdf.py:_index_document_pdf_process_extractions): document is too long')
     # --- cases/laws mentioned
     #  TODO: await extract_document_caselaw_mentions(document_content_text)
     # --- event timeline v2
     print('INFO (index_document_pdf.py:_index_document_pdf_process_extractions): events')
-    # document.document_events = await extract_document_events_v1(document_content_text)
+    # document.genereated_events = await extract_document_events_v1(document_content_text)
     # --- organizations mentioned
     #  TODO: await extract_document_organizations(document_content_text)
     # --- people mentioned + context within document
