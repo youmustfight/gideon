@@ -97,6 +97,28 @@ PASSAGE: <<SOURCE_TEXT>>
 ONE SENTENCE SUMMARY:
 """
 
+# BRIEFS
+gpt_prompt_find_facts_for_issue = """
+List facts from the passage that relate to the issue.
+
+ISSUE: <<ISSUE_TEXT>>
+
+PASSAGE: <<SOURCE_TEXT>>
+
+LIST OF RELEVANT FACTS FOR ISSUE:
+- 
+"""
+
+gpt_prompt_consolidate_facts_for_issue = """
+Consolidate facts listed.
+
+FACTS:
+<<SOURCE_TEXT>>
+
+CONSOLIDATED FACTS:
+- 
+"""
+
 
 # EDITING
 gpt_prompt_edit_event_timeline = """

@@ -19,8 +19,8 @@ class AI_ACTIONS(Enum):
     document_similarity_text_sentence_embed = 'document_similarity_text_sentence_embed'
     document_similarity_text_sentences_20_embed = 'document_similarity_text_sentences_20_embed'
     document_similarity_text_max_size_embed = 'document_similarity_text_max_size_embed'
-    legal_brief_facts_similarity_embed = 'legal_brief_facts_similarity_embed'
-    legal_brief_facts_similarity_search = 'legal_brief_facts_similarity_search'
+    brief_facts_similarity_embed = 'brief_facts_similarity_embed'
+    brief_facts_similarity_search = 'brief_facts_similarity_search'
     case_similarity_text_sentence_search = 'case_similarity_text_sentence_search'
     case_similarity_text_sentences_20_search = 'case_similarity_text_sentences_20_search'
     case_similarity_text_max_size_search = 'case_similarity_text_max_size_search'
@@ -270,17 +270,17 @@ def generate_ai_action_locks(case_id = None, organization_id = None):
         organization_id=organization_id),
     # CASE FACTS EMBED+SEARCH
     AIActionLock(
-        action=AI_ACTIONS.legal_brief_facts_similarity_embed.value,
+        action=AI_ACTIONS.brief_facts_similarity_embed.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
-        index_partition_id=AI_ACTIONS.legal_brief_facts_similarity_embed.value,
+        index_partition_id=AI_ACTIONS.brief_facts_similarity_embed.value,
         case_id=case_id,
         organization_id=organization_id),
     AIActionLock(
-        action=AI_ACTIONS.legal_brief_facts_similarity_search.value,
+        action=AI_ACTIONS.brief_facts_similarity_search.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
-        index_partition_id=AI_ACTIONS.legal_brief_facts_similarity_embed.value,
+        index_partition_id=AI_ACTIONS.brief_facts_similarity_embed.value,
         case_id=case_id,
         organization_id=organization_id),
     # CASE->DOCUMENTS SEARCH
