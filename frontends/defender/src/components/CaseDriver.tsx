@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { useCase, useCaseUpdate, useCaseUserUpdate } from "../data/useCase";
 import { useOrganizations } from "../data/useOrganizations";
 import { CaseAdminToolbox } from "./CaseAdminToolbox";
-import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
+import { ConfirmButton } from "./ConfirmButton";
 
 export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
                 <tr key={u.id}>
                   <td>{u.name}</td>
                   <td>
-                    <ConfirmDeleteButton
+                    <ConfirmButton
                       prompts={["Remove", "Yes, Remove"]}
                       onClick={() => caseUserUpdate({ action: "remove", case_id: cse.id, user_id: Number(u.id) })}
                     />

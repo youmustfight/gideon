@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { InquiryBox } from "../../components/InquiryBox";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
@@ -271,7 +271,7 @@ export const ViewCaseDocument = () => {
         {/* DELETES */}
         <hr />
         <section>
-          <ConfirmDeleteButton
+          <ConfirmButton
             prompts={["Delete Document", "Yes, Delete Document"]}
             onClick={deleteHandler}
             disabled={isDeleting}

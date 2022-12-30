@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { TOrganization, useOrganizationUserUpdate } from "../data/useOrganizations";
 import { TUser, useUser, useUserUpdate } from "../data/useUser";
-import { ConfirmDeleteButton } from "./ConfirmDeleteButton";
+import { ConfirmButton } from "./ConfirmButton";
 import { OrganizationAdminToolbox } from "./OrgAdminToolbox";
 
 export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organization: TOrganization }> = ({
@@ -105,7 +105,7 @@ export const OrganizationDriver: React.FC<{ allowNavigate?: boolean; organizatio
                     <input disabled type="checkbox" />
                   </td>
                   <td className="row-actions">
-                    <ConfirmDeleteButton
+                    <ConfirmButton
                       disabled={user?.id === u.id || !app.focusedOrgId}
                       prompts={user?.id === u.id ? ["You"] : ["Remove", "Yes, Remove"]}
                       onClick={() =>
