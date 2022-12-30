@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
 import { InquiryBox } from "../../components/InquiryBox";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
@@ -25,7 +25,7 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   return (
     <div>
       <p>
-        {isFullyVisible ? document.document_summary : document.document_summary?.slice(0, 400)}{" "}
+        {isFullyVisible ? document.generated_summary : document.generated_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
       {isFullyVisible ? (
@@ -160,7 +160,7 @@ export const ViewCaseDocument = () => {
 
         <div className="section-lead title">
           <h3>
-            <b>{document.document_description}</b>
+            <b>{document.generated_description}</b>
           </h3>
         </div>
 
@@ -196,7 +196,7 @@ export const ViewCaseDocument = () => {
         </section>
 
         {/* EVENTS */}
-        {document.document_events && document.document_events?.length > 0 ? (
+        {document.generated_events && document.generated_events?.length > 0 ? (
           <>
             <div className="section-lead">
               <h4>Timeline/Events</h4>
@@ -271,7 +271,7 @@ export const ViewCaseDocument = () => {
         {/* DELETES */}
         <hr />
         <section>
-          <ConfirmDeleteButton
+          <ConfirmButton
             prompts={["Delete Document", "Yes, Delete Document"]}
             onClick={deleteHandler}
             disabled={isDeleting}

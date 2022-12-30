@@ -92,7 +92,7 @@ class Case(BaseModel):
     documents = relationship("Document", back_populates="case")
     embeddings = relationship("Embedding", back_populates="case")
     writings = relationship("Writing", back_populates="case")
-    legal_brief_facts = relationship("LegalBriefFact", back_populates="case")
+    brief = relationship("Brief", back_populates="case")
     ai_action_locks = relationship("AIActionLock", back_populates="case")
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
@@ -140,10 +140,10 @@ class Document(BaseModel):
     embeddings = relationship("Embedding", back_populates="document")
     # --- content -> extracted summaries/details
     status_processing_extractions = Column(String()) # queued, processing, completed, error
-    document_description = Column(Text())
-    document_events = Column(JSON)
-    document_summary = Column(Text())
-    document_summary_one_liner = Column(Text())
+    generated_description = Column(Text())
+    generated_events = Column(JSON)
+    generated_summary = Column(Text())
+    generated_summary_one_liner = Column(Text())
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -154,10 +154,10 @@ class Document(BaseModel):
             "status_processing_content": self.status_processing_content,
             "status_processing_embeddings": self.status_processing_embeddings,
             "status_processing_extractions": self.status_processing_extractions,
-            "document_description": self.document_description,
-            "document_events": self.document_events,
-            "document_summary": self.document_summary,
-            "document_summary_one_liner": self.document_summary_one_liner,
+            "generated_description": self.generated_description,
+            "generated_events": self.generated_events,
+            "generated_summary": self.generated_summary,
+            "generated_summary_one_liner": self.generated_summary_one_liner,
         }
 
 class DocumentContent(BaseModel):
@@ -257,21 +257,36 @@ class File(BaseModel):
             "upload_thumbnail_url": self.upload_thumbnail_url,
         }
 
-class LegalBriefFact(BaseModel):
-    __tablename__ = "legal_brief_fact"
+class Brief(BaseModel):
+    __tablename__ = "brief"
     id = Column(Integer, primary_key=True)
+    # relations
     case_id = Column(Integer, ForeignKey("case.id"))
-    case = relationship("Case", back_populates="legal_brief_facts")
-    text = Column(Text())
+    case = relationship("Case", back_populates="brief")
+    cap_case_id = Column(Integer, ForeignKey("cap_case.id"))
+    cap_case = relationship("CAPCaseLaw", back_populates="brief")
+    # properties
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
+    # case law + case brief (both use facts and issues, but case law briefs won't have holding/reasoning yet since that's from the judge)
+    facts = Column(JSONB()) # { text }[]
+    issues = Column(JSONB()) # { issue, holding, reasoning }[]
+    # --- issue ('Whether ...') may be more than 1
+    # --- TODO: related_facts ??? (how do we associate issues w/ facts? should we? or do we keep it loose)
+    # --- holding (court/judge decision. Yes/No in response to issue)
+    # --- TODO: rule? (what is the rule being applied to the facts?)
+    # --- reasoning (combines facts w/ rule of law. court states whether arguments are sound)
+    # conclusion (court affirms/reversed if appealate)
+    # TODO: appellite brief? such as the courts a decision has gone through?
     def serialize(self, serialize_relationships=[]):
         return {
-            "id": self.id,
-            "case_id": self.case_id,
-            "text": self.text,
-            "created_at": self.created_at.isoformat() if self.created_at != None else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at != None else None,
+            'id': self.id,
+            'cap_case_id': self.cap_case_id,
+            'case_id': self.case_id,
+            'created_at': str(self.created_at),
+            'updated_at': str(self.updated_at),
+            'facts': self.facts,
+            'issues': self.issues,
         }
 
 class Writing(BaseModel):
@@ -336,6 +351,7 @@ class CAPCaseLaw(BaseModel):
     generated_summary_one_liner = Column(Text())
     generated_citing_slavery_summary = Column(Text())
     generated_citing_slavery_summary_one_liner = Column(Text())
+    brief = relationship("Brief", back_populates="cap_case")
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,

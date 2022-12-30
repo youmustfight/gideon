@@ -4,7 +4,7 @@ import {
   reqQueryCaselaw,
   reqQueryDocument,
   reqQueryDocumentLocations,
-  reqQueryLegalBriefFactSimilarity,
+  reqQueryBriefFactSimilarity,
   reqQueryWritingSimilarity,
   TQueryLocation,
 } from "./useQueryAI";
@@ -70,14 +70,14 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       // --- case facts (defer to case id if that's provided over query)
       set({ answerCaseFactsSimilarity: { inProgress: true } });
       if (caseId) {
-        reqQueryLegalBriefFactSimilarity({ caseId, organizationId }).then(({ locations }) =>
+        reqQueryBriefFactSimilarity({ caseId, organizationId }).then(({ locations }) =>
           set({
             answerCaseFactsSimilarity: { inProgress: false, locations },
             query: `Case facts similar to case #${caseId}`,
           })
         );
       } else {
-        reqQueryLegalBriefFactSimilarity({ organizationId, query: get().query }).then(({ locations }) =>
+        reqQueryBriefFactSimilarity({ organizationId, query: get().query }).then(({ locations }) =>
           set({ answerCaseFactsSimilarity: { inProgress: false, locations } })
         );
       }

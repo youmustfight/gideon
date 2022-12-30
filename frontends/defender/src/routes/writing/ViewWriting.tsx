@@ -4,7 +4,7 @@ import { useDebounce } from "react-use";
 import { WritingEditor } from "../../components/WritingEditor/WritingEditor";
 import { useWriting, useWritingDelete, useWritingUpdate } from "../../data/useWriting";
 import styled from "styled-components";
-import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
+import { ConfirmButton } from "../../components/ConfirmButton";
 
 type TViewWritingProps = {
   caseId?: number;
@@ -65,7 +65,7 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
       <br />
       <br />
       <section>
-        <ConfirmDeleteButton
+        <ConfirmButton
           prompts={["Delete Writing", "Yes, Delete Writing"]}
           onClick={deleteHandler}
           disabled={!isIdleDelete}

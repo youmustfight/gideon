@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from "react";
 
-type TConfirmDeleteButtonProps = {
+type TConfirmButtonProps = {
   disabled?: boolean;
   prompts: string[];
   onClick: Function;
   style?: any;
 };
 
-export const ConfirmDeleteButton: React.FC<TConfirmDeleteButtonProps> = ({ disabled, prompts, onClick, style }) => {
+export const ConfirmButton: React.FC<TConfirmButtonProps> = ({ disabled, prompts, onClick, style }) => {
   const [promptPosition, setPromptPosition] = useState(0);
   // If we don't confirm deletion after X time, reset prompt
   useEffect(() => {
-    setTimeout(() => {
+    const tid = setTimeout(() => {
       if (promptPosition !== 0) setPromptPosition(0);
     }, 1000 * 5);
+    return () => clearInterval(tid);
   }, [promptPosition]);
 
   // RENDER

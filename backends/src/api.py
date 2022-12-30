@@ -12,8 +12,9 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
+from brief.create_case_brief import create_case_brief
 from caselaw.index_cap_caselaw import _index_cap_caselaw_process_extractions
-from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, LegalBriefFact, Document, DocumentContent, File, Organization, Writing, User
+from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, Brief, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
@@ -24,7 +25,7 @@ from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
 from queries.cap_caselaw_search import cap_caselaw_search
-from queries.legal_brief_fact_similarity import legal_brief_fact_similarity
+from queries.brief_fact_similarity import brief_fact_similarity
 from queries.question_answer import question_answer
 from queries.search_locations import search_locations
 from queries.writing_similarity import writing_similarity
@@ -140,16 +141,16 @@ async def app_route_ai_query_document_locations(request):
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
 
-@api_app.route('/v1/ai/query-legal-brief-fact-similiarty', methods = ['POST'])
+@api_app.route('/v1/ai/query-brief-fact-similiarty', methods = ['POST'])
 @auth_route
-async def app_route_ai_query_legal_brief_fact_similarity(request):
+async def app_route_ai_query_brief_fact_similarity(request):
     session = request.ctx.session
     async with session.begin():
         # Fetch
         case_id = request.json.get('case_id')
         organization_id = request.json.get('organization_id')
         query_text = request.json.get('query')
-        locations = await legal_brief_fact_similarity(
+        locations = await brief_fact_similarity(
             session,
             case_id=int(case_id) if case_id != None else None,
             organization_id=int(organization_id),
@@ -174,7 +175,6 @@ async def app_route_ai_query_writing_similarity(request):
     return json({ 'status': 'success', 'data': { 'locations': locations } })
 
 
-
 # CASES
 @api_app.route('/v1/cases', methods = ['GET'])
 @auth_route
@@ -184,11 +184,14 @@ async def app_route_cases(request):
         cases_json = []
         query_cases = await session.execute(
             sa.select(Case)
-                .options(joinedload(Case.users))
+                .options(
+                    joinedload(Case.users),
+                    joinedload(Case.brief),
+                )
                 .where(Case.organization_id == int(request.args.get('organization_id')))
         )
         cases = query_cases.scalars().unique().all()
-        cases_json = serialize_list(cases, ['users'])
+        cases_json = serialize_list(cases, ['brief', 'users'])
     return json({ 'status': 'success', 'data': { 'cases': cases_json } })
 
 @api_app.route('/v1/case/<case_id>', methods = ['GET'])
@@ -198,12 +201,16 @@ async def app_route_case_get(request, case_id):
     async with session.begin():
         query_case = await session.execute(
             sa.select(Case)
-                .options(joinedload(Case.users))
+                .options(
+                    joinedload(Case.users),
+                    joinedload(Case.brief),
+                )
                 .where(Case.id == int(case_id))
         )
         case = query_case.scalars().unique().one()
-        case_json = case.serialize(['users'])
+        case_json = case.serialize(['brief', 'users'])
     return json({ 'status': 'success', 'data': { 'case': case_json } })
+    
 
 @api_app.route('/v1/case/<case_id>', methods = ['PUT'])
 @auth_route
@@ -274,6 +281,31 @@ async def app_route_case_post(request):
         session.add(case_to_insert)
     return json({ 'status': 'success', 'data': { "case": { "id": case_to_insert.id } } })
 
+@api_app.route('/v1/case/<case_id>/brief', methods = ['GET'])
+@auth_route
+async def app_route_case_brief_get(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        query_brief = await session.execute(
+            sa.select(Brief).where(Brief.case_id == int(case_id)))
+        brief = query_brief.scalar_one_or_none()
+        return json({ 'status': 'success', 'data': { 'brief': None if brief == None else brief.serialize() } })
+
+@api_app.route('/v1/case/<case_id>/brief', methods = ['POST'])
+@auth_route
+async def app_route_case_brief_post(request, case_id):
+    session = request.ctx.session
+    async with session.begin():
+        # if a brief exists, delete it
+        await session.execute(sa.delete(Brief)
+            .where(Brief.case_id == int(case_id)))
+        # genereate brief
+        brief = await create_case_brief(session, int(case_id), request.json.get('issues'))
+        # save brief
+        session.add(brief)
+    # return TODO: return brief
+    return json({ 'status': 'success' })
+
 @api_app.route('/v1/case/<case_id>/user', methods = ['POST'])
 @auth_route
 async def app_route_case_user(request, case_id):
@@ -299,66 +331,37 @@ async def app_route_case_user(request, case_id):
     await session.commit()
     return json({ 'status': 'success' })
 
-# CASE FACTS
-@api_app.route('/v1/legal_brief_facts', methods = ['GET'])
+
+# BRIEFS
+@api_app.route('/v1/brief/<brief_id>', methods = ['GET'])
 @auth_route
-async def app_route_legal_brief_facts_get(request):
+async def app_route_brief_get(request, brief_id):
     session = request.ctx.session
     async with session.begin():
-        query_builder = sa.select(LegalBriefFact).order_by(sa.desc(LegalBriefFact.id))
-        # --- filter for org or case related legal_brief_fact
-        if (request.args.get('case_id')):
-            query_builder = query_builder.where(LegalBriefFact.case_id == int(request.args.get('case_id')))
-        query_legal_brief_facts = await session.execute(query_builder)
-        legal_brief_facts = query_legal_brief_facts.scalars().all()
-        legal_brief_facts_json = serialize_list(legal_brief_facts)
-    return json({ 'status': 'success', 'data': { 'legal_brief_facts': legal_brief_facts_json } })
+        query_brief = await session.execute(
+            sa.select(Brief).where(Brief.id == int(brief_id)))
+        brief = query_brief.scalar_one_or_none()
+        brief_json = brief.serialize()
+    return json({ 'status': 'success', "brief": brief_json })
 
-@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['GET'])
+@api_app.route('/v1/brief/<brief_id>', methods = ['PUT'])
 @auth_route
-async def app_route_legal_brief_fact_get(request, legal_brief_fact_id):
+async def app_route_brief_put(request, brief_id):
     session = request.ctx.session
     async with session.begin():
-        query_legal_brief_fact = await session.execute(
-            sa.select(LegalBriefFact).where(LegalBriefFact.id == int(legal_brief_fact_id)))
-        legal_brief_fact = query_legal_brief_fact.scalar_one_or_none()
-        legal_brief_fact_json = legal_brief_fact.serialize()
-    return json({ 'status': 'success', "legal_brief_fact": legal_brief_fact_json })
-
-@api_app.route('/v1/legal_brief_fact', methods = ['POST'])
-@auth_route
-async def app_route_legal_brief_facts_post(request):
-    session = request.ctx.session
-    legal_brief_fact_model = LegalBriefFact(
-        case_id=request.json.get('case_id'),
-    )
-    session.add(legal_brief_fact_model)
-    await session.commit()
-    return json({ 'status': 'success', })
-
-@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['PUT'])
-@auth_route
-async def app_route_legal_brief_fact_put(request, legal_brief_fact_id):
-    session = request.ctx.session
-    async with session.begin():
-        query_legal_brief_fact = await session.execute(
-            sa.select(LegalBriefFact).where(LegalBriefFact.id == int(legal_brief_fact_id)))
-        legal_brief_fact = query_legal_brief_fact.scalars().one()
-        # TODO: make better lol
-        if (request.json.get('legal_brief_fact').get('text')):
-            legal_brief_fact.text = request.json['legal_brief_fact']['text']
-            legal_brief_fact.updated_at = datetime.now()
-        session.add(legal_brief_fact)
-    return json({ 'status': 'success' })
-
-@api_app.route('/v1/legal_brief_fact/<legal_brief_fact_id>', methods = ['DELETE'])
-@auth_route
-async def app_route_legal_brief_fact_delete(request, legal_brief_fact_id):
-    session = request.ctx.session
-    async with session.begin():
-        # --- legal_brief_fact
-        await session.execute(sa.delete(LegalBriefFact)
-            .where(LegalBriefFact.id == int(legal_brief_fact_id)))
+        query_brief = await session.execute(
+            sa.select(Brief).where(Brief.id == int(brief_id)))
+        brief = query_brief.scalars().one()
+        # --- facts
+        if (request.json.get('brief').get('facts')):
+            brief.facts = request.json['brief']['facts']
+        # --- issues
+        if (request.json.get('brief').get('issues')):
+            brief.issues = request.json['brief']['issues']
+        # --- updated at
+        brief.updated_at = datetime.now()
+        # --- commit 
+        session.add(brief)
     return json({ 'status': 'success' })
 
 

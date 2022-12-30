@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { LegalBriefFacts } from "../../components/LegalBriefFacts";
+import { BriefEditor } from "../../components/BriefEditor/BriefEditor";
 import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
@@ -17,7 +17,7 @@ export const ViewCaseOverview = () => {
       <StyledViewCaseOverview key={focusedCaseId}>
         {/* LEGAL BRIEF */}
         <section>
-          <LegalBriefFacts caseId={focusedCaseId} />
+          <BriefEditor caseId={focusedCaseId} />
         </section>
 
         <br />

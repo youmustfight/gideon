@@ -227,17 +227,17 @@ async def _index_document_video_process_extractions(session, document_id: int) -
     # COMPILE/EXTRACT
     # --- classification/description
     print('INFO (index_document_video.py:_index_document_video_process_extractions): document_description')
-    document.document_description = gpt_completion(
+    document.generated_description = gpt_completion(
         gpt_prompt_video_type.replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
         max_tokens=75)
     # --- summary
     print('INFO (index_document_video.py:_index_document_video_process_extractions): document_summary')
     if len(document_content_text) < 250_000:
-        document.document_summary = extract_document_summary(document_content_text)
-        document.document_summary_one_liner = extract_document_summary_one_liner(document.document_summary)
+        document.generated_summary = extract_document_summary(document_content_text)
+        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
     # --- events
-    print('INFO (index_document_video.py:_index_document_video_process_extractions): document_events')
-    document.document_events = await extract_document_events_v1(document_content_text)
+    print('INFO (index_document_video.py:_index_document_video_process_extractions): generated_events')
+    document.generated_events = await extract_document_events_v1(document_content_text)
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

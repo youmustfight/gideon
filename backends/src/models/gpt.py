@@ -60,7 +60,7 @@ def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE, temperature=GTP3
                 },
             )
             response = response.json()
-            # print(response)
+            print('INFO (GPT3): gpt_completion usage: ', response['usage'])
             text = response['choices'][0]['text'].strip()
             print(f'INFO (GPT3): gpt_completion - {engine}: RESPONSE for "{prompt[0:120]}"...'.replace('\n', ' '), text)
             return text

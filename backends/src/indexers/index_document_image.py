@@ -77,8 +77,8 @@ async def _index_document_image_process_extractions(session, document_id) -> Non
         image_file_urls=image_file_urls,
         min_similarity=0.6
     )[0]
-    document.document_description = ", ".join(map(lambda prediction: prediction['classification'], document_type_classifications))
-    print('INFO (index_document_image.py): document_description', document.document_description)
+    document.generated_description = ", ".join(map(lambda prediction: prediction['classification'], document_type_classifications))
+    print('INFO (index_document_image.py): document_description', document.generated_description)
     # 3. document summary (multiple breakdowns w/ contrast between classifications)
     document_summary_classifications = []
     document_summary_classifications += clip_classifications(
@@ -96,8 +96,8 @@ async def _index_document_image_process_extractions(session, document_id) -> Non
         image_file_urls=image_file_urls,
         min_similarity=0.6
     )[0]
-    document.document_summary = ", ".join(map(lambda prediction: prediction['classification'], document_summary_classifications))
-    print('INFO (index_document_image.py): document_summary', document.document_summary)
+    document.generated_summary = ", ".join(map(lambda prediction: prediction['classification'], document_summary_classifications))
+    print('INFO (index_document_image.py): document_summary', document.generated_summary)
     # 4. SAVE
     document.status_processing_extractions = "completed"
     session.add(document)

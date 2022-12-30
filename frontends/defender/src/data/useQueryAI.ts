@@ -46,7 +46,7 @@ export const reqQueryDocumentLocations = async ({
     })
     .then((res) => ({ locations: res.data.data.locations }));
 
-export const reqQueryLegalBriefFactSimilarity = async ({
+export const reqQueryBriefFactSimilarity = async ({
   caseId,
   organizationId,
   query,
@@ -56,7 +56,7 @@ export const reqQueryLegalBriefFactSimilarity = async ({
   query?: string;
 }): Promise<{ locations: TQueryLocation[] }> =>
   axios
-    .post(`${getGideonApiUrl()}/v1/ai/query-legal-brief-fact-similiarty`, {
+    .post(`${getGideonApiUrl()}/v1/ai/query-brief-fact-similiarty`, {
       case_id: caseId,
       organization_id: organizationId,
       query,
