@@ -210,6 +210,10 @@ const StyledDiscoveryBox = styled.div`
     margin: 4px 0;
     display: flex;
     justify-content: space-between;
+    border: 1px solid #eee;
+    &:hover {
+      border: 1px solid blue;
+    }
     &.processing {
       opacity: 0.5;
       text-align: center;
