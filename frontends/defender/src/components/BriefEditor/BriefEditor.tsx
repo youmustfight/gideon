@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { TBrief, TBriefFact, TBriefIssue, useBrief, useBriefCreate, useBriefUpdate } from "../../data/useBrief";
 import { useCase } from "../../data/useCase";
 import { BriefEditorFact } from "./BriefEditorFact";
+import { BriefEditorIssue } from "./BriefEditorIssue";
 
 type TBriefEditorUpdaterProps = {
   brief: TBrief;
@@ -15,11 +16,21 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
   // SETUP
   // --- create a clone so we can edit local state and send updates
   const [brief, setBrief] = useState(props.brief);
-  // --- update handlers
   const { mutateAsync: briefUpdate } = useBriefUpdate();
-  const updateBriefAddFact = () => {
-    setBrief({ ...brief, facts: brief.facts.concat({ text: "" }) });
+  // --- run updates w/ debouncer
+  useDebounce(() => briefUpdate(brief), 1000 * 2, [brief]);
+  // --- update issue handlers
+  const updateBriefAddIssue = () => setBrief({ ...brief, issues: brief.issues.concat({ issue: "" }) });
+  const updateBriefEditIssue = (index: number, value: TBriefIssue) => {
+    const updatedIssues = cloneDeep(brief?.issues ?? []);
+    updatedIssues[index] = value;
+    setBrief({ ...brief, issues: updatedIssues });
   };
+  const updateBriefDeleteIssue = (index: number) => {
+    setBrief({ ...brief, issues: brief?.issues.slice(0, index).concat(brief?.issues.slice(index + 1)) });
+  };
+  // --- update fact handlers
+  const updateBriefAddFact = () => setBrief({ ...brief, facts: brief.facts.concat({ text: "" }) });
   const updateBriefEditFact = (index: number, value: TBriefFact) => {
     const updatedFacts = cloneDeep(brief?.facts ?? []);
     updatedFacts[index] = value;
@@ -28,8 +39,6 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
   const updateBriefDeleteFact = (index: number) => {
     setBrief({ ...brief, facts: brief?.facts.slice(0, index).concat(brief?.facts.slice(index + 1)) });
   };
-  // --- run updates w/ debouncer
-  useDebounce(() => briefUpdate(brief), 1000 * 2, [brief]);
 
   // RENDER
   return (
@@ -38,12 +47,19 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
       {/* ISSUES */}
       <StyledBriefBoxLead>
         <h3>Issues</h3>
-        <button onClick={() => console.log("ok")}>+ Issue</button>
+        <button onClick={() => updateBriefAddIssue()}>+ Issue</button>
       </StyledBriefBoxLead>
       <StyledBriefBox>
         <ul>
-          {brief?.issues?.map((issue, issueIndex) => (
-            <li key={issue.issue}>{issue.issue}</li>
+          {brief?.issues?.map((issue, issueIndex, issueAr) => (
+            <li key={[issueAr.length, issueIndex].join("-")}>
+              <BriefEditorIssue
+                briefIssue={issue}
+                caseId={brief.case_id}
+                onChange={(newIssueValue) => updateBriefEditIssue(issueIndex, newIssueValue)}
+                onDelete={() => updateBriefDeleteIssue(issueIndex)}
+              />
+            </li>
           ))}
         </ul>
       </StyledBriefBox>

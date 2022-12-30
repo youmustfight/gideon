@@ -38,7 +38,7 @@ export const BriefEditorFact: React.FC<TBriefEditorFactProps> = ({ briefFact, ca
   return isEditing ? (
     <div>
       <StyledBriefFactSlimBox>
-        <textarea value={briefFact.text} rows={7} onChange={(e) => updateHandler({ text: e.target.value })} />
+        <textarea value={fact.text} rows={7} onChange={(e) => updateHandler({ text: e.target.value })} />
         <div className="fact-edit__actions">
           <button onClick={() => setIsEditing(false)}>Done</button>
           <ConfirmButton prompts={["Delete", "Yes, Delete Fact"]} onClick={() => onDelete(briefFact)} />
@@ -88,5 +88,8 @@ const StyledBriefFactSlimBox = styled(SlimBox)`
     display: flex;
     justify-content: space-between;
     margin-top: 4px;
+  }
+  textarea {
+    font-size: 13px !important;
   }
 `;
