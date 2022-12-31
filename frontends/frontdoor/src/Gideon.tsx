@@ -1,64 +1,143 @@
 import React from "react";
 import styled from "styled-components";
+// import Library1 from "./assets/library.jpg";
 
 export const Gideon: React.FC = () => {
   // RENDER
   return (
-    <StyledGideon>
-      <div className="intro-box">
-        <h1>Gideon</h1>
-        <small>Legal Assistance for All</small>
-      </div>
-      <div className="button-box">
-        <a href="https://defender.gideon.foundation/login" target="_blank" rel="noreferer noopener">
-          <button>Document Assistant Tool for Nashua, New Hampshire Public Defenders (MVP)</button>
-        </a>
-        +
-        <br />
-        <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
-        +
-        <br />
-        <a
-          href="https://docs.google.com/spreadsheets/d/1WLqK9HIzQvvuz7Tq_TtEkI85PEwsQhWnnnQF4ZbOl0Q"
-          target="_blank"
-          rel="noreferer noopener"
-        >
-          <button>Caselaw Search & Understanding for Citing Slavery, Harvard CAP (Proof of Concept)</button>
-        </a>
-        =
-        <br />
-        <button disabled>AI Engine & Interface that Reflects Society's Codified Values</button>
-      </div>
-    </StyledGideon>
+    <Page>
+      <StyledTop>
+        <span>Gideon</span>
+      </StyledTop>
+      <StyledIntro>
+        {/* <h1>Ensuring Legal Assistance for All</h1> */}
+        <h1>Bringing the power of A.I. to those who protect our rights.</h1>
+        <h2>
+          Apply for early access to A.I. powered legal tools. Currently free for resource constrained lawyers →{" "}
+          <a href="https://airtable.com/shrIqGlVPw2Qzsypn">Request Access</a>
+        </h2>
+        {/* <div className="button-box">
+          <a href="https://defender.gideon.foundation/login" target="_blank" rel="noreferer noopener">
+            <button>Document Assistant Tool for Nashua, New Hampshire Public Defenders (MVP)</button>
+          </a>
+          +
+          <br />
+          <button disabled>Co-Pilot Litigation & Motion Writing (Future)</button>
+          +
+          <br />
+          <a
+            href="https://docs.google.com/spreadsheets/d/1WLqK9HIzQvvuz7Tq_TtEkI85PEwsQhWnnnQF4ZbOl0Q"
+            target="_blank"
+            rel="noreferer noopener"
+          >
+            <button>Caselaw Search & Understanding for Citing Slavery, Harvard CAP (Proof of Concept)</button>
+          </a>
+          =
+          <br />
+          <button disabled>AI Engine & Interface that Reflects Society's Codified Values</button>
+        </div> */}
+      </StyledIntro>
+      <StyledFooter>
+        <div>
+          <small>
+            Are you an AI engineer or researcher looking to reduce human suffering and/or balance power?{" "}
+            <a
+              href="mailto:mark@gideon.foundation?subject=Interested in Gideon and AI Aligned with Human Rights"
+              target="_blank"
+            >
+              Get in touch
+            </a>
+          </small>
+        </div>
+        <div>
+          <small>
+            Special thank you to attorneys at{" "}
+            <a href="http://www.citingslavery.org/" target="_blank">
+              Citing Slavery Project
+            </a>
+            ,{" "}
+            <a href="http://www.refugeerights.org/" target="_blank">
+              IRAP
+            </a>
+            , and{" "}
+            <a href="https://www.weil.com/" target="_blank">
+              Weil
+            </a>{" "}
+            for early feedback © 2022
+          </small>
+        </div>
+      </StyledFooter>
+    </Page>
   );
 };
 
-const StyledGideon = styled.main`
+const Page = styled.div`
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 2em;
   display: flex;
-  justify-content: center;
-  align-items: center;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  justify-content: space-between;
+`;
+
+const StyledTop = styled.div`
+  font-size: 24px;
+  font-family: "GT Walsheim";
+  font-weight: 700;
+  letter-spacing: 0px;
+  color: var(--color-font);
+  text-transform: uppercase;
+`;
+
+const StyledIntro = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+  margin: 2em 0;
+  h1 {
+    font-size: 96px;
+    font-family: "GT Walsheim";
+    font-weight: 600;
+    letter-spacing: -5px;
+    line-height: 90%;
+    color: var(--color-font);
+    margin-bottom: 12px;
+    @media (max-width: 45em) {
+      font-size: 72px;
+      letter-spacing: -1px;
+      line-height: 100%;
+    }
+  }
+  h2 {
+    font-size: 22px;
+    font-family: "GT Walsheim";
+    font-weight: 300;
+    color: var(--color-font);
+    margin-left: 8px;
+    line-height: 140%;
+  }
+  small {
+    font-style: italic;
+    font-size: 12px;
+  }
+`;
+
+const StyledFooter = styled.div`
+  margin-top: 1em;
+  border-top: 2px dashed var(--color-font);
+  padding: 0.5em 0;
+  display: flex;
+  justify-content: space-between;
+  small {
+    font-style: italic;
+    font-size: 13px;
+    color: var(--color-font);
+  }
   & > div {
-    max-width: 100%;
+    margin-top: 4px;
   }
-  .intro-box {
-    margin: 1em;
-    text-align: center;
-    h1 {
-      font-size: 26px;
-      margin-bottom: 8px;
-    }
-  }
-  .button-box {
-    display: flex;
+  @media (max-width: 45em) {
     flex-direction: column;
-    margin: 1em;
-    text-align: center;
-    button {
-      margin: 8px 0;
-      width: 100%;
-    }
   }
 `;
