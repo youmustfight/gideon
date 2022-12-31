@@ -11,4 +11,5 @@ export default defineConfig({
   preview: {
     port: 1110,
   },
+  publicDir: "public",
 });
