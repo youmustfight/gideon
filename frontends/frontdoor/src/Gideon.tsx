@@ -51,7 +51,7 @@ export const Gideon: React.FC = () => {
         </div>
         <div>
           <small>
-            Special thank you to the{" "}
+            Special thank you to attorneys at{" "}
             <a href="http://www.citingslavery.org/" target="_blank">
               Citing Slavery Project
             </a>
@@ -100,15 +100,17 @@ const StyledIntro = styled.div`
     font-family: "GT Walsheim";
     font-weight: 600;
     letter-spacing: -5px;
+    line-height: 90%;
     color: var(--color-font);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     @media (max-width: 45em) {
       font-size: 72px;
       letter-spacing: -1px;
+      line-height: 100%;
     }
   }
   h2 {
-    font-size: 20px;
+    font-size: 22px;
     font-family: "GT Walsheim";
     font-weight: 300;
     color: var(--color-font);
