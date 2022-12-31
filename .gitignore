@@ -12,7 +12,6 @@ __pycache__
 # frontends
 node_modules
 dist
-public
 .parcel-cache
 
 # tmp storage/things to remove

@@ -31,6 +31,7 @@ services:
       context: ./frontends/frontdoor
     volumes:
       - ./frontends/frontdoor/src:/usr/src/frontdoor/src
+      - ./frontends/frontdoor/public:/usr/public/frontdoor/src
       - ./frontends/frontdoor/index.html:/usr/src/frontdoor/index.html
       - ./frontends/frontdoor/package.json:/usr/src/frontdoor/package.json
       - ./frontends/frontdoor/tsconfig.json:/usr/src/frontdoor/tsconfig.json
@@ -40,8 +41,6 @@ services:
       - /usr/src/frontdoor/node_modules
     ports:
       - "1110:1110"
-    depends_on:
-      - api
     command: "npm run start:local"
     env_file:
       - ./.env
