@@ -104,9 +104,9 @@ const StyledIntro = styled.div`
     color: var(--color-font);
     margin-bottom: 12px;
     @media (max-width: 45em) {
-      font-size: 72px;
+      font-size: 54px;
       letter-spacing: -1px;
-      line-height: 100%;
+      line-height: 95%;
     }
   }
   h2 {
@@ -131,7 +131,7 @@ const StyledFooter = styled.div`
   justify-content: space-between;
   small {
     font-style: italic;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-font);
   }
   & > div {
