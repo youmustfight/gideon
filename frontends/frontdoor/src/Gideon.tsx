@@ -40,7 +40,7 @@ export const Gideon: React.FC = () => {
       <StyledFooter>
         <div>
           <small>
-            Are you an AI engineer or researcher looking to reduce human suffering and/or balance power?{" "}
+            Are you an AI engineer or researcher looking to reduce human suffering?{" "}
             <a
               href="mailto:mark@gideon.foundation?subject=Interested in Gideon and AI Aligned with Human Rights"
               target="_blank"
