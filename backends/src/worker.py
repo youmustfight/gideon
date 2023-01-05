@@ -2,6 +2,7 @@ from arq import create_pool, cron
 from arq.connections import RedisSettings
 from arq.worker import run_worker
 from env import env_queue_host, env_queue_port
+from brief.jobs.job_create_case_brief import job_create_case_brief
 from caselaw.jobs.job_index_cap_caselaw import job_index_cap_caselaw
 from indexers.jobs.job_cron_embeddings_upserter import job_cron_embeddings_upserter
 from indexers.jobs.job_cron_index_brief_facts import job_cron_index_brief_facts
@@ -27,6 +28,7 @@ def start_worker():
             job_cron_index_brief_facts,
             job_cron_index_writing,
             # jobs
+            job_create_case_brief,
             job_index_cap_caselaw,
             job_index_document_audio,
             job_index_document_image,

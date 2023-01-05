@@ -294,16 +294,8 @@ async def app_route_case_brief_get(request, case_id):
 @api_app.route('/v1/case/<case_id>/brief', methods = ['POST'])
 @auth_route
 async def app_route_case_brief_post(request, case_id):
-    session = request.ctx.session
-    async with session.begin():
-        # if a brief exists, delete it
-        await session.execute(sa.delete(Brief)
-            .where(Brief.case_id == int(case_id)))
-        # genereate brief
-        brief = await create_case_brief(session, int(case_id), request.json.get('issues'))
-        # save brief
-        session.add(brief)
-    # return TODO: return brief
+    arq_pool = await create_queue_pool()
+    arq_job = await arq_pool.enqueue_job('job_create_case_brief', case_id=int(case_id), issues=request.json.get('issues'))
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/case/<case_id>/user', methods = ['POST'])
