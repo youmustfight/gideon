@@ -9,7 +9,7 @@ from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
-from agents.ai_action_agent import generate_ai_action_locks
+from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from brief.create_case_brief import create_case_brief
@@ -24,13 +24,13 @@ from indexers.index_document_image import _index_document_image_process_extracti
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
-from queries.cap_caselaw_search import cap_caselaw_search
-from queries.brief_fact_similarity import brief_fact_similarity
-from queries.question_answer import question_answer
-from queries.search_locations import search_locations
-from queries.writing_similarity import writing_similarity
-from queries.utils.serialize_location import serialize_location
-from queries.write_template_with_ai import write_template_with_ai
+from ai.requests.cap_caselaw_search import cap_caselaw_search
+from ai.requests.brief_fact_similarity import brief_fact_similarity
+from ai.requests.question_answer import question_answer
+from ai.requests.search_locations import search_locations
+from ai.requests.writing_similarity import writing_similarity
+from ai.requests.utils.serialize_location import serialize_location
+from ai.requests.write_template_with_ai import write_template_with_ai
 from worker import create_queue_pool
 
 # INIT
