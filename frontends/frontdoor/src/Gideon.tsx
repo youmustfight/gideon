@@ -11,10 +11,10 @@ export const Gideon: React.FC = () => {
       </StyledTop>
       <StyledIntro>
         {/* <h1>Ensuring Legal Assistance for All</h1> */}
-        <h1>Bringing the power of A.I. to those who protect our rights.</h1>
+        <h1>Bringing the power of A.I. to those who protect us and our rights.</h1>
         <h2>
-          Apply for early access to A.I. powered legal tools. Currently free for resource constrained lawyers →{" "}
-          <a href="https://airtable.com/shrIqGlVPw2Qzsypn">Request Access</a>
+          Are you a public interest lawyer or impact litigator? →{" "}
+          <a href="https://airtable.com/shrIqGlVPw2Qzsypn">Request Access to A.I. Tools & Assistance</a>
         </h2>
         {/* <div className="button-box">
           <a href="https://defender.gideon.foundation/login" target="_blank" rel="noreferer noopener">
@@ -40,7 +40,7 @@ export const Gideon: React.FC = () => {
       <StyledFooter>
         <div>
           <small>
-            Are you an AI engineer or researcher looking to reduce human suffering?{" "}
+            Are you an engineer or researcher looking to align AI systems with the most vulnerabale?{" "}
             <a
               href="mailto:mark@gideon.foundation?subject=Interested in Gideon and AI Aligned with Human Rights"
               target="_blank"
