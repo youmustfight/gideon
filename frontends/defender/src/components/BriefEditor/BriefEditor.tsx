@@ -109,7 +109,7 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
     <>
       <StyledBriefBoxLead>
         <h2>"{cse?.name ?? "Untitled"}" Case Brief</h2>
-        {brief && !wantsToCreateNewBrief && (
+        {!wantsToCreateNewBrief && (
           <button
             onClick={() => {
               setInitialIssues(brief?.issues ?? []);
@@ -119,11 +119,11 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
             + Generate New Brief
           </button>
         )}
-        {brief && wantsToCreateNewBrief ? (
-          <button onClick={() => setWantsToCreateNewBrief(false)}>← Back to Current Brief</button>
+        {wantsToCreateNewBrief ? (
+          <button onClick={() => setWantsToCreateNewBrief(false)}>← Cancel New Brief</button>
         ) : null}
       </StyledBriefBoxLead>
-      {!brief || wantsToCreateNewBrief ? (
+      {wantsToCreateNewBrief ? (
         <>
           <hr />
           <StyledBriefBoxLead>
