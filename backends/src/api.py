@@ -24,6 +24,7 @@ from indexers.index_document_image import _index_document_image_process_extracti
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
+from indexers.utils.extract_document_summary import extract_document_summary
 from ai.requests.cap_caselaw_search import cap_caselaw_search
 from ai.requests.brief_fact_similarity import brief_fact_similarity
 from ai.requests.question_answer import question_answer
@@ -173,6 +174,16 @@ async def app_route_ai_query_writing_similarity(request):
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
+
+@api_app.route('/v1/ai/summarize', methods = ['POST'])
+@auth_route
+async def app_route_ai_summarize(request):
+    session = request.ctx.session
+    async with session.begin():
+        # TODO: save request query + results
+        # Summarize
+        summary = extract_document_summary(request.json.get('text'))
+    return json({ 'status': 'success', 'data': { 'summary': summary } })
 
 
 # CASES

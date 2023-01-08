@@ -105,7 +105,7 @@ async def _index_document_pdf_process_embeddings(session, document_id: int) -> N
             indexed_status='queued'
         ))
     session.add_all(sentence_embeddings_as_models)
-    # --- batches (gtp3 ada = very very cheap, and large token length)
+    # --- batches (gpt3 ada = very very cheap, and large token length)
     print('INFO (index_document_pdf.py:_index_document_pdf_process_embeddings): encoding sentences in chunks of 20...', document_content_sentences_20)
     sentences_20_embeddings = aiagent_sentences_20_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences_20)))
     sentences_20_embeddings_as_models = []

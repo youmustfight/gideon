@@ -1,5 +1,5 @@
 # MISC/UTIL
- # used spaces instead of _, but gtp completion would make it 'NO MENTION OF SLAVERY'
+ # used spaces instead of _, but gpt completion would make it 'NO MENTION OF SLAVERY'
 GPT_NULL_PHRASE = 'NO_MENTION_NULL_PHRASE'
 
 # SUMMARIZTION
