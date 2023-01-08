@@ -3,9 +3,10 @@ import { Routes, Route, useParams } from "react-router";
 import styled from "styled-components";
 import { AppHeader } from "../../components/AppHeader";
 import { CAPCaseLawDriver } from "../../components/CAPCaseLawDriver";
-import { InquiryBox } from "../../components/InquiryBox";
+import { InquiryBox } from "../../components/AIRequest/InquiryBox";
 import { StyledViewCase } from "../../components/styled/StyledViewCase";
 import { ViewCapCase } from "./ViewCapCase";
+import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 
 export const ViewCaseLaw = () => {
   return (
@@ -13,7 +14,7 @@ export const ViewCaseLaw = () => {
       <AppHeader />
       <div className="caselaw-driver">
         <CAPCaseLawDriver />
-        <InquiryBox isCaseLawSearch />
+        <AIRequestBox isCaseLawSearch />
       </div>
       <StyledViewCaseLaw>
         <Routes>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { TBriefFact } from "../../data/useBrief";
-import { TQueryLocation, reqQueryDocumentLocations } from "../../data/useQueryAI";
+import { TQueryLocation, reqQueryDocumentLocations } from "../AIRequest/aiRequestReqs";
 import { ConfirmButton } from "../ConfirmButton";
 import { DocumentContentLocationBox } from "../DocumentContentLocationBox";
 import { SlimBox } from "../styled/StyledBox";

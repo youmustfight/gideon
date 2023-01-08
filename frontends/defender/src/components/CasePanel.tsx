@@ -1,13 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { useInquiryStore } from "../data/InquiryStore";
+import { useAIRequestStore } from "./AIRequest/AIRequestStore";
 import { TCase } from "../data/useCase";
 import { BoxWithRightSideButton } from "./styled/StyledBox";
 
 export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
   const navigate = useNavigate();
-  const { setInquiryScope, inquiry } = useInquiryStore();
+  const { setInquiryScope, inquiry } = useAIRequestStore();
 
   return (
     <StyledCasePanel key={cse.id}>

@@ -5,7 +5,7 @@ import { DiscoveryBox } from "../../components/DiscoveryBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
-import { InquiryBox } from "../../components/InquiryBox";
+import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 
 export const ViewCaseOverview = () => {
   const { focusedCaseId, focusedOrgId } = useAppStore();
@@ -13,7 +13,7 @@ export const ViewCaseOverview = () => {
   // RENDER (attaching key to force re-renders of child components, so we don't have lingering react-query data)
   return !focusedCaseId ? null : (
     <>
-      <InquiryBox />
+      <AIRequestBox />
       <StyledViewCaseOverview key={focusedCaseId}>
         {/* LEGAL BRIEF */}
         <section>

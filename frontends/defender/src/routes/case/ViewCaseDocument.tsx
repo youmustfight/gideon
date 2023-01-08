@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
-import { InquiryBox } from "../../components/InquiryBox";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
@@ -143,7 +143,7 @@ export const ViewCaseDocument = () => {
   // RENDER
   return !document ? null : (
     <>
-      <InquiryBox />
+      <AIRequestBox />
       <div>
         {/* HEAD */}
         <div className="document-header">

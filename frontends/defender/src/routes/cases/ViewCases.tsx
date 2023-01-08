@@ -4,8 +4,8 @@ import { OrganizationDriver } from "../../components/OrganizationDriver";
 import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
 import { useOrganizations } from "../../data/useOrganizations";
-import { InquiryBox } from "../../components/InquiryBox";
 import { AppHeader } from "../../components/AppHeader";
+import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 
 export const ViewCases = () => {
   const { data: organizations } = useOrganizations();
@@ -19,7 +19,7 @@ export const ViewCases = () => {
       <StyledViewCases key={focusedOrgId}>
         <div className="view-cases__panels">
           {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
-          <InquiryBox />
+          <AIRequestBox />
           <OrgCasesList />
           <WritingsBox isTemplate organizationId={focusedOrgId} />
         </div>

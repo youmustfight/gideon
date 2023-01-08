@@ -48,7 +48,7 @@ export type TUseBriefCreateBody = {
   issues?: TBriefIssue[];
 };
 
-const reqBriefCreate = async (data: TUseBriefCreateBody): Promise<any> =>
+export const reqBriefCreate = async (data: TUseBriefCreateBody): Promise<any> =>
   axios
     .post(
       data.caseId
