@@ -472,6 +472,7 @@ async def app_route_document_delete(request, document_id):
 @auth_route
 async def app_route_document_extractions(request, document_id):
     session = request.ctx.session
+    # update
     async with session.begin():
         query_document = await session.execute(
             sa.select(Document).where(Document.id == int(document_id)))
@@ -484,7 +485,12 @@ async def app_route_document_extractions(request, document_id):
             await _index_document_audio_process_extractions(session=session, document_id=document.id)
         if (document.type == "video"):
             await _index_document_video_process_extractions(session=session, document_id=document.id)
-    return json({ 'status': 'success' })
+    # fetch result
+    query_document = await session.execute(
+        sa.select(Document).where(Document.id == int(document_id)))
+    document = query_document.scalars().first()
+    # respond
+    return json({ 'status': 'success', 'data': { 'document': document.serialize() } })
 
 @api_app.route('/v1/documents', methods = ['GET'])
 @auth_route

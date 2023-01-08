@@ -24,7 +24,7 @@ type TAIRequestStore = {
   setAIRequestType: (aiRequestType: TAIRequestType) => void;
 
   // SUMMARIZE
-  summaryScope: TSummaryScope;
+  summaryScope?: TSummaryScope;
   setSummaryScope: (summaryScope: TSummaryScope) => void;
   summaryInput: Partial<TUseBriefCreateBody> & { text: string };
   setSummaryInput: (query: Partial<TUseBriefCreateBody> & { text: string }) => void;
@@ -78,8 +78,8 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   setAIRequestType: (aiRequestType) => set({ aiRequestType }),
 
   // SUMMARIZE
-  summaryScope: "text",
-  setSummaryScope: (summaryScope) => set({ summaryScope }),
+  summaryScope: undefined,
+  setSummaryScope: (summaryScope) => set({ summaryScope, summaryInput: { text: "", issues: [] } }),
   // --- inputs
   summaryInput: { text: "", issues: [] },
   setSummaryInput: (summaryInput) => set({ summaryInput }),
@@ -104,7 +104,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       // TODO: this function is always going to re-run summarization even if its present
       reqDocumentSummarize(documentId).then((document) =>
         // TODO: return string from document extraction/summarization job
-        set({ answerSummary: { inProgress: false, summary: "" } })
+        set({ answerSummary: { inProgress: false, summary: document.generated_summary } })
       );
     }
   },

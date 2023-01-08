@@ -19,6 +19,18 @@ export const SummarizeBox = () => {
     summarize,
   } = useAIRequestStore();
 
+  // ON MOUNT
+  useEffect(() => {
+    // --- set initial search scope depending on vars available (don't change if inputs exist)
+    if (params?.documentId != null) {
+      setSummaryScope("document");
+    } else if (params.caseId != null) {
+      setSummaryScope("case");
+    } else {
+      setSummaryScope("text");
+    }
+  }, []);
+
   // RENDER
   return (
     <StyledSummaryBox>
@@ -75,20 +87,14 @@ export const SummarizeBox = () => {
                 if (summaryScope === "case") return "Case Brief";
                 if (summaryScope === "document") return "Document Summary";
               })()}{" "}
-              {answerSummary?.inProgress ? "(Processing...)" : ""}
+              {answerSummary?.inProgress ? `(${summaryScope ? "Processing, 2-5 minutes" : "Processing"}...)` : ""}
             </label>
             <label className="ai-request-box__reset-inquiry-btn" onClick={clearInquiry}>
               <ResetIcon />
             </label>
           </div>
           {/* FOCUS */}
-          <div className="ai-request-box__focus">
-            {answerSummary?.summary ? (
-              <>
-                <p>{answerSummary?.summary}</p>
-              </>
-            ) : null}
-          </div>
+          <div className="ai-request-box__focus">{answerSummary?.summary ? <p>{answerSummary?.summary}</p> : null}</div>
         </>
       )}
     </StyledSummaryBox>
@@ -104,6 +110,14 @@ const StyledSummaryBox = styled.div`
       max-height: 22px;
     }
   }
+  .ai-request-box__instructions {
+    text-align: center;
+    box-sizing: border-box;
+    background: #f5f5f5;
+    font-size: 13px;
+    padding: 6px;
+    font-style: italic;
+  }
 `;
 
 export const BriefAIGenerator: React.FC = () => {
@@ -111,7 +125,7 @@ export const BriefAIGenerator: React.FC = () => {
   // RENDER
   return (
     <StyledBriefAIGenerator>
-      <div className="brief-editor-gen__instructions">
+      <div className="ai-request-box__instructions">
         <p>Use AI to generate a case brief. To start, list case issues below. Click 'Run AI' when done.</p>
       </div>
       <div className="brief-editor-gen__row">
@@ -163,15 +177,6 @@ export const BriefAIGenerator: React.FC = () => {
 };
 
 const StyledBriefAIGenerator = styled.div`
-  .brief-editor-gen__instructions {
-    text-align: center;
-    box-sizing: border-box;
-    background: #f5f5f5;
-    font-size: 13px;
-    padding: 6px;
-    margin: 4px 0;
-    font-style: italic;
-  }
   .brief-editor-gen__row {
     display: flex;
     justify-content: space-between;

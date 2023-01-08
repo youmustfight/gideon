@@ -22,4 +22,4 @@ export const reqDocumentDelete = async (documentId: number): Promise<void> =>
 
 // MISC
 export const reqDocumentSummarize = async (documentId: number): Promise<TDocument[]> =>
-  axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/extractions`).then((res) => res.data.document);
+  axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/extractions`).then((res) => res.data.data.document);
