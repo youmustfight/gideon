@@ -8,6 +8,7 @@ import { ViewCaseDocument } from "./ViewCaseDocument";
 import { ViewCaseOverview } from "./ViewCaseOverview";
 import { ViewWriting } from "../writing/ViewWriting";
 import { StyledViewCase } from "../../components/styled/StyledViewCase";
+import { AppHeader } from "../../components/AppHeader";
 
 export const ViewCase = () => {
   const params = useParams();
@@ -22,6 +23,7 @@ export const ViewCase = () => {
   // RENDER
   return !caseId ? null : (
     <Fragment key={caseId}>
+      <AppHeader />
       <CaseDriver caseId={caseId} />
       <StyledViewCase>
         {/* --- CASE VIEWS ---  */}

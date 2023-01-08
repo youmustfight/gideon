@@ -10,10 +10,12 @@ export const ToolWindow: React.FC<{ children: React.ReactNode }> = ({ children }
 };
 
 const StyledToolWindow = styled.div`
+  z-index: -10;
   min-height: 100vh;
   background: #f1f4f8;
   display: flex;
   & > main {
+    z-index: 0;
     height: 100%;
     min-height: 100vh;
     width: 100%;

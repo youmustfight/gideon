@@ -5,6 +5,7 @@ import { WritingsBox } from "../../components/WritingsBox";
 import { useAppStore } from "../../data/AppStore";
 import { useOrganizations } from "../../data/useOrganizations";
 import { InquiryBox } from "../../components/InquiryBox";
+import { AppHeader } from "../../components/AppHeader";
 
 export const ViewCases = () => {
   const { data: organizations } = useOrganizations();
@@ -13,14 +14,17 @@ export const ViewCases = () => {
 
   // RENDER
   return !organizations || !focusedOrgId ? null : (
-    <StyledViewCases key={focusedOrgId}>
-      <div className="view-cases__panels">
-        {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
-        <InquiryBox />
-        <OrgCasesList />
-        <WritingsBox isTemplate organizationId={focusedOrgId} />
-      </div>
-    </StyledViewCases>
+    <>
+      <AppHeader />
+      <StyledViewCases key={focusedOrgId}>
+        <div className="view-cases__panels">
+          {focusedOrg && <OrganizationDriver organization={focusedOrg} />}
+          <InquiryBox />
+          <OrgCasesList />
+          <WritingsBox isTemplate organizationId={focusedOrgId} />
+        </div>
+      </StyledViewCases>
+    </>
   );
 };
 
