@@ -1,23 +1,47 @@
 import createVanilla from "zustand/vanilla";
 import create from "zustand";
 import {
+  TQueryLocation,
   reqQueryCaselaw,
   reqQueryDocument,
   reqQueryDocumentLocations,
   reqQueryBriefFactSimilarity,
   reqQueryWritingSimilarity,
-  TQueryLocation,
-} from "./useQueryAI";
-import { TCapCase } from "./useCapCase";
+  reqQuerySummarize,
+} from "./aiRequestReqs";
+import { TCapCase } from "../../data/useCapCase";
+import { reqBriefCreate, TUseBriefCreateBody } from "../../data/useBrief";
 
-type TInquiryScope = "caselaw" | "organization" | "case" | "document";
-type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
+export type TAIRequestType = "inquiry" | "summarize" | "write";
+export type TSummaryScope = "case" | "document" | "text";
+export type TInquiryScope = "caselaw" | "organization" | "case" | "document";
+export type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
 
-type TInquiryStore = {
-  // scopes
+type TAIRequestStore = {
+  // GLOBAL
+  aiRequestType: TAIRequestType;
+  setAIRequestType: (aiRequestType: TAIRequestType) => void;
+
+  // SUMMARIZE
+  summaryScope: TSummaryScope;
+  setSummaryScope: (summaryScope: TSummaryScope) => void;
+  summaryTextInput: string;
+  setSummaryTextInput: (query: string) => void;
+  summaryBriefInput: Partial<TUseBriefCreateBody>;
+  setSummaryBriefInput: (summaryBriefInput: Partial<TUseBriefCreateBody>) => void;
+  // --- query
+  summarize: () => void;
+  // --- answers
+  answerSummary?: {
+    inProgress?: boolean;
+    summary?: string;
+  };
+
+  // INQUIRY
+  // --- setup
   inquiryScope: TInquiryScope;
   setInquiryScope: (inquiryScope: TInquiryScope) => void;
-  // inquiry + answers
+  // --- query & answers
   query: string;
   setQuery: (query: string) => void;
   answerQuestion?: {
@@ -42,29 +66,60 @@ type TInquiryStore = {
     capCases?: TCapCase[]; // TODO
   };
   inquiry: (params: any) => void;
-  isInquirySubmitted: boolean;
-  // after
+  isAIRequestSubmitted: boolean;
+  // --- post-answer
   focusAnswer?: TFocusAnswer;
   setFocusAnswer: (focusAnswer: TFocusAnswer) => void;
   clearInquiry: () => void;
 };
 
-export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
-  // setup
+export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
+  // GLOBAL
+  aiRequestType: "inquiry",
+  setAIRequestType: (aiRequestType) => set({ aiRequestType }),
+
+  // SUMMARIZE
+  summaryScope: "text",
+  setSummaryScope: (summaryScope) => set({ summaryScope }),
+  summaryTextInput: "",
+  setSummaryTextInput: (summaryTextInput) => set({ summaryTextInput }),
+  setSummaryBriefInput: (summaryBriefInput) => set({ summaryBriefInput }),
+  summaryBriefInput: { caseId: undefined, issues: [] },
+  // --- query
+  summarize: () => {
+    set({ isAIRequestSubmitted: true, answerSummary: { inProgress: true } });
+    // TEXT
+    if (get().summaryScope === "text") {
+      reqQuerySummarize({ text: get().summaryTextInput }).then(({ summary }) =>
+        set({ answerSummary: { inProgress: false, summary } })
+      );
+    }
+    // CASE
+    if (get().summaryScope === "case" && get().summaryBriefInput) {
+      reqBriefCreate({ caseId: get().summaryBriefInput.caseId, issues: get().summaryBriefInput?.issues }).then(() =>
+        // long running process so don't set inProgress = false
+        set({ answerSummary: { inProgress: true } })
+      );
+    }
+  },
+  // --- answers
+  answerSummary: undefined,
+
+  // INQUIRY
+  // --- setup
   inquiryScope: "organization",
   setInquiryScope: (inquiryScope) => set({ inquiryScope }),
-  // inquiry
+  // --- query & answers
   query: "",
   setQuery: (query) => set({ query }),
-  isInquirySubmitted: false,
+  isAIRequestSubmitted: false,
   answerQuestion: undefined,
   answerDetailsLocations: undefined,
   answerCaseFactsSimilarity: undefined,
   answerWritingSimilarity: undefined,
   answerCaselaw: undefined,
   inquiry: ({ caseId, documentId, organizationId }) => {
-    set({ isInquirySubmitted: true });
-
+    set({ isAIRequestSubmitted: true });
     // ORG
     if (get().inquiryScope === "organization") {
       // --- case facts (defer to case id if that's provided over query)
@@ -91,7 +146,6 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
         set({ answerWritingSimilarity: { inProgress: false, locations: [] } });
       }
       set({ focusAnswer: "caseFacts" });
-
       // CASE
     } else if (get().inquiryScope === "case") {
       // --- detail
@@ -106,7 +160,6 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
         query: get().query,
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
       set({ focusAnswer: "location" });
-
       // DOCUMENT
     } else if (get().inquiryScope === "document") {
       // --- detail
@@ -125,7 +178,6 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
       // set default focus
       set({ focusAnswer: "location" });
-
       // CASELAW
     } else if (get().inquiryScope === "caselaw") {
       set({ answerCaselaw: { inProgress: true } });
@@ -135,20 +187,26 @@ export const inquiryStore = createVanilla<TInquiryStore>((set, get) => ({
       set({ focusAnswer: "caselaw" });
     }
   },
-  // after
+  // --- post-answer
   focusAnswer: undefined,
   setFocusAnswer: (focusAnswer) => set({ focusAnswer }),
   clearInquiry: () =>
     set({
-      answerQuestion: undefined,
-      answerDetailsLocations: undefined,
+      // --- answers
       answerCaseFactsSimilarity: undefined,
-      answerWritingSimilarity: undefined,
       answerCaselaw: undefined,
-      isInquirySubmitted: false,
-      focusAnswer: undefined,
+      answerDetailsLocations: undefined,
+      answerQuestion: undefined,
+      answerSummary: undefined,
+      answerWritingSimilarity: undefined,
+      // --- inputs
       query: "",
+      summaryTextInput: "",
+      summaryBriefInput: { caseId: undefined, issues: [] },
+      // --- meta
+      isAIRequestSubmitted: false,
+      focusAnswer: undefined,
     }),
 }));
 
-export const useInquiryStore = create(inquiryStore);
+export const useAIRequestStore = create(aiRequestStore);
