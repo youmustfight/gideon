@@ -28,17 +28,6 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         {isFullyVisible ? document.generated_summary : document.generated_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
-      {isFullyVisible ? (
-        <>
-          <br />
-          <br />
-          <div style={{ display: "flex", width: "100%" }}>
-            <button onClick={() => reqDocumentSummarize(document.id)} style={{ flexGrow: "1" }}>
-              Re-run Summarizing Process
-            </button>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 };
@@ -144,6 +133,7 @@ export const ViewCaseDocument = () => {
   return !document ? null : (
     <>
       <AIRequestBox />
+
       <div>
         {/* HEAD */}
         <div className="document-header">

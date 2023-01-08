@@ -14,23 +14,10 @@ export const SummarizeBox = () => {
     isAIRequestSubmitted,
     summaryScope,
     setSummaryScope,
-    summaryBriefInput,
-    summaryTextInput,
-    setSummaryTextInput,
+    summaryInput,
+    setSummaryInput,
     summarize,
   } = useAIRequestStore();
-
-  // ON MOUNT
-  // --- set initial search scope depending on vars available
-  useEffect(() => {
-    if (params?.documentId != null) {
-      setSummaryScope("document");
-    } else if (params.caseId != null) {
-      setSummaryScope("case");
-    } else {
-      setSummaryScope("text");
-    }
-  }, [params]);
 
   // RENDER
   return (
@@ -55,8 +42,11 @@ export const SummarizeBox = () => {
           </select>
           <button
             type="submit"
-            disabled={isAIRequestSubmitted || !(summaryTextInput.length > 400 || summaryBriefInput?.issues?.length > 0)}
-            onClick={() => summarize()}
+            disabled={
+              isAIRequestSubmitted ||
+              !(summaryInput?.text.length > 400 || summaryInput?.issues?.length > 0 || params?.documentId != null)
+            }
+            onClick={() => summarize({ caseId: params?.caseId, documentId: params?.documentId })}
           >
             Run AI
           </button>
@@ -66,14 +56,12 @@ export const SummarizeBox = () => {
             <textarea
               disabled={isAIRequestSubmitted}
               placeholder="Paste a very long text document..."
-              value={summaryTextInput}
+              value={summaryInput.text}
               rows={5}
-              onChange={(e) => setSummaryTextInput(e.target.value)}
+              onChange={(e) => setSummaryInput({ text: e.target.value })}
             />
           ) : null}
-          {summaryScope === "case" && params?.caseId != null ? (
-            <BriefEditorGenerator caseId={Number(params.caseId)} />
-          ) : null}
+          {summaryScope === "case" && params?.caseId != null ? <BriefAIGenerator /> : null}
         </div>
       </div>
 
@@ -81,12 +69,14 @@ export const SummarizeBox = () => {
         <>
           {/* TABS */}
           <div className="ai-request-box__tabs">
-            {summaryScope === "text" ? (
-              <label className="active">Summary {answerSummary?.inProgress ? "(Processing...)" : ""}</label>
-            ) : null}
-            {summaryScope === "case" ? (
-              <label className="active">Case Brief {answerSummary?.inProgress ? "(Processing...)" : ""}</label>
-            ) : null}
+            <label className="active">
+              {(() => {
+                if (summaryScope === "text") return "Summary";
+                if (summaryScope === "case") return "Case Brief";
+                if (summaryScope === "document") return "Document Summary";
+              })()}{" "}
+              {answerSummary?.inProgress ? "(Processing...)" : ""}
+            </label>
             <label className="ai-request-box__reset-inquiry-btn" onClick={clearInquiry}>
               <ResetIcon />
             </label>
@@ -116,17 +106,11 @@ const StyledSummaryBox = styled.div`
   }
 `;
 
-export const BriefEditorGenerator: React.FC<{ caseId: number }> = ({ caseId }) => {
-  const { isAIRequestSubmitted, summaryBriefInput, setSummaryBriefInput } = useAIRequestStore();
-  // ON MOUNT
-  useEffect(() => {
-    // --- ensure we've set the case id
-    setSummaryBriefInput({ ...summaryBriefInput, caseId: caseId });
-  }, []);
-
+export const BriefAIGenerator: React.FC = () => {
+  const { isAIRequestSubmitted, summaryInput, setSummaryInput } = useAIRequestStore();
   // RENDER
   return (
-    <StyledBriefEditorGenerator>
+    <StyledBriefAIGenerator>
       <div className="brief-editor-gen__instructions">
         <p>Use AI to generate a case brief. To start, list case issues below. Click 'Run AI' when done.</p>
       </div>
@@ -135,9 +119,9 @@ export const BriefEditorGenerator: React.FC<{ caseId: number }> = ({ caseId }) =
         <button
           disabled={isAIRequestSubmitted}
           onClick={() =>
-            setSummaryBriefInput({
-              ...summaryBriefInput,
-              issues: (summaryBriefInput?.issues ?? []).concat({ issue: "" }),
+            setSummaryInput({
+              ...summaryInput,
+              issues: (summaryInput?.issues ?? []).concat({ issue: "" }),
             })
           }
         >
@@ -145,7 +129,7 @@ export const BriefEditorGenerator: React.FC<{ caseId: number }> = ({ caseId }) =
         </button>
       </div>
       <div>
-        {summaryBriefInput?.issues?.map((issue, issueIndex, issuesArr) => (
+        {summaryInput?.issues?.map((issue, issueIndex, issuesArr) => (
           <div key={issueIndex} className="brief-editor-gen__row">
             <label>
               <span>Issue #{issueIndex + 1}:</span>
@@ -156,14 +140,14 @@ export const BriefEditorGenerator: React.FC<{ caseId: number }> = ({ caseId }) =
                 onChange={(e) => {
                   const updatedIssues = cloneDeep(issuesArr);
                   updatedIssues[issueIndex] = { issue: e.target.value };
-                  setSummaryBriefInput({ ...summaryBriefInput, issues: updatedIssues });
+                  setSummaryInput({ ...summaryInput, issues: updatedIssues });
                 }}
               />
               <button
                 disabled={isAIRequestSubmitted}
                 onClick={() => {
-                  setSummaryBriefInput({
-                    ...summaryBriefInput,
+                  setSummaryInput({
+                    ...summaryInput,
                     issues: issuesArr.slice(0, issueIndex).concat(issuesArr.slice(issueIndex + 1)),
                   });
                 }}
@@ -174,11 +158,11 @@ export const BriefEditorGenerator: React.FC<{ caseId: number }> = ({ caseId }) =
           </div>
         ))}
       </div>
-    </StyledBriefEditorGenerator>
+    </StyledBriefAIGenerator>
   );
 };
 
-const StyledBriefEditorGenerator = styled.div`
+const StyledBriefAIGenerator = styled.div`
   .brief-editor-gen__instructions {
     text-align: center;
     box-sizing: border-box;

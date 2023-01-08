@@ -25,7 +25,7 @@ export const AIRequestBox = () => {
   // MOUNT
   useEffect(() => {
     // --- reset focus of request box to inquiry since that'll be most common?
-    // setAIRequestType("inquiry");
+    setAIRequestType("inquiry");
   }, []);
 
   // RENDER
