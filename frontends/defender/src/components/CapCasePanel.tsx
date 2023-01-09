@@ -21,7 +21,8 @@ export const CapCasePanel: React.FC<TCapCasePanelProps> = ({ capCase }) => {
         <div className="caselaw__actions">
           <div>
             <small>
-              {capCase.casebody.head_matter.slice(0, 280)}... <Link to={`/caselaw/${capCase.cap_id}`}>Read More</Link>
+              {capCase.casebody.head_matter.slice(0, 280)}...{" "}
+              <Link to={`/caselaw/cap/${capCase.cap_id}`}>Read More</Link>
             </small>
           </div>
         </div>

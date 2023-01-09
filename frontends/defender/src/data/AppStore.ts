@@ -10,9 +10,9 @@ type TAppStore = {
   focusedCaseId?: number;
   focusedDocumentId?: number;
   focusedOrgId?: number;
-  setFocusedCaseId: (focusedCaseId: number) => void;
-  setFocusedDocumentId: (focusedDocumentId: number) => void;
-  setFocusedOrgId: (focusedOrgId: number) => void;
+  setFocusedCaseId: (focusedCaseId?: number) => void;
+  setFocusedDocumentId: (focusedDocumentId?: number) => void;
+  setFocusedOrgId: (focusedOrgId?: number) => void;
 };
 
 export const appStore = createVanilla<TAppStore>((set, get) => ({

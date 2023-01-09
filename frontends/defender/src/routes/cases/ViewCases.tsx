@@ -15,7 +15,6 @@ export const ViewCases = () => {
   // RENDER
   return !organizations || !focusedOrgId ? null : (
     <>
-      <AppHeader />
       <StyledViewCases key={focusedOrgId}>
         <div className="view-cases__panels">
           {focusedOrg && <OrganizationDriver organization={focusedOrg} />}

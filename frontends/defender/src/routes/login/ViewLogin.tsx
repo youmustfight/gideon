@@ -19,7 +19,7 @@ export const ViewLogin = () => {
 
   return (
     <>
-      {user && <Navigate to="/cases" replace={true} />}
+      {user && <Navigate to="/" replace={true} />}
       <StyledViewLogin>
         <div className="login-wrapper">
           <h1>Gideon Login</h1>

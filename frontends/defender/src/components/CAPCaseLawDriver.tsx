@@ -21,7 +21,7 @@ export const CAPCaseLawDriver: React.FC = () => {
     <StyledCAPCaseLawDriver>
       <div className="driver__lead">
         <div className="driver__lead__text">
-          <button onClick={() => navigate("/cases")}>⬅</button>
+          <button onClick={() => navigate("/")}>⬅</button>
           <h2>U. S. Caselaw Search</h2>
         </div>
       </div>

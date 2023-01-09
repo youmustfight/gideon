@@ -11,10 +11,9 @@ import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 export const ViewCaseLaw = () => {
   return (
     <>
-      <AppHeader />
       <div className="caselaw-driver">
         <CAPCaseLawDriver />
-        <AIRequestBox isCaseLawSearch />
+        <AIRequestBox />
       </div>
       <StyledViewCaseLaw>
         <Routes>

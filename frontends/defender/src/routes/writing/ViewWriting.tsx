@@ -43,7 +43,6 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
   // RENDER
   return !writing ? null : (
     <>
-      <AppHeader />
       <StyledViewWriting>
         {/* HEAD */}
         <div className="writing-header">
