@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { TAIRequestType, useAIRequestStore } from "./AIRequestStore";
 import { InquiryBox } from "./InquiryBox";
 import { SummarizeBox } from "./SummarizeBox";
@@ -22,7 +22,7 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
 };
 
 export const AIRequestBox = () => {
-  const { aiRequestType, clearAIRequest, setAIRequestType } = useAIRequestStore();
+  const { aiRequestType, clearAIRequest, isScrollingToAIRequestBox, setAIRequestType } = useAIRequestStore();
   // MOUNT
   useEffect(() => {
     // TODO: maybe don't do this so we don't lose search answers as we move between sections?
@@ -33,7 +33,7 @@ export const AIRequestBox = () => {
 
   // RENDER
   return (
-    <StyledAIRequestBox>
+    <StyledAIRequestBox id="ai-request-box" highlight={isScrollingToAIRequestBox}>
       {/* REQUEST INTERFACES */}
       {aiRequestType === "inquiry" ? <InquiryBox /> : null}
       {aiRequestType === "summarize" ? <SummarizeBox /> : null}
@@ -42,13 +42,28 @@ export const AIRequestBox = () => {
   );
 };
 
-const StyledAIRequestBox = styled.div`
+const StyledAIRequestBox = styled.div<{ highlight: boolean }>`
   display: flex;
   margin: -6px 12px 0 !important;
   background: white;
   padding: 12px;
   padding-top: 12px !important;
   margin-bottom: 12px;
+  border-radius: 2px;
+  transition: 1s;
+
+  ${({ highlight }) => {
+    if (highlight) {
+      return css`
+        border: 2px solid blue;
+      `;
+    } else {
+      return css`
+        border: 2px solid #fafafa;
+      `;
+    }
+  }}
+
   & > select {
     font-size: 13px;
   }

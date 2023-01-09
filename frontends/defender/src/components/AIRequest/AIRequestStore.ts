@@ -29,6 +29,10 @@ type TAIRequestStore = {
   isAIRequestSubmitted: boolean;
   focusAnswer?: TFocusAnswer;
   setFocusAnswer: (focusAnswer: TFocusAnswer) => void;
+  // --- scroll focus
+  isScrollingToAIRequestBox: boolean;
+  scrollToAIRequestBox: () => void;
+  // --- clearing/reset
   clearAIRequest: () => void;
 
   // INQUIRY
@@ -101,8 +105,23 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   aiRequestType: "inquiry",
   setAIRequestType: (aiRequestType) => set({ aiRequestType }),
   // --- post-answer
+  isAIRequestSubmitted: false,
   focusAnswer: undefined,
   setFocusAnswer: (focusAnswer) => set({ focusAnswer }),
+  // --- scroll focus
+  isScrollingToAIRequestBox: false,
+  scrollToAIRequestBox: () => {
+    set({ isScrollingToAIRequestBox: true });
+    const el = document.querySelector("#ai-request-box");
+    if (el) {
+      // el.scrollIntoView({ behavior: "smooth" });
+      window.scrollTo(0, 0);
+      setTimeout(() => {
+        set({ isScrollingToAIRequestBox: false });
+      }, 1000 * 3);
+    }
+  },
+  // --- clearing/reset
   clearAIRequest: () =>
     set({
       // --- answers
@@ -129,7 +148,6 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   // --- query & answers
   query: "",
   setQuery: (query) => set({ query }),
-  isAIRequestSubmitted: false,
   answerQuestion: undefined,
   answerDetailsLocations: undefined,
   answerCaseFactsSimilarity: undefined,

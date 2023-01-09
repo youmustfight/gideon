@@ -34,7 +34,7 @@ type TWritingsBoxProps = {
 };
 
 export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, organizationId }) => {
-  const { aiRequestType, setAIRequestType } = useAIRequestStore();
+  const { scrollToAIRequestBox, setAIRequestType } = useAIRequestStore();
   const { data: writings } = useWritings({ caseId, isTemplate: isTemplate, organizationId });
   const { data: writingsTemplates } = useWritings({ isTemplate: true, organizationId });
   const { mutateAsync: writingCreate } = useWritingCreate();
@@ -71,7 +71,16 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
             ))}
           </select>
           <button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ New"}</button>
-          {!isTemplate && <button onClick={() => setAIRequestType("write")}>+ Draft with AI</button>}
+          {!isTemplate && (
+            <button
+              onClick={() => {
+                setAIRequestType("write");
+                scrollToAIRequestBox();
+              }}
+            >
+              + Draft with AI
+            </button>
+          )}
         </div>
       </StyledWritingsBoxLead>
       {writings && (

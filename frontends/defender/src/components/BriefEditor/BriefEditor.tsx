@@ -101,7 +101,7 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
   const { data: documents } = useDocuments(caseId);
   const { data: brief } = useBrief({ caseId });
   const { mutateAsync: briefCreate, isIdle: isIdleBriefCreate } = useBriefCreate();
-  const { setAIRequestType } = useAIRequestStore();
+  const { scrollToAIRequestBox, setAIRequestType } = useAIRequestStore();
 
   // RENDER
   return (
@@ -119,9 +119,9 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
             + Create Blank Case Brief
           </button>
           <button
-            disabled={!isIdleBriefCreate || documents?.length === 0}
             onClick={() => {
               setAIRequestType("summarize");
+              scrollToAIRequestBox();
             }}
             style={{ flexGrow: "1" }}
           >
