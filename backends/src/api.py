@@ -95,20 +95,22 @@ async def app_route_auth_user(request):
 @auth_route
 async def app_route_ai_fill_writing_template(request):
     session = request.ctx.session
-    # setup writing model
-    writing_model = Writing(
-        case_id=request.json.get('case_id'),
-        is_template=request.json.get('is_template'),
-        name=request.json.get('name'),
-        organization_id=request.json.get('organization_id'),
-        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
-    )
-    # pass it to ai writer
-    updated_writing_model = await write_template_with_ai(session, writing_model)
-    # save
-    session.add(updated_writing_model)
-    await session.commit()
-    return json({ 'status': 'success' })
+    async with session.begin():
+        # setup writing model
+        writing_model = Writing(
+            case_id=request.json.get('writing').get('case_id'),
+            is_template=request.json.get('writing').get('is_template'),
+            name=request.json.get('writing').get('name'),
+            organization_id=request.json.get('writing').get('organization_id'),
+            forked_writing_id=int(request.json.get('writing').get('forked_writing_id')) if request.json.get('writing').get('forked_writing_id') != None else None,
+        )
+        # pass it to ai writer
+        updated_writing_model = await write_template_with_ai(session, writing_model, request.json.get('prompt_text'))
+        # save
+        session.add(updated_writing_model)
+    # TODO: send back data to frontend
+    session.refresh(updated_writing_model)
+    return json({ 'status': 'success', 'data': { 'writing': updated_writing_model.serialize() } })
 
 @api_app.route('/v1/ai/query-document-answer', methods = ['POST'])
 @auth_route
