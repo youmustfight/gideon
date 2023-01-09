@@ -12,8 +12,11 @@ import {
 import { TCapCase } from "../../data/useCapCase";
 import { reqBriefCreate, TUseBriefCreateBody } from "../../data/useBrief";
 import { reqDocumentSummarize } from "../../data/useDocument";
+import { TWriting } from "../../data/useWritings";
+import { reqWritingPost } from "../../data/useWriting";
 
 export type TAIRequestType = "inquiry" | "summarize" | "write";
+export type TWritingScope = "case" | "prompt";
 export type TSummaryScope = "case" | "document" | "text";
 export type TInquiryScope = "caselaw" | "organization" | "case" | "document";
 export type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
@@ -22,19 +25,11 @@ type TAIRequestStore = {
   // GLOBAL
   aiRequestType: TAIRequestType;
   setAIRequestType: (aiRequestType: TAIRequestType) => void;
-
-  // SUMMARIZE
-  summaryScope?: TSummaryScope;
-  setSummaryScope: (summaryScope: TSummaryScope) => void;
-  summaryInput: Partial<TUseBriefCreateBody> & { text: string };
-  setSummaryInput: (query: Partial<TUseBriefCreateBody> & { text: string }) => void;
-  // --- query
-  summarize: (params: any) => void;
-  // --- answers
-  answerSummary?: {
-    inProgress?: boolean;
-    summary?: string;
-  };
+  // --- post-answer
+  isAIRequestSubmitted: boolean;
+  focusAnswer?: TFocusAnswer;
+  setFocusAnswer: (focusAnswer: TFocusAnswer) => void;
+  clearAIRequest: () => void;
 
   // INQUIRY
   // --- setup
@@ -45,71 +40,87 @@ type TAIRequestStore = {
   setQuery: (query: string) => void;
   answerQuestion?: {
     answer?: string;
-    inProgress?: boolean;
+    inProgress: boolean;
     locations?: TQueryLocation[];
   };
   answerDetailsLocations?: {
-    inProgress?: boolean;
+    inProgress: boolean;
     locations?: TQueryLocation[];
   };
   answerCaseFactsSimilarity?: {
-    inProgress?: boolean;
+    inProgress: boolean;
     locations?: TQueryLocation[];
   };
   answerWritingSimilarity?: {
-    inProgress?: boolean;
+    inProgress: boolean;
     locations?: TQueryLocation[];
   };
   answerCaselaw?: {
-    inProgress?: boolean;
+    inProgress: boolean;
     capCases?: TCapCase[]; // TODO
   };
   inquiry: (params: any) => void;
-  isAIRequestSubmitted: boolean;
-  // --- post-answer
-  focusAnswer?: TFocusAnswer;
-  setFocusAnswer: (focusAnswer: TFocusAnswer) => void;
-  clearInquiry: () => void;
+
+  // SUMMARIZE
+  summaryScope?: TSummaryScope;
+  setSummaryScope: (summaryScope: TSummaryScope) => void;
+  summaryInput: Partial<TUseBriefCreateBody> & { text: string };
+  setSummaryInput: (query: Partial<TUseBriefCreateBody> & { text: string }) => void;
+  // --- query
+  summarize: (params: any) => void;
+  // --- answers
+  answerSummary?: {
+    inProgress: boolean;
+    summary?: string;
+  };
+
+  // WRITING
+  writingScope?: TWritingScope;
+  setWritingScope: (writingScope: TWritingScope) => void;
+  writingInput: {
+    writingTemplateId?: number | string;
+    writingModel?: Partial<TWriting>;
+    promptText: string;
+  };
+  setWritingInput: (input: {
+    writingTemplateId?: number | string;
+    writingModel?: Partial<TWriting>;
+    promptText: string;
+  }) => void;
+  // --- query
+  write: (params: any) => void;
+  // --- answers
+  answerWriting?: {
+    inProgress: boolean;
+    writing?: TWriting;
+  };
 };
 
 export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   // GLOBAL
   aiRequestType: "inquiry",
   setAIRequestType: (aiRequestType) => set({ aiRequestType }),
-
-  // SUMMARIZE
-  summaryScope: undefined,
-  setSummaryScope: (summaryScope) => set({ summaryScope, summaryInput: { text: "", issues: [] } }),
-  // --- inputs
-  summaryInput: { text: "", issues: [] },
-  setSummaryInput: (summaryInput) => set({ summaryInput }),
-  // --- query
-  summarize: ({ caseId, documentId }) => {
-    set({ isAIRequestSubmitted: true, answerSummary: { inProgress: true } });
-    // TEXT
-    if (get().summaryScope === "text") {
-      reqQuerySummarize({ text: get().summaryInput.text }).then(({ summary }) =>
-        set({ answerSummary: { inProgress: false, summary } })
-      );
-    }
-    // CASE
-    if (get().summaryScope === "case") {
-      reqBriefCreate({ caseId, issues: get().summaryInput?.issues }).then(() =>
-        // long running process so don't set inProgress = false
-        set({ answerSummary: { inProgress: true } })
-      );
-    }
-    // DOCUMENT
-    if (get().summaryScope === "document") {
-      // TODO: this function is always going to re-run summarization even if its present
-      reqDocumentSummarize(documentId).then((document) =>
-        // TODO: return string from document extraction/summarization job
-        set({ answerSummary: { inProgress: false, summary: document.generated_summary } })
-      );
-    }
-  },
-  // --- answers
-  answerSummary: undefined,
+  // --- post-answer
+  focusAnswer: undefined,
+  setFocusAnswer: (focusAnswer) => set({ focusAnswer }),
+  clearAIRequest: () =>
+    set({
+      // --- answers
+      answerCaseFactsSimilarity: undefined,
+      answerCaselaw: undefined,
+      answerDetailsLocations: undefined,
+      answerQuestion: undefined,
+      answerSummary: undefined,
+      answerWritingSimilarity: undefined,
+      answerWriting: undefined,
+      // --- inputs
+      query: "",
+      summaryInput: { text: "", issues: [] },
+      writingInput: { promptText: "", writingTemplateId: undefined, writingModel: undefined },
+      // --- meta
+      isAIRequestSubmitted: false,
+      focusAnswer: undefined,
+    }),
 
   // INQUIRY
   // --- setup
@@ -164,7 +175,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       reqQueryDocument({
         caseId,
         query: get().query,
-      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
+      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
       set({ focusAnswer: "location" });
       // DOCUMENT
     } else if (get().inquiryScope === "document") {
@@ -174,14 +185,14 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
         caseId,
         documentId,
         query: get().query,
-      }).then(({ locations }) => set({ answerDetailsLocations: { locations } }));
+      }).then(({ locations }) => set({ answerDetailsLocations: { locations, inProgress: false } }));
       //} --- answer
       set({ answerQuestion: { inProgress: true } });
       reqQueryDocument({
         caseId,
         documentId,
         query: get().query,
-      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations } }));
+      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
       // set default focus
       set({ focusAnswer: "location" });
       // CASELAW
@@ -193,25 +204,66 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       set({ focusAnswer: "caselaw" });
     }
   },
-  // --- post-answer
-  focusAnswer: undefined,
-  setFocusAnswer: (focusAnswer) => set({ focusAnswer }),
-  clearInquiry: () =>
-    set({
-      // --- answers
-      answerCaseFactsSimilarity: undefined,
-      answerCaselaw: undefined,
-      answerDetailsLocations: undefined,
-      answerQuestion: undefined,
-      answerSummary: undefined,
-      answerWritingSimilarity: undefined,
-      // --- inputs
-      query: "",
-      summaryInput: { text: "", issues: [] },
-      // --- meta
-      isAIRequestSubmitted: false,
-      focusAnswer: undefined,
-    }),
+
+  // SUMMARIZE
+  summaryScope: undefined,
+  setSummaryScope: (summaryScope) => set({ summaryScope, summaryInput: { text: "", issues: [] } }),
+  // --- inputs
+  summaryInput: { text: "", issues: [] },
+  setSummaryInput: (summaryInput) => set({ summaryInput }),
+  // --- query
+  summarize: ({ caseId, documentId }) => {
+    set({ isAIRequestSubmitted: true, answerSummary: { inProgress: true } });
+    // TEXT
+    if (get().summaryScope === "text") {
+      reqQuerySummarize({ text: get().summaryInput.text }).then(({ summary }) =>
+        set({ answerSummary: { inProgress: false, summary } })
+      );
+    }
+    // CASE
+    if (get().summaryScope === "case") {
+      reqBriefCreate({ caseId, issues: get().summaryInput?.issues }).then(() =>
+        // long running process so don't set inProgress = false
+        set({ answerSummary: { inProgress: true } })
+      );
+    }
+    // DOCUMENT
+    if (get().summaryScope === "document") {
+      // TODO: this function is always going to re-run summarization even if its present
+      reqDocumentSummarize(documentId).then((document) =>
+        // TODO: return string from document extraction/summarization job
+        set({ answerSummary: { inProgress: false, summary: document.generated_summary } })
+      );
+    }
+  },
+  // --- answers
+  answerSummary: undefined,
+
+  // WRITING
+  writingScope: undefined,
+  setWritingScope: (writingScope) => set({ writingScope, writingInput: { ...get().writingInput, promptText: "" } }),
+  // --- inputs
+  writingInput: { writingTemplateId: undefined, writingModel: undefined, promptText: "" },
+  setWritingInput: (writingInput) => set({ writingInput }),
+  // --- query
+  write: ({ caseId, organizationId }) => {
+    set({ isAIRequestSubmitted: true, answerWriting: { inProgress: true } });
+    const { promptText, writingTemplateId, writingModel } = get().writingInput;
+    reqWritingPost(
+      {
+        caseId: Number(caseId),
+        isTemplate: false,
+        name: writingModel!.name,
+        organizationId,
+        forkedWritingId: Number(writingTemplateId),
+        bodyHtml: writingModel!.body_html,
+        bodyText: writingModel!.body_text,
+      },
+      { runAIWriter: true, promptText }
+    ).then((writing) => set({ answerWriting: { inProgress: false, writing } }));
+  },
+  // --- answers
+  answerWriting: undefined,
 }));
 
 export const useAIRequestStore = create(aiRequestStore);

@@ -37,7 +37,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
     inquiry,
     focusAnswer,
     setFocusAnswer,
-    clearInquiry,
+    clearAIRequest,
   } = useAIRequestStore();
 
   // ON MOUNT
@@ -105,7 +105,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
           />
         </label>
         <button type="submit" disabled={isAIRequestSubmitted || query.length < 4}>
-          Run AI
+          Request
         </button>
       </form>
 
@@ -143,7 +143,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
                 Caselaw {answerCaselaw?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
-            <label className="ai-request-box__reset-inquiry-btn" onClick={clearInquiry}>
+            <label className="ai-request-box__reset-inquiry-btn" onClick={clearAIRequest}>
               <ResetIcon />
             </label>
           </div>

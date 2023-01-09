@@ -10,7 +10,7 @@ export const SummarizeBox = () => {
   const params = useParams(); // TODO: get from props, not params
   const {
     answerSummary,
-    clearInquiry,
+    clearAIRequest,
     isAIRequestSubmitted,
     summaryScope,
     setSummaryScope,
@@ -36,7 +36,7 @@ export const SummarizeBox = () => {
     <StyledSummaryBox>
       <div className="ai-request-box__input rows">
         {/* Doing this inline bc we don't want to take up width on responses */}
-        <div className="ai-request-box__input__row" key={summaryScope}>
+        <div className="ai-request-box__input__row">
           <AIRequestTypeSelect disabled={isAIRequestSubmitted} />
           <select
             value={summaryScope}
@@ -60,7 +60,7 @@ export const SummarizeBox = () => {
             }
             onClick={() => summarize({ caseId: params?.caseId, documentId: params?.documentId })}
           >
-            Run AI
+            Request
           </button>
         </div>
         <div className="ai-request-box__input__row">
@@ -89,7 +89,7 @@ export const SummarizeBox = () => {
               })()}{" "}
               {answerSummary?.inProgress ? `(${summaryScope ? "Processing, 2-5 minutes" : "Processing"}...)` : ""}
             </label>
-            <label className="ai-request-box__reset-inquiry-btn" onClick={clearInquiry}>
+            <label className="ai-request-box__reset-inquiry-btn" onClick={clearAIRequest}>
               <ResetIcon />
             </label>
           </div>

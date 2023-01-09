@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { TAIRequestType, useAIRequestStore } from "./AIRequestStore";
 import { InquiryBox } from "./InquiryBox";
 import { SummarizeBox } from "./SummarizeBox";
+import { WriteBox } from "./WriteBox";
 
 export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
   const { aiRequestType, setAIRequestType } = useAIRequestStore();
@@ -21,11 +22,13 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
 };
 
 export const AIRequestBox = () => {
-  const { aiRequestType, setAIRequestType } = useAIRequestStore();
+  const { aiRequestType, clearAIRequest, setAIRequestType } = useAIRequestStore();
   // MOUNT
   useEffect(() => {
+    // TODO: maybe don't do this so we don't lose search answers as we move between sections?
     // --- reset focus of request box to inquiry since that'll be most common?
     setAIRequestType("inquiry");
+    clearAIRequest();
   }, []);
 
   // RENDER
@@ -34,6 +37,7 @@ export const AIRequestBox = () => {
       {/* REQUEST INTERFACES */}
       {aiRequestType === "inquiry" ? <InquiryBox /> : null}
       {aiRequestType === "summarize" ? <SummarizeBox /> : null}
+      {aiRequestType === "write" ? <WriteBox /> : null}
     </StyledAIRequestBox>
   );
 };
@@ -49,7 +53,7 @@ const StyledAIRequestBox = styled.div`
     font-size: 13px;
   }
   div {
-    width: 100%;
+    flex-grow: 1;
   }
 
   .ai-request-box__input {

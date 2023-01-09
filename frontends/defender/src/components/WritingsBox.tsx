@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { TWriting, useWritings } from "../data/useWritings";
+import { useAIRequestStore } from "./AIRequest/AIRequestStore";
 import { SlimBox } from "./styled/StyledBox";
 
 export const WritingPanel: React.FC<{ writing: TWriting }> = ({ writing }) => {
@@ -33,6 +34,7 @@ type TWritingsBoxProps = {
 };
 
 export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, organizationId }) => {
+  const { aiRequestType, setAIRequestType } = useAIRequestStore();
   const { data: writings } = useWritings({ caseId, isTemplate: isTemplate, organizationId });
   const { data: writingsTemplates } = useWritings({ isTemplate: true, organizationId });
   const { mutateAsync: writingCreate } = useWritingCreate();
@@ -61,15 +63,15 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
         <h2>{isTemplate ? "Templates" : "Writings"}</h2>
         <div>
           <select value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}>
-            <option value="">--- Without Template ---</option>
+            <option value="">--- No Template ---</option>
             {writingsTemplates?.map((wt) => (
               <option key={wt.id} value={wt.id}>
                 Template: {wt.name}
               </option>
             ))}
           </select>
-          <button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ Add"}</button>
-          {!isTemplate && <button onClick={() => onWritingCreate(true)}>+ Fill with AI</button>}
+          <button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ New"}</button>
+          {!isTemplate && <button onClick={() => setAIRequestType("write")}>+ Draft with AI</button>}
         </div>
       </StyledWritingsBoxLead>
       {writings && (

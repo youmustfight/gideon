@@ -17,7 +17,7 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
           <span className="case-panel__users__assigned">👩‍💼:</span> {cse.users?.map((u) => u.name).join(", ")}
         </small>
       </span>
-      <div>
+      <div className="case-panel__actions">
         <button
           className="view-cases-like-this-btn"
           onClick={() => {
@@ -35,10 +35,15 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
 };
 
 const StyledCasePanel = styled(BoxWithRightSideButton)`
+  display: flex;
+  justify-content: space-between;
   .case-panel__users {
     display: block;
     margin-top: 4px;
     font-size: 12px;
+  }
+  .case-panel__actions {
+    text-align: right;
   }
   .view-cases-like-this-btn {
     display: none;

@@ -21,5 +21,5 @@ export const reqDocumentDelete = async (documentId: number): Promise<void> =>
   axios.delete(`${getGideonApiUrl()}/v1/document/${documentId}`);
 
 // MISC
-export const reqDocumentSummarize = async (documentId: number): Promise<TDocument[]> =>
+export const reqDocumentSummarize = async (documentId: number): Promise<TDocument> =>
   axios.post(`${getGideonApiUrl()}/v1/document/${documentId}/extractions`).then((res) => res.data.data.document);

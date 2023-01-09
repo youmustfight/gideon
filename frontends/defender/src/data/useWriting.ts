@@ -25,26 +25,29 @@ export type TWritingCreateParams = {
   forkedWritingId?: number;
 };
 
-const reqWritingPost = async (
+export const reqWritingPost = async (
   { bodyHtml, bodyText, caseId, forkedWritingId, isTemplate, name, organizationId }: TWritingCreateParams,
-  runAIWriter: boolean
+  { promptText, runAIWriter }: { promptText?: string; runAIWriter: boolean }
 ): Promise<any> =>
   axios
     .post(runAIWriter ? `${getGideonApiUrl()}/v1/ai/fill-writing-template` : `${getGideonApiUrl()}/v1/writing`, {
-      body_html: bodyHtml,
-      body_text: bodyText,
-      case_id: caseId,
-      forked_writing_id: forkedWritingId,
-      is_template: isTemplate,
-      name,
-      organization_id: organizationId,
+      writing: {
+        body_html: bodyHtml,
+        body_text: bodyText,
+        case_id: caseId,
+        forked_writing_id: forkedWritingId,
+        is_template: isTemplate,
+        name,
+        organization_id: organizationId,
+      },
+      prompt_text: promptText,
     })
-    .then((res) => res.data.writing);
+    .then((res) => res.data.data.writing);
 
 export const useWritingCreate = () =>
   useMutation(
     async ({ params, runAIWriter }: { params: TWritingCreateParams; runAIWriter: boolean }) =>
-      reqWritingPost(params, runAIWriter),
+      reqWritingPost(params, { runAIWriter }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(["writing"]);
