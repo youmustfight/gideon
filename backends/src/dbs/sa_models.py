@@ -128,7 +128,7 @@ class Document(BaseModel):
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="documents")
     name = Column(Text())
-    type = Column(String()) # pdf, image, audio, video (derive search modalities from this)
+    type = Column(String()) # audio, docx, image, pdf, video (derive search modalities from this)
     # --- O>M for files
     status_processing_files = Column(String()) # queued, processing, completed, error
     status_processing_content = Column(String()) # queued, processing, completed, error
