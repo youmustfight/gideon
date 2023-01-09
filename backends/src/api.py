@@ -9,7 +9,7 @@ from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
-from agents.ai_action_agent import generate_ai_action_locks
+from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from brief.create_case_brief import create_case_brief
@@ -24,13 +24,14 @@ from indexers.index_document_image import _index_document_image_process_extracti
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
-from queries.cap_caselaw_search import cap_caselaw_search
-from queries.brief_fact_similarity import brief_fact_similarity
-from queries.question_answer import question_answer
-from queries.search_locations import search_locations
-from queries.writing_similarity import writing_similarity
-from queries.utils.serialize_location import serialize_location
-from queries.write_template_with_ai import write_template_with_ai
+from indexers.utils.extract_document_summary import extract_document_summary
+from ai.requests.cap_caselaw_search import cap_caselaw_search
+from ai.requests.brief_fact_similarity import brief_fact_similarity
+from ai.requests.question_answer import question_answer
+from ai.requests.search_locations import search_locations
+from ai.requests.writing_similarity import writing_similarity
+from ai.requests.utils.serialize_location import serialize_location
+from ai.requests.write_template_with_ai import write_template_with_ai
 from worker import create_queue_pool
 
 # INIT
@@ -94,20 +95,22 @@ async def app_route_auth_user(request):
 @auth_route
 async def app_route_ai_fill_writing_template(request):
     session = request.ctx.session
-    # setup writing model
-    writing_model = Writing(
-        case_id=request.json.get('case_id'),
-        is_template=request.json.get('is_template'),
-        name=request.json.get('name'),
-        organization_id=request.json.get('organization_id'),
-        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
-    )
-    # pass it to ai writer
-    updated_writing_model = await write_template_with_ai(session, writing_model)
-    # save
-    session.add(updated_writing_model)
-    await session.commit()
-    return json({ 'status': 'success' })
+    async with session.begin():
+        # setup writing model
+        writing_model = Writing(
+            case_id=request.json.get('writing').get('case_id'),
+            is_template=request.json.get('writing').get('is_template'),
+            name=request.json.get('writing').get('name'),
+            organization_id=request.json.get('writing').get('organization_id'),
+            forked_writing_id=int(request.json.get('writing').get('forked_writing_id')) if request.json.get('writing').get('forked_writing_id') != None else None,
+        )
+        # pass it to ai writer
+        updated_writing_model = await write_template_with_ai(session, writing_model, request.json.get('prompt_text'))
+        # save
+        session.add(updated_writing_model)
+    # TODO: send back data to frontend
+    session.refresh(updated_writing_model)
+    return json({ 'status': 'success', 'data': { 'writing': updated_writing_model.serialize() } })
 
 @api_app.route('/v1/ai/query-document-answer', methods = ['POST'])
 @auth_route
@@ -173,6 +176,16 @@ async def app_route_ai_query_writing_similarity(request):
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
+
+@api_app.route('/v1/ai/summarize', methods = ['POST'])
+@auth_route
+async def app_route_ai_summarize(request):
+    session = request.ctx.session
+    async with session.begin():
+        # TODO: save request query + results
+        # Summarize
+        summary = extract_document_summary(request.json.get('text'))
+    return json({ 'status': 'success', 'data': { 'summary': summary } })
 
 
 # CASES
@@ -461,6 +474,7 @@ async def app_route_document_delete(request, document_id):
 @auth_route
 async def app_route_document_extractions(request, document_id):
     session = request.ctx.session
+    # update
     async with session.begin():
         query_document = await session.execute(
             sa.select(Document).where(Document.id == int(document_id)))
@@ -473,7 +487,12 @@ async def app_route_document_extractions(request, document_id):
             await _index_document_audio_process_extractions(session=session, document_id=document.id)
         if (document.type == "video"):
             await _index_document_video_process_extractions(session=session, document_id=document.id)
-    return json({ 'status': 'success' })
+    # fetch result
+    query_document = await session.execute(
+        sa.select(Document).where(Document.id == int(document_id)))
+    document = query_document.scalars().first()
+    # respond
+    return json({ 'status': 'success', 'data': { 'document': document.serialize() } })
 
 @api_app.route('/v1/documents', methods = ['GET'])
 @auth_route

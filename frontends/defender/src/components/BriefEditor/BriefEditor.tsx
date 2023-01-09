@@ -4,6 +4,8 @@ import { useDebounce } from "react-use";
 import styled from "styled-components";
 import { TBrief, TBriefFact, TBriefIssue, useBrief, useBriefCreate, useBriefUpdate } from "../../data/useBrief";
 import { useCase } from "../../data/useCase";
+import { useDocuments } from "../../data/useDocuments";
+import { useAIRequestStore } from "../AIRequest/AIRequestStore";
 import { BriefEditorFact } from "./BriefEditorFact";
 import { BriefEditorIssue } from "./BriefEditorIssue";
 
@@ -95,75 +97,37 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
 };
 
 export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
-  // SETUP
   const { data: cse } = useCase(caseId);
+  const { data: documents } = useDocuments(caseId);
   const { data: brief } = useBrief({ caseId });
-  const [initialIssues, setInitialIssues] = useState<TBriefIssue[]>([]);
-  const [wantsToCreateNewBrief, setWantsToCreateNewBrief] = useState(false);
-  // --- generate brief
   const { mutateAsync: briefCreate, isIdle: isIdleBriefCreate } = useBriefCreate();
-  // --- editor state
+  const { scrollToAIRequestBox, setAIRequestType } = useAIRequestStore();
 
   // RENDER
   return (
     <>
       <StyledBriefBoxLead>
         <h2>"{cse?.name ?? "Untitled"}" Case Brief</h2>
-        {!wantsToCreateNewBrief && (
+      </StyledBriefBoxLead>
+      {!brief ? (
+        <div style={{ display: "flex", paddingTop: "8px", width: "100%" }}>
+          <button
+            disabled={!isIdleBriefCreate}
+            onClick={() => briefCreate({ caseId: caseId, issues: [] })}
+            style={{ flexGrow: "1" }}
+          >
+            + Create Blank Case Brief
+          </button>
           <button
             onClick={() => {
-              setInitialIssues(brief?.issues ?? []);
-              setWantsToCreateNewBrief(true);
+              setAIRequestType("summarize");
+              scrollToAIRequestBox();
             }}
+            style={{ flexGrow: "1" }}
           >
-            + Generate New Brief
+            + Generate Case Brief with AI
           </button>
-        )}
-        {wantsToCreateNewBrief ? (
-          <button onClick={() => setWantsToCreateNewBrief(false)}>← Cancel New Brief</button>
-        ) : null}
-      </StyledBriefBoxLead>
-      {wantsToCreateNewBrief ? (
-        <>
-          <hr />
-          <StyledBriefBoxLead>
-            <h3>Issues</h3>
-            <button onClick={() => setInitialIssues(initialIssues.concat({ issue: "" }))}>+ Issue</button>
-          </StyledBriefBoxLead>
-          <StyledBriefBox>
-            {initialIssues.map((issue, issueIndex, issuesArr) => (
-              <div key={issueIndex} className="issue-row">
-                <label>
-                  <span>Issue #{issueIndex + 1}:</span>
-                  <input
-                    value={issue.issue}
-                    placeholder="Whether..."
-                    onChange={(e) => {
-                      const updatedIssues = cloneDeep(issuesArr);
-                      updatedIssues[issueIndex] = { issue: e.target.value };
-                      setInitialIssues(updatedIssues);
-                    }}
-                  />
-                  <button
-                    onClick={() =>
-                      setInitialIssues(issuesArr.slice(0, issueIndex).concat(issuesArr.slice(issueIndex + 1)))
-                    }
-                  >
-                    Remove
-                  </button>
-                </label>
-              </div>
-            ))}
-            <br />
-            <button
-              style={{ width: "100%" }}
-              disabled={initialIssues.length === 0 || !isIdleBriefCreate}
-              onClick={() => briefCreate({ caseId, issues: initialIssues })}
-            >
-              {isIdleBriefCreate ? "Generate Case Brief with AI" : "Generating case brief..."}
-            </button>
-          </StyledBriefBox>
-        </>
+        </div>
       ) : (
         <BriefEditorUpdater brief={brief} caseId={caseId} />
       )}

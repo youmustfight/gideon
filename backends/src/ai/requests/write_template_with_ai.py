@@ -3,13 +3,16 @@ from dbs.sa_models import Brief, Writing
 from models.gpt import GTP3_COMPLETION_MODEL_ENGINE, gpt_completion
 
 
-async def write_template_with_ai(session, writing_model):
+async def write_template_with_ai(session, writing_model, prompt_text=None):
     # FETCH
-    # --- grab case facts
-    query_brief = await session.execute(
-        sa.select(Brief).where(Brief.case_id == writing_model.case_id))
-    brief = query_brief.scalars().one()
-    FACTS = "\n".join(map(lambda cf: cf.text, brief.facts))
+    # --- grab case facts/prompt
+    if prompt_text != None:
+      FACTS = prompt_text
+    else:
+      query_brief = await session.execute(
+          sa.select(Brief).where(Brief.case_id == writing_model.case_id))
+      brief = query_brief.scalars().one()
+      FACTS = "\n".join(map(lambda cf: cf.text, brief.facts))
     # --- grab template text
     query_template = await session.execute(
         sa.select(Writing).where(Writing.id == writing_model.forked_writing_id))

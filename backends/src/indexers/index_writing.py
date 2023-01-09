@@ -1,7 +1,7 @@
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
-from agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
+from ai.agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Writing, Embedding
 
 async def index_writing(session: Session, writing_id):

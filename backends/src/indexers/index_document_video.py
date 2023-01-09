@@ -3,7 +3,7 @@ import math
 import pydash as _
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
-from agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
+from ai.agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file_string

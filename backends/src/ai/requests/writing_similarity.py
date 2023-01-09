@@ -1,7 +1,7 @@
-from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
+from ai.agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 from logger import logger
-from queries.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
+from ai.requests.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
 
 async def writing_similarity(session, query: str, organization_id=None):
     logger.info(f'writing_similarity')

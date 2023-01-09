@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { TQueryLocation } from "../data/useQueryAI";
+import { TQueryLocation } from "./AIRequest/aiRequestReqs";
 import { formatSecondToTime } from "./formatSecondToTime";
 import { formatHashForSentenceHighlight } from "./hashUtils";
 

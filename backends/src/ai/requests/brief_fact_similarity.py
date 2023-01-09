@@ -1,9 +1,9 @@
 import sqlalchemy as sa
-from agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
+from ai.agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.sa_models import Case, Embedding
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 from logger import logger
-from queries.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
+from ai.requests.utils.location_from_search_vector_embedding import location_from_search_vector_embedding
 
 async def brief_fact_similarity(session, case_id, organization_id, query_text=None):
     logger.info(f'brief_fact_similarity')

@@ -5,6 +5,7 @@ import { WritingEditor } from "../../components/WritingEditor/WritingEditor";
 import { useWriting, useWritingDelete, useWritingUpdate } from "../../data/useWriting";
 import styled from "styled-components";
 import { ConfirmButton } from "../../components/ConfirmButton";
+import { AppHeader } from "../../components/AppHeader";
 
 type TViewWritingProps = {
   caseId?: number;
@@ -41,42 +42,46 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
 
   // RENDER
   return !writing ? null : (
-    <StyledViewWriting>
-      {/* HEAD */}
-      <div className="writing-header">
-        <Link to={caseId ? `/case/${caseId}` : "/cases"}>
-          <button>←</button>
-        </Link>
-        <input
-          placeholder="Untitled Name"
-          defaultValue={writing?.name}
-          value={writingName}
-          onChange={(e) => setWritingName(e.target.value)}
-        />
-        <button>
-          <Link to={`/writing/${writingId}/pdf`}>Preview PDF</Link>
-        </button>
-      </div>
+    <>
+      <AppHeader />
+      <StyledViewWriting>
+        {/* HEAD */}
+        <div className="writing-header">
+          <Link to={caseId ? `/case/${caseId}` : "/cases"}>
+            <button>←</button>
+          </Link>
+          <input
+            placeholder="Untitled Name"
+            defaultValue={writing?.name}
+            value={writingName}
+            onChange={(e) => setWritingName(e.target.value)}
+          />
+          <button>
+            <Link to={`/writing/${writingId}/pdf`}>Preview PDF</Link>
+          </button>
+        </div>
 
-      {/* EDITOR */}
-      <WritingEditor html={writing.body_html} onChange={({ html, text }) => setEditorChange({ html, text })} />
+        {/* EDITOR */}
+        <WritingEditor html={writing.body_html} onChange={({ html, text }) => setEditorChange({ html, text })} />
 
-      {/* DELETES */}
-      <br />
-      <br />
-      <section>
-        <ConfirmButton
-          prompts={["Delete Writing", "Yes, Delete Writing"]}
-          onClick={deleteHandler}
-          disabled={!isIdleDelete}
-          style={{ width: "100%" }}
-        />
-      </section>
-    </StyledViewWriting>
+        {/* DELETES */}
+        <br />
+        <br />
+        <section>
+          <ConfirmButton
+            prompts={["Delete Writing", "Yes, Delete Writing"]}
+            onClick={deleteHandler}
+            disabled={!isIdleDelete}
+            style={{ width: "100%" }}
+          />
+        </section>
+      </StyledViewWriting>
+    </>
   );
 };
 
 export const StyledViewWriting = styled.div`
+  margin-top: 10px;
   .writing-title {
     text-align: center;
     padding: 20px 0 6px;

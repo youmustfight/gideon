@@ -1,6 +1,8 @@
 import React from "react";
 import styled from "styled-components";
+import { AppHeader } from "../../components/AppHeader";
 import { OrganizationDriver } from "../../components/OrganizationDriver";
+import { StyledViewCase } from "../../components/styled/StyledViewCase";
 import { useOrganizationCreate, useOrganizations } from "../../data/useOrganizations";
 
 export const ViewOrganizations = () => {
@@ -9,35 +11,32 @@ export const ViewOrganizations = () => {
 
   // RENDER
   return (
-    <StyledViewOrganizations>
-      {organizations?.map((org) => (
-        <OrganizationDriver key={org.id} allowNavigate organization={org} />
-      ))}
-      <div className="add-orgs">
-        <button
-          onClick={() =>
-            orgCreate({
-              name: prompt("Name of Org:") ?? "",
-            })
-          }
-        >
-          + Add Organization
-        </button>
-      </div>
-    </StyledViewOrganizations>
+    <>
+      <AppHeader />
+      <StyledViewOrganizations>
+        <div className="section-lead">
+          <h3>All Organizations</h3>
+        </div>
+        {organizations?.map((org) => (
+          <OrganizationDriver key={org.id} allowNavigate organization={org} />
+        ))}
+        <section>
+          <button
+            onClick={() =>
+              orgCreate({
+                name: prompt("Name of Org:") ?? "",
+              })
+            }
+            style={{ width: "100%" }}
+          >
+            + Add Organization
+          </button>
+        </section>
+      </StyledViewOrganizations>
+    </>
   );
 };
 
-const StyledViewOrganizations = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  .add-orgs {
-    margin-top: 16px;
-    padding: 16px;
-    border-top: 1px solid #ccc;
-    button {
-      width: 100%;
-    }
-  }
+const StyledViewOrganizations = styled(StyledViewCase)`
+  padding: 36px 24px;
 `;

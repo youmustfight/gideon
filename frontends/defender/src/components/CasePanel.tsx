@@ -1,13 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
-import { useInquiryStore } from "../data/InquiryStore";
+import { useAIRequestStore } from "./AIRequest/AIRequestStore";
 import { TCase } from "../data/useCase";
 import { BoxWithRightSideButton } from "./styled/StyledBox";
 
 export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
   const navigate = useNavigate();
-  const { setInquiryScope, inquiry } = useInquiryStore();
+  const { setInquiryScope, inquiry } = useAIRequestStore();
 
   return (
     <StyledCasePanel key={cse.id}>
@@ -17,7 +17,7 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
           <span className="case-panel__users__assigned">👩‍💼:</span> {cse.users?.map((u) => u.name).join(", ")}
         </small>
       </span>
-      <div>
+      <div className="case-panel__actions">
         <button
           className="view-cases-like-this-btn"
           onClick={() => {
@@ -35,10 +35,15 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
 };
 
 const StyledCasePanel = styled(BoxWithRightSideButton)`
+  display: flex;
+  justify-content: space-between;
   .case-panel__users {
     display: block;
     margin-top: 4px;
     font-size: 12px;
+  }
+  .case-panel__actions {
+    text-align: right;
   }
   .view-cases-like-this-btn {
     display: none;

@@ -3,14 +3,15 @@ import { ResetIcon } from "@radix-ui/react-icons";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
-import { useAppStore } from "../data/AppStore";
-import { useCases } from "../data/useCases";
-import { DocumentContentLocationBox } from "./DocumentContentLocationBox";
-import { CasePanel } from "./CasePanel";
-import { useWritings } from "../data/useWritings";
-import { WritingPanel } from "./WritingsBox";
-import { useInquiryStore } from "../data/InquiryStore";
-import { CapCasePanel } from "./CapCasePanel";
+import { useAppStore } from "../../data/AppStore";
+import { useCases } from "../../data/useCases";
+import { DocumentContentLocationBox } from "../DocumentContentLocationBox";
+import { CasePanel } from "../CasePanel";
+import { useWritings } from "../../data/useWritings";
+import { WritingPanel } from "../WritingsBox";
+import { useAIRequestStore } from "./AIRequestStore";
+import { CapCasePanel } from "../CapCasePanel";
+import { AIRequestTypeSelect } from "./AIRequestBox";
 
 type TInquiryBoxProps = {
   isCaseLawSearch?: boolean;
@@ -32,12 +33,12 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
     answerCaseFactsSimilarity,
     answerWritingSimilarity,
     answerCaselaw,
-    isInquirySubmitted,
+    isAIRequestSubmitted,
     inquiry,
     focusAnswer,
     setFocusAnswer,
-    clearInquiry,
-  } = useInquiryStore();
+    clearAIRequest,
+  } = useAIRequestStore();
 
   // ON MOUNT
   // --- set initial search scope depending on vars available
@@ -57,15 +58,17 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
   return (
     <StyledInquiryBox>
       <form
-        className="inquiry-box__input"
+        className="ai-request-box__input"
         onSubmit={(e) => {
           e.preventDefault();
           inquiry({ caseId: params.caseId, documentId: params.documentId, organizationId: app.focusedOrgId });
         }}
       >
+        {/* Doing this inline bc we don't want to take up width on responses */}
+        <AIRequestTypeSelect disabled={isAIRequestSubmitted} />
         {/* @ts-ignore */}
         <select
-          disabled={isInquirySubmitted}
+          disabled={isAIRequestSubmitted}
           value={inquiryScope}
           onChange={(e) => {
             const value = e.target.value;
@@ -91,28 +94,32 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
         <label>
           {/* <span>Ask Question</span> */}
           <input
-            disabled={isInquirySubmitted}
-            placeholder={isCaseLawSearch ? "Gideon v. Wainwright" : "Where did the search warrant authorize a raid on?"}
+            disabled={isAIRequestSubmitted}
+            placeholder={(() => {
+              if (isCaseLawSearch) return "Ex) Gideon v. Wainwright";
+              if (inquiryScope === "organization") return "Ex) Cases involving Syrian refugees";
+              return "Ex) What address was the search warrant for?";
+            })()}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={isInquirySubmitted || query.length < 4}>
-          Ask AI
+        <button type="submit" disabled={isAIRequestSubmitted || query.length < 4}>
+          Request
         </button>
       </form>
 
-      {isInquirySubmitted && (
+      {isAIRequestSubmitted && (
         <>
-          <div className="inquiry-box__tabs">
+          <div className="ai-request-box__tabs">
             {answerDetailsLocations && (
               <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
-                Detail Locations {answerDetailsLocations?.inProgress ? "(Loading...)" : ""}
+                Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerQuestion && (
               <label className={focusAnswer === "question" ? "active" : ""} onClick={() => setFocusAnswer("question")}>
-                Answer/Summary {answerQuestion?.inProgress ? "(Loading...)" : ""}
+                Answer/Summary {answerQuestion?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerCaseFactsSimilarity && (
@@ -120,7 +127,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
                 className={focusAnswer === "caseFacts" ? "active" : ""}
                 onClick={() => setFocusAnswer("caseFacts")}
               >
-                Similar Case Facts {answerCaseFactsSimilarity?.inProgress ? "(Loading...)" : ""}
+                Similar Case Facts {answerCaseFactsSimilarity?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerWritingSimilarity && (
@@ -128,19 +135,19 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
                 className={focusAnswer === "writingSimilarity" ? "active" : ""}
                 onClick={() => setFocusAnswer("writingSimilarity")}
               >
-                Writings {answerWritingSimilarity?.inProgress ? "(Loading...)" : ""}
+                Writings {answerWritingSimilarity?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerCaselaw && (
               <label className={focusAnswer === "caselaw" ? "active" : ""} onClick={() => setFocusAnswer("caselaw")}>
-                Caselaw {answerCaselaw?.inProgress ? "(Loading...)" : ""}
+                Caselaw {answerCaselaw?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
-            <label className="reset-inquiry-btn" onClick={clearInquiry}>
+            <label className="ai-request-box__reset-inquiry-btn" onClick={clearAIRequest}>
               <ResetIcon />
             </label>
           </div>
-          <div className="inquiry-box__focus">
+          <div className="ai-request-box__focus">
             {/* ANSWER */}
             {focusAnswer === "question" ? (
               <>
@@ -203,73 +210,4 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
 const StyledInquiryBox = styled.div`
   display: flex;
   flex-direction: column;
-  margin: -6px 12px 0 !important;
-  background: white;
-  padding: 12px;
-  padding-top: 12px !important;
-  margin-bottom: 12px;
-
-  .inquiry-box__input {
-    display: flex;
-    width: 100%;
-    label,
-    input,
-    select {
-      width: 100%;
-      display: flex;
-      flex-grow: 1;
-      align-items: center;
-    }
-    button,
-    label > span {
-      min-width: 120px;
-      font-size: 12px;
-    }
-    & > select {
-      max-width: 100px;
-    }
-  }
-  .inquiry-box__tabs {
-    padding: 4px 0;
-    margin-top: 12px;
-    display: flex;
-    label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      flex-grow: 1;
-      text-align: center;
-      padding: 4px 0;
-      margin: 0 2px;
-      border-bottom: 2px solid #eee;
-      color: #aaa;
-      cursor: pointer;
-      font-size: 14px;
-      background: #eee;
-      &.active {
-        border-bottom: 2px solid blue;
-        background: blue;
-        color: white;
-      }
-    }
-  }
-  .inquiry-box__focus {
-    padding-top: 12px;
-    font-size: 13px;
-    ul {
-      list-style-type: none;
-      padding-left: 0;
-    }
-    li {
-      margin-top: 4px;
-    }
-    b {
-      font-weight: 700;
-    }
-  }
-  .reset-inquiry-btn {
-    width: 54px;
-    max-width: 54px;
-  }
 `;

@@ -1,6 +1,6 @@
 import pydash as _
 import sqlalchemy as sa
-from agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
+from ai.agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from indexers.utils.extract_document_events import extract_document_events_v1
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner

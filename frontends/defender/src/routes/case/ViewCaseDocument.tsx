@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { Link, useLocation, useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
-import { InquiryBox } from "../../components/InquiryBox";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
@@ -28,17 +28,6 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         {isFullyVisible ? document.generated_summary : document.generated_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
-      {isFullyVisible ? (
-        <>
-          <br />
-          <br />
-          <div style={{ display: "flex", width: "100%" }}>
-            <button onClick={() => reqDocumentSummarize(document.id)} style={{ flexGrow: "1" }}>
-              Re-run Summarizing Process
-            </button>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 };
@@ -143,7 +132,8 @@ export const ViewCaseDocument = () => {
   // RENDER
   return !document ? null : (
     <>
-      <InquiryBox />
+      <AIRequestBox />
+
       <div>
         {/* HEAD */}
         <div className="document-header">

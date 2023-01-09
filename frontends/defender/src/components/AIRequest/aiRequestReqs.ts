@@ -1,7 +1,7 @@
 import axios from "axios";
-import { getGideonApiUrl } from "../env";
-import { TCapCase } from "./useCapCase";
-import { TDocument, TDocumentContent, TFile } from "./useDocuments";
+import { getGideonApiUrl } from "../../env";
+import { TCapCase } from "../../data/useCapCase";
+import { TDocument, TDocumentContent, TFile } from "../../data/useDocuments";
 
 export type TQueryLocation = {
   score: number;
@@ -88,3 +88,15 @@ export const reqQueryCaselaw = async ({
       params: { query },
     })
     .then((res) => ({ capCases: res.data.data.cap_cases }));
+
+export const reqQuerySummarize = async ({
+  // caseId
+  text,
+}: {
+  text: string;
+}): Promise<{ summary: string }> =>
+  axios
+    .post(`${getGideonApiUrl()}/v1/ai/summarize`, {
+      text,
+    })
+    .then((res) => ({ summary: res.data.data.summary }));

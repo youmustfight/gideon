@@ -2,7 +2,7 @@ import datetime
 
 
 # tested out w/ https://huggingface.co/spaces/togethercomputer/GPT-JT
-gtpjt_prompt_date_iso_edit = f"""
+gptjt_prompt_date_iso_edit = f"""
 The current year is {datetime.date.today().year}. Edit the date into the ISO format.
 
 Input: SEPT 9
