@@ -56,7 +56,10 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
             onChange={(e) => setWritingName(e.target.value)}
           />
           <button>
-            <Link to={`/writing/${writingId}/pdf`}>Preview PDF</Link>
+            <Link to={`/writing/${writingId}/pdf`}>[⬈] PDF</Link>
+          </button>
+          <button>
+            <Link to={`/writing/${writingId}/pdf`}>[⬈] Docx</Link>
           </button>
         </div>
 
@@ -99,9 +102,9 @@ export const StyledViewWriting = styled.div`
       flex-grow: 1;
     }
     & > button {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
+      width: 80px;
+      min-width: 80px;
+      max-width: 80px;
     }
   }
 `;

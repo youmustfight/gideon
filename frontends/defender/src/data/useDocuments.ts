@@ -36,7 +36,7 @@ export type TDocument = {
   id: number;
   case_id: number;
   name?: string;
-  type: "audio" | "image" | "pdf" | "video";
+  type: "audio" | "docx" | "image" | "pdf" | "video";
   status_processing_files?: "queued" | "completed";
   status_processing_content?: "queued" | "completed";
   status_processing_embeddings?: "queued" | "completed";
