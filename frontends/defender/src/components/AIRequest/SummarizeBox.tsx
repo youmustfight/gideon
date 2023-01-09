@@ -87,7 +87,9 @@ export const SummarizeBox = () => {
                 if (summaryScope === "case") return "Case Brief";
                 if (summaryScope === "document") return "Document Summary";
               })()}{" "}
-              {answerSummary?.inProgress ? `(${summaryScope ? "Processing, 2-5 minutes" : "Processing"}...)` : ""}
+              {answerSummary?.inProgress
+                ? `(${summaryScope ? "Processing varies on text length" : "Processing"}...)`
+                : ""}
             </label>
             <label className="ai-request-box__reset-inquiry-btn" onClick={clearAIRequest}>
               <ResetIcon />

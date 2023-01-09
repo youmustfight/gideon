@@ -21,13 +21,15 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
   );
 };
 
-export const AIRequestBox = () => {
+export const AIRequestBox: React.FC<{ forceInitialAiRequestType: TAIRequestType }> = ({
+  forceInitialAiRequestType,
+}) => {
   const { aiRequestType, clearAIRequest, isScrollingToAIRequestBox, setAIRequestType } = useAIRequestStore();
   // MOUNT
   useEffect(() => {
     // TODO: maybe don't do this so we don't lose search answers as we move between sections?
     // --- reset focus of request box to inquiry since that'll be most common?
-    setAIRequestType("inquiry");
+    setAIRequestType(forceInitialAiRequestType ?? "inquiry");
     clearAIRequest();
   }, []);
 
@@ -42,7 +44,7 @@ export const AIRequestBox = () => {
   );
 };
 
-const StyledAIRequestBox = styled.div<{ highlight: boolean }>`
+export const StyledAIRequestBox = styled.div<{ highlight: boolean }>`
   display: flex;
   margin: -6px 12px 0 !important;
   background: white;

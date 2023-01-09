@@ -16,5 +16,6 @@ const reqCasesGet = async (params: TUseCasesParams): Promise<TCase[]> => {
 export const useCases = (params: TUseCasesParams) => {
   return useQuery<TCase[]>(["cases"], async () => reqCasesGet(params), {
     refetchInterval: 1000 * 60 * 5,
+    enabled: params.organizationId != null,
   });
 };

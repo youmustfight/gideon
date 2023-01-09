@@ -12,7 +12,6 @@ export const ViewOrganizations = () => {
   // RENDER
   return (
     <>
-      <AppHeader />
       <StyledViewOrganizations>
         <div className="section-lead">
           <h3>All Organizations</h3>

@@ -14,6 +14,8 @@ import { useAppStore } from "./data/AppStore";
 import { ViewWriting } from "./routes/writing/ViewWriting";
 import { ViewProfile } from "./routes/profile/ViewProfile";
 import { ViewCaseLaw } from "./routes/caselaw/ViewCaseLaw";
+import { AppHeader } from "./components/AppHeader";
+import { ViewPlayground } from "./routes/playground/ViewPlayground";
 
 export const Gideon: React.FC = () => {
   const { data: user, isSuccess: isSuccessUserFetch } = useUser();
@@ -21,11 +23,12 @@ export const Gideon: React.FC = () => {
   const { focusedOrgId, setFocusedOrgId } = useAppStore();
   // ON MOUNT
   useEffect(() => {
-    // --- set focused org if none
-    if (!focusedOrgId && organizations && user) {
-      const userOrgId = organizations?.find((o) => o.users.some((u) => u.id === user.id))?.id;
-      if (userOrgId) setFocusedOrgId(userOrgId);
-    }
+    // DEPRECATED: removed this bc we now have a 'playground' page a person can land at. Before we needed initial cases view to focus on
+    // // --- set focused org if none
+    // if (!focusedOrgId && organizations && user) {
+    //   const userOrgId = organizations?.find((o) => o.users.some((u) => u.id === user.id))?.id;
+    //   if (userOrgId) setFocusedOrgId(userOrgId);
+    // }
   }, [organizations, user]);
 
   // RENDER
@@ -45,8 +48,21 @@ export const Gideon: React.FC = () => {
         path="/organizations"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewOrganizations />
+            </ToolWindow>
+          </ProtectedRoute>
+        }
+      />
+      {/* PERSONAL VIEW AKA PLAYGROUND */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute user={user}>
+            <AppHeader />
+            <ToolWindow>
+              <ViewPlayground />
             </ToolWindow>
           </ProtectedRoute>
         }
@@ -56,6 +72,7 @@ export const Gideon: React.FC = () => {
         path="/cases"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewCases />
             </ToolWindow>
@@ -66,6 +83,7 @@ export const Gideon: React.FC = () => {
         path="/case/:caseId/*"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewCase />
             </ToolWindow>
@@ -76,6 +94,7 @@ export const Gideon: React.FC = () => {
         path="/caselaw/*"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewCaseLaw />
             </ToolWindow>
@@ -87,6 +106,7 @@ export const Gideon: React.FC = () => {
         path="/writing/:writingId"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewWriting />
             </ToolWindow>
@@ -106,6 +126,7 @@ export const Gideon: React.FC = () => {
         path="/profile"
         element={
           <ProtectedRoute user={user}>
+            <AppHeader />
             <ToolWindow>
               <ViewProfile />
             </ToolWindow>
@@ -113,7 +134,6 @@ export const Gideon: React.FC = () => {
         }
       />
       {/* NO MATCH */}
-      <Route path="/" element={<Navigate to="/cases" />} />
       <Route
         path="*"
         element={

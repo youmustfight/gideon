@@ -18,10 +18,10 @@ type TInquiryBoxProps = {
 };
 
 export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
-  const app = useAppStore();
+  const { focusedOrgId } = useAppStore();
   const params = useParams(); // TODO: get from props, not params
-  const { data: cases } = useCases({ organizationId: app.focusedOrgId });
-  const { data: writings } = useWritings({ organizationId: app.focusedOrgId });
+  const { data: cases } = useCases({ organizationId: focusedOrgId });
+  const { data: writings } = useWritings({ organizationId: focusedOrgId });
 
   const {
     inquiryScope,
@@ -47,10 +47,10 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
       setInquiryScope("document");
     } else if (params.caseId != null) {
       setInquiryScope("case");
-    } else if (isCaseLawSearch) {
-      setInquiryScope("caselaw");
-    } else {
+    } else if (focusedOrgId != null) {
       setInquiryScope("organization");
+    } else {
+      setInquiryScope("caselaw");
     }
   }, [params]);
 
@@ -61,27 +61,15 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
         className="ai-request-box__input"
         onSubmit={(e) => {
           e.preventDefault();
-          inquiry({ caseId: params.caseId, documentId: params.documentId, organizationId: app.focusedOrgId });
+          inquiry({ caseId: params.caseId, documentId: params.documentId, organizationId: focusedOrgId });
         }}
       >
         {/* Doing this inline bc we don't want to take up width on responses */}
         <AIRequestTypeSelect disabled={isAIRequestSubmitted} />
         {/* @ts-ignore */}
-        <select
-          disabled={isAIRequestSubmitted}
-          value={inquiryScope}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (value === "caselaw") {
-              window.open("/caselaw");
-            } else {
-              // @ts-ignore
-              setInquiryScope(value);
-            }
-          }}
-        >
+        <select disabled={isAIRequestSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
           <option value="caselaw">Case Law</option>
-          <option value="organization" disabled={isCaseLawSearch}>
+          <option value="organization" disabled={!focusedOrgId}>
             Organization
           </option>
           <option value="case" disabled={params.caseId == null}>
@@ -96,7 +84,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
           <input
             disabled={isAIRequestSubmitted}
             placeholder={(() => {
-              if (isCaseLawSearch) return "Ex) Gideon v. Wainwright";
+              if (inquiryScope === "caselaw") return "Ex) Gideon v. Wainwright";
               if (inquiryScope === "organization") return "Ex) Cases involving Syrian refugees";
               return "Ex) What address was the search warrant for?";
             })()}

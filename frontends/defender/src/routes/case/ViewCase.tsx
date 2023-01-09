@@ -23,7 +23,6 @@ export const ViewCase = () => {
   // RENDER
   return !caseId ? null : (
     <Fragment key={caseId}>
-      <AppHeader />
       <CaseDriver caseId={caseId} />
       <StyledViewCase>
         {/* --- CASE VIEWS ---  */}
