@@ -8,6 +8,7 @@ from indexers.jobs.job_cron_embeddings_upserter import job_cron_embeddings_upser
 from indexers.jobs.job_cron_index_brief_facts import job_cron_index_brief_facts
 from indexers.jobs.job_cron_index_writing import job_cron_index_writing
 from indexers.jobs.job_index_document_audio import job_index_document_audio
+from indexers.jobs.job_index_document_docx import job_index_document_docx
 from indexers.jobs.job_index_document_pdf import job_index_document_pdf
 from indexers.jobs.job_index_document_image import job_index_document_image
 from indexers.jobs.job_index_document_video import job_index_document_video
@@ -31,6 +32,7 @@ def start_worker():
             job_create_case_brief,
             job_index_cap_caselaw,
             job_index_document_audio,
+            job_index_document_docx,
             job_index_document_image,
             job_index_document_pdf,
             job_index_document_video,

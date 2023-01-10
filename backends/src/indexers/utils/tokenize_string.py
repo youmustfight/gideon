@@ -1,4 +1,5 @@
 from enum import Enum
+import re
 import pydash as _
 import textwrap
 
@@ -35,34 +36,41 @@ def split_text_gpt(text):
 
 # TOKENIZING
 def tokenize_string(text, strategy, token_count=None):
+    # CLEAN
+    # --- clear error causing characters
+    text_safe = text.encode(encoding='ASCII',errors='ignore').decode()
+    # --- remove deeply repeating \n 
+    text_safe = re.sub(r'\n\n\n+', '\n\n', text_safe)
+
+    # TOKENIZE
     # --- sentences w/ acronym + address safety
     if strategy == TOKENIZING_STRATEGY.sentence.value and token_count == None:
-        sentences = split_text_sentences(text)
+        sentences = split_text_sentences(text_safe)
         return sentences
     if strategy == TOKENIZING_STRATEGY.sentence.value and token_count != None:
-        sentences = split_text_sentences(text)
+        sentences = split_text_sentences(text_safe)
         sentences_chunks_by_count = _.chunk(sentences, token_count) # could change this in the future maybe
         return list(map(lambda sentences: " ".join(sentences)), sentences_chunks_by_count)
     if strategy == TOKENIZING_STRATEGY.sentences_20.value:
-        sentences = split_text_sentences(text)
+        sentences = split_text_sentences(text_safe)
         sentences_chunks_by_20 = _.chunk(sentences, 20) # could change this in the future maybe
         return list(map(lambda sentences: " ".join(sentences)), sentences_chunks_by_20)
 
     # --- words
     if strategy == TOKENIZING_STRATEGY.word.value and token_count != None:
-        words = split_text_words(text)
+        words = split_text_words(text_safe)
         words_chunks_by_count = _.chunk(words, token_count) # could change this in the future maybe
         return list(map(lambda words: " ".join(words), words_chunks_by_count))
 
     # --- gpt
     if strategy == TOKENIZING_STRATEGY.gpt.value and token_count != None:
-        words = split_text_gpt(text)
+        words = split_text_gpt(text_safe)
         words_chunks_by_count = _.chunk(words, token_count) # could change this in the future maybe
         return list(map(lambda words: "".join(words), words_chunks_by_count))
 
     # --- DEPRECATE max sizes (max_size depends on encoding model + token count is word based, not char length based)
     if strategy == TOKENIZING_STRATEGY.max_size.value:
-        return textwrap.wrap(text, 3_500)
+        return textwrap.wrap(text_safe, 3_500)
 
     # --- no strategy
-    return [text]
+    return [text_safe]

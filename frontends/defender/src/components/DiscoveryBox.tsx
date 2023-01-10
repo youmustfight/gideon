@@ -47,7 +47,7 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
           {["audio", "video"].includes(document?.type) ? <> ({timeText} min.)</> : null}
           {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
         </small>
-        {["audio", "pdf", "video"].includes(document.type) ? (
+        {["audio", "docx", "pdf", "video"].includes(document.type) ? (
           <>
             <p>{document.generated_description}</p>
             <div className="discovery-box__document__actions">
@@ -104,6 +104,8 @@ export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
       type = "audio";
     } else if (mimeType.includes("/pdf")) {
       type = "pdf";
+    } else if (mimeType.includes("/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
+      type = "docx";
     }
     // --- setup form data/submit
     const formData = new FormData();
@@ -127,7 +129,7 @@ export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
       <StyledDiscoveryBoxLead>
         <h2>Discovery</h2>
         <form className="discovery-box__file-uploader" onSubmit={(e) => onSubmitFile(e)}>
-          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.doc,.docx" />
+          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.docx" />
           <button type="submit">+ Upload</button>
         </form>
       </StyledDiscoveryBoxLead>

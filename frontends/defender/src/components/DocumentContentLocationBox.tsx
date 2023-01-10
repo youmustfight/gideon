@@ -14,7 +14,7 @@ export const DocumentContentLocationBox = ({ location }: { location: TQueryLocat
               {location.document.name ?? "n/a"}
             </Link>
             <span>
-              {location.document.type === "pdf" ? (
+              {["docx", "pdf"].includes(location.document.type) ? (
                 <>
                   <Link
                     to={`/case/${location.case_id}/document/${location.document.id}#${formatHashForSentenceHighlight(

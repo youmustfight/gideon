@@ -62,6 +62,13 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         // @ts-ignore
         accum[dc.page_number].push(dc);
       }
+      // TODO: groupings aren't really a thing for docx but w/e
+      if (doc.type === "docx") {
+        // @ts-ignore
+        if (!accum[1]) accum[1] = [];
+        // @ts-ignore
+        accum[1].push(dc);
+      }
       if (["audio", "video"].includes(doc.type)) {
         // @ts-ignore
         const minute = Math.floor(dc.second_start / 60);
@@ -81,7 +88,7 @@ const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
         <div key={`text-batch-${groupingNumber}`}>
           <div className="body-text__header">
             <h6>
-              {doc.type === "pdf" ? "Page" : "▶️ Minute"} #{groupingNumber}:
+              {["docx", "pdf"].includes(doc.type) ? "Page" : "▶️ Minute"} #{groupingNumber}:
             </h6>
             <hr />
           </div>

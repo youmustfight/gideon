@@ -1,13 +1,16 @@
-from time import sleep
+import io
+import os
 from arq.jobs import JobStatus
 from contextvars import ContextVar
 from datetime import datetime
+from htmldocx import HtmlToDocx
 from typing import List
-from sanic import Sanic
+from sanic import response, Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
+from time import sleep
 
 from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
@@ -20,6 +23,7 @@ import env
 from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
 from indexers.index_document_audio import _index_document_audio_process_extractions
+from indexers.index_document_docx import _index_document_docx_process_extractions
 from indexers.index_document_image import _index_document_image_process_extractions
 from indexers.index_document_pdf import _index_document_pdf_process_extractions
 from indexers.index_document_video import _index_document_video_process_extractions
@@ -265,12 +269,14 @@ async def app_route_case_put_reprocess_all_data(request, case_id):
     # --- for each document, re-run document processing + embedding + vector db/index upsertion
     arq_pool = await create_queue_pool()
     for document in documents:
-        if document.type == 'pdf':
-            await arq_pool.enqueue_job('job_index_document_pdf', document.id)
-        if document.type == 'image':
-            await arq_pool.enqueue_job('job_index_document_image', document.id)
         if document.type == 'audio':
             await arq_pool.enqueue_job('job_index_document_audio', document.id)
+        if document.type == 'docx':
+            await arq_pool.enqueue_job('job_index_document_docx', document.id)
+        if document.type == 'image':
+            await arq_pool.enqueue_job('job_index_document_image', document.id)
+        if document.type == 'pdf':
+            await arq_pool.enqueue_job('job_index_document_pdf', document.id)
         if document.type == 'video':
             await arq_pool.enqueue_job('job_index_document_video', document.id)
     return json({ 'status': 'success' })
@@ -479,13 +485,15 @@ async def app_route_document_extractions(request, document_id):
         query_document = await session.execute(
             sa.select(Document).where(Document.id == int(document_id)))
         document = query_document.scalars().first()
-        if (document.type == "pdf"):
-            await _index_document_pdf_process_extractions(session=session, document_id=document.id)
-        if (document.type == "image"):
-            await _index_document_image_process_extractions(session=session, document_id=document.id)
-        if (document.type == "audio"):
+        if (document.type == 'audio'):
             await _index_document_audio_process_extractions(session=session, document_id=document.id)
-        if (document.type == "video"):
+        if (document.type == 'docx'):
+            await _index_document_docx_process_extractions(session=session, document_id=document.id)
+        if (document.type == 'image'):
+            await _index_document_image_process_extractions(session=session, document_id=document.id)
+        if (document.type == 'pdf'):
+            await _index_document_pdf_process_extractions(session=session, document_id=document.id)
+        if (document.type == 'video'):
             await _index_document_video_process_extractions(session=session, document_id=document.id)
     # fetch result
     query_document = await session.execute(
@@ -530,6 +538,20 @@ async def app_route_index_document_pdf(request):
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_pdf', document_id)
+    return json({ 'status': 'success' })
+
+@api_app.route('/v1/index/document/docx', methods = ['POST'])
+@auth_route
+async def app_route_index_document_docx(request):
+    pyfile = request.files['file'][0]
+    session = request.ctx.session
+    case_id = int(request.args.get('case_id'))
+    # --- setup document + file
+    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="docx")
+    await session.commit()
+    # --- queue processing
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_index_document_docx', document_id)
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/index/document/image', methods = ['POST'])
@@ -711,6 +733,25 @@ async def app_route_writing_get(request, writing_id):
         writing = query_writing.scalar_one_or_none()
         writing_json = writing.serialize()
     return json({ 'status': 'success', "writing": writing_json })
+
+@api_app.route('/v1/writing/<writing_id>/docx', methods = ['GET'])
+@auth_route
+async def app_route_writing_get(request, writing_id):
+    session = request.ctx.session
+    async with session.begin():
+        # get writing w/ html
+        query_writing = await session.execute(
+            sa.select(Writing).where(Writing.id == int(writing_id)))
+        writing = query_writing.scalar_one_or_none()
+        # create docx
+        h2d_parser = HtmlToDocx()
+        writing_docx = h2d_parser.parse_html_string(writing.body_html)
+        # save to disk
+        writing_docx_path = f'/tmp/writing_docx_{writing_id}.docx'
+        writing_docx.save(writing_docx_path)
+        # TODO: clean up file
+        # respond
+        return await response.file(writing_docx_path)
 
 @api_app.route('/v1/writing', methods = ['POST'])
 @auth_route
