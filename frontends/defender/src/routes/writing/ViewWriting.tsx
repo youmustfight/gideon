@@ -1,3 +1,5 @@
+import axios from "axios";
+import { saveAs } from "file-saver";
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useDebounce } from "react-use";
@@ -6,6 +8,7 @@ import { useWriting, useWritingDelete, useWritingUpdate } from "../../data/useWr
 import styled from "styled-components";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { AppHeader } from "../../components/AppHeader";
+import { snakeCase } from "lodash";
 
 type TViewWritingProps = {
   caseId?: number;
@@ -18,6 +21,12 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
   const { data: writing, isSuccess: isSuccessWriting } = useWriting(writingId);
   const { mutateAsync: writingUpdate } = useWritingUpdate();
   const { mutateAsync: writingDelete, isIdle: isIdleDelete } = useWritingDelete();
+  // --- save docx helper
+  const saveWritingAsDocx = () => {
+    axios({ method: "get", url: `/v1/writing/${writingId}/docx`, responseType: "blob" }).then((res) =>
+      saveAs(res.data, `${snakeCase(writing!.name)}.docx`)
+    );
+  };
 
   // ON MOUNT
   // --- check if writing exists
@@ -58,9 +67,7 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
           <button>
             <Link to={`/writing/${writingId}/pdf`}>[⬈] PDF</Link>
           </button>
-          <button>
-            <Link to={`/writing/${writingId}/pdf`}>[⬈] Docx</Link>
-          </button>
+          <button onClick={saveWritingAsDocx}>[⬈] Docx</button>
         </div>
 
         {/* EDITOR */}
@@ -105,6 +112,11 @@ export const StyledViewWriting = styled.div`
       width: 80px;
       min-width: 80px;
       max-width: 80px;
+      cursor: pointer;
+      & > a {
+        color: inherit;
+        text-decoration: none;
+      }
     }
   }
 `;
