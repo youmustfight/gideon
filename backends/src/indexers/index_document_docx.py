@@ -27,7 +27,7 @@ async def _index_document_docx_process_content(session, document_id: int) -> Non
         print(f"INFO (index_document_docx.py:_index_document_docx_process_content): converting {file.filename} to text")
         # --- request gives response via .raw property, which we read() for bytes, which we pass to BytesIO to give us back an 'opened file'
         docx_bytes = io.BytesIO(requests.get(file.upload_url, stream=True).raw.read())
-        docx_text_raw = mammoth.extract_raw_text(docx_bytes)
+        docx_text_raw = mammoth.extract_raw_text(docx_bytes) # TODO: if we want to extract html, we can
         docx_text = docx_text_raw.value.encode(encoding='ASCII',errors='ignore').decode() # The raw text w/ unicode clean up. should we do more widely?
         print(f'INFO (index_document_docx.py:_index_document_docx_process_content): docx_text', docx_text)
         # 2. DOCUMENT CONTENT CREATE

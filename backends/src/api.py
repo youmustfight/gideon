@@ -1,13 +1,16 @@
-from time import sleep
+import io
+import os
 from arq.jobs import JobStatus
 from contextvars import ContextVar
 from datetime import datetime
+from htmldocx import HtmlToDocx
 from typing import List
-from sanic import Sanic
+from sanic import response, Sanic
 from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
+from time import sleep
 
 from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
@@ -730,6 +733,25 @@ async def app_route_writing_get(request, writing_id):
         writing = query_writing.scalar_one_or_none()
         writing_json = writing.serialize()
     return json({ 'status': 'success', "writing": writing_json })
+
+@api_app.route('/v1/writing/<writing_id>/docx', methods = ['GET'])
+@auth_route
+async def app_route_writing_get(request, writing_id):
+    session = request.ctx.session
+    async with session.begin():
+        # get writing w/ html
+        query_writing = await session.execute(
+            sa.select(Writing).where(Writing.id == int(writing_id)))
+        writing = query_writing.scalar_one_or_none()
+        # create docx
+        h2d_parser = HtmlToDocx()
+        writing_docx = h2d_parser.parse_html_string(writing.body_html)
+        # save to disk
+        writing_docx_path = f'/tmp/writing_docx_{writing_id}.docx'
+        writing_docx.save(writing_docx_path)
+        # TODO: clean up file
+        # respond
+        return await response.file(writing_docx_path)
 
 @api_app.route('/v1/writing', methods = ['POST'])
 @auth_route
