@@ -5,7 +5,7 @@ import numpy as np
 from sqlalchemy.orm import joinedload, Session
 import pinecone
 
-from dbs.sa_models import AIActionLock, Case, Organization
+from dbs.sa_models import AIActionLock, Case, Organization, User
 from dbs.vectordb_pinecone import VECTOR_INDEX_ID
 from models.clip import clip_text_embedding, clip_image_embedding
 from models.gpt import gpt_embedding
@@ -182,9 +182,10 @@ class AIActionAgent_ViTL14336px(AIActionAgent):
 
 
 # TODO: how the f can we just initialize a AIActionAgent class off the bat w/ this setup
-async def create_ai_action_agent(session: Session, action: AI_ACTIONS, ai_action_locks=None, case_id=None, organization_id=None):
+async def create_ai_action_agent(session: Session, action: AI_ACTIONS, ai_action_locks=None, case_id=None, organization_id=None, user_id=None):
     print(f'INFO (agent.py:create_ai_action_agent) create', action)
     aia_locks: List[AIActionLock] = ai_action_locks
+    # --- get if case 
     if aia_locks == None and case_id != None:
         case_query = await session.execute(
             sa.select(Case)
@@ -192,13 +193,22 @@ async def create_ai_action_agent(session: Session, action: AI_ACTIONS, ai_action
                 .where(Case.id == case_id))
         case = case_query.scalars().first()
         aia_locks = case.ai_action_locks
-    elif aia_locks == None and organization_id != None:
-        org_query = await session.execute(
+    # --- get if org
+    if aia_locks == None and organization_id != None:
+        organization_query = await session.execute(
             sa.select(Organization)
                 .options(joinedload(Organization.ai_action_locks))
                 .where(Organization.id == organization_id))
-        organization = org_query.scalars().first()
+        organization = organization_query.scalars().first()
         aia_locks = organization.ai_action_locks
+    # --- get if user
+    if aia_locks == None and user_id != None:
+        user_query = await session.execute(
+            sa.select(User)
+                .options(joinedload(User.ai_action_locks))
+                .where(User.id == user_id))
+        user = user_query.scalars().first()
+        aia_locks = user.ai_action_locks
 
     # 1. find action config/lock relevant
     for ai_action_lock in aia_locks:
@@ -237,7 +247,7 @@ async def create_ai_action_agent(session: Session, action: AI_ACTIONS, ai_action
     raise f'No AIActionAgent found for action: {action.value}'
 
 
-def generate_ai_action_locks(case_id = None, organization_id = None):
+def generate_ai_action_locks(case_id = None, organization_id = None, user_id = None):
   return [
     # DOCUMENT EMBEDDING
     AIActionLock(
@@ -246,28 +256,32 @@ def generate_ai_action_locks(case_id = None, organization_id = None):
         index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentence_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.document_similarity_text_sentences_20_embed.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentences_20_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.document_similarity_text_max_size_embed.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_max_size_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.document_similarity_image_embed.value,
         model_name=AI_MODELS.ViT_L_14_336px.value,
         index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_image_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     # CASE FACTS EMBED+SEARCH
     AIActionLock(
         action=AI_ACTIONS.brief_facts_similarity_embed.value,
@@ -275,14 +289,16 @@ def generate_ai_action_locks(case_id = None, organization_id = None):
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.brief_facts_similarity_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.brief_facts_similarity_search.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.brief_facts_similarity_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     # CASE->DOCUMENTS SEARCH
     AIActionLock(
         action=AI_ACTIONS.case_similarity_text_sentence_search.value,
@@ -290,28 +306,32 @@ def generate_ai_action_locks(case_id = None, organization_id = None):
         index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentence_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.case_similarity_text_sentences_20_search.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_sentences_20_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.case_similarity_text_max_size_search.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_text_max_size_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.case_similarity_text_to_image_search.value,
         model_name=AI_MODELS.ViT_L_14_336px.value,
         index_id=VECTOR_INDEX_ID.index_768_cosine.value,
         index_partition_id=AI_ACTIONS.document_similarity_image_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     # WRITING EMBED
     AIActionLock(
         action=AI_ACTIONS.writing_similarity_embed.value,
@@ -319,13 +339,15 @@ def generate_ai_action_locks(case_id = None, organization_id = None):
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.writing_similarity_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
     AIActionLock(
         action=AI_ACTIONS.writing_similarity_search.value,
         model_name=AI_MODELS.text_embedding_ada_002.value,
         index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
         index_partition_id=AI_ACTIONS.writing_similarity_embed.value,
         case_id=case_id,
-        organization_id=organization_id),
+        organization_id=organization_id,
+        user_id=user_id),
   ]
 

@@ -43,6 +43,8 @@ class User(BaseModel):
     created_at = Column(DateTime(timezone=True))
     cases = relationship("Case", secondary=case_user_junction, back_populates="users")
     organizations = relationship("Organization", secondary=organization_user_junction, back_populates="users")
+    documents = relationship("Document", back_populates="user")
+    ai_action_locks = relationship("AIActionLock", back_populates="user")
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -59,6 +61,7 @@ class Organization(BaseModel):
     updated_at = Column(DateTime(timezone=True))
     name = Column(Text())
     cases = relationship("Case", back_populates="organization")
+    documents = relationship("Document", back_populates="organization")
     users = relationship("User", secondary=organization_user_junction, back_populates="organizations")
     writing_templates = relationship("Writing", back_populates="organization")
     ai_action_locks = relationship("AIActionLock", back_populates="organization")
@@ -118,6 +121,8 @@ class AIActionLock(BaseModel):
     case = relationship("Case", back_populates="ai_action_locks")
     organization_id = Column(Integer, ForeignKey('organization.id'))
     organization = relationship("Organization", back_populates="ai_action_locks")
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship("User", back_populates="ai_action_locks")
     created_at = Column(DateTime(timezone=True))
 
 class Document(BaseModel):
@@ -125,8 +130,14 @@ class Document(BaseModel):
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
+    # --- user/org/case relations
     case_id = Column(Integer, ForeignKey("case.id"))
     case = relationship("Case", back_populates="documents")
+    organization_id = Column(Integer, ForeignKey("organization.id"))
+    organization = relationship("Organization", back_populates="documents")
+    user_id = Column(Integer, ForeignKey("user.id"))
+    user = relationship("User", back_populates="documents")
+    # --- name
     name = Column(Text())
     type = Column(String()) # audio, docx, image, pdf, video (derive search modalities from this)
     # --- O>M for files
@@ -148,6 +159,8 @@ class Document(BaseModel):
         return {
             "id": self.id,
             "case_id": self.case_id,
+            "organization_id": self.organization_id,
+            "user_id": self.user_id,
             "name": self.name,
             "type": self.type,
             "status_processing_files": self.status_processing_files,
