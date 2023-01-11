@@ -34,7 +34,7 @@ async def _index_document_image_process_embeddings(session, document_id) -> None
     print('INFO (index_document_image.py:_index_document_image_process_embeddings): document content', document_content)
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agent
-    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
+    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id, user_id=document.user_id)
     # --- images
     image_embeddings_as_models = []
     for content in list(document_content):

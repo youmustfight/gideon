@@ -85,8 +85,8 @@ async def _index_document_pdf_process_embeddings(session, document_id: int) -> N
     document_content_sentences_20 = list(filter(lambda c: c.tokenizing_strategy == TOKENIZING_STRATEGY.sentences_20.value, document_content))
     # V2 CREATE EMBEDDINGS
     # --- session/agent
-    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
-    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id)
+    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id, user_id=document.user_id)
+    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id, user_id=document.user_id)
     # --- sentences (sentence-transformer = free, but very limited token length)
     print('INFO (index_document_pdf.py:_index_document_pdf_process_embeddings): encoding sentences...', document_content_sentences)
     sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))

@@ -149,9 +149,9 @@ async def _index_document_video_process_embeddings(session, document_id: int) ->
     document_content_images = list(filter(lambda c: c.image_file_id != None, document_content))
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agents
-    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id)
-    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id)
-    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
+    aiagent_sentence_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentence_embed, case_id=document.case_id, user_id=document.user_id)
+    aiagent_sentences_20_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_text_sentences_20_embed, case_id=document.case_id, user_id=document.user_id)
+    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id, user_id=document.user_id)
     # --- sentences (batch processing to avoid rate limits/throttles)
     print('INFO (index_document_video.py:_index_document_video_process_embeddings): encoding sentences...', document_content_sentences)
     sentence_embeddings = aiagent_sentence_embeder.encode_text(list(map(lambda c: c.text, document_content_sentences)))

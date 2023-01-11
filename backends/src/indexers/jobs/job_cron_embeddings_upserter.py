@@ -36,7 +36,7 @@ async def job_cron_embeddings_upserter(job_ctx):
             dc = embedding.document_content
             case_id = embedding.case_id
             organization_id = None
-            if case_id == None and embedding.document_content != None:
+            if case_id == None and embedding.document_content != None and embedding.document_content.document.case != None:
                 case_id = embedding.document_content.document.case.id
                 organization_id = embedding.document_content.document.case.organization_id
             if embedding.writing != None:

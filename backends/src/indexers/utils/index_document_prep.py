@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from dbs.sa_models import Document, File
 from files.s3_utils import s3_get_file_url, s3_upload_file
 
-async def index_document_prep(session, pyfile, case_id, type):
+async def index_document_prep(session, pyfile, type, case_id, organization_id, user_id):
     # VALIDATE
     print(f"INFO (index_document_prep.py): type: '{type}'")
     if type not in ['audio', 'docx', 'image', 'pdf', 'video']:
@@ -11,7 +11,7 @@ async def index_document_prep(session, pyfile, case_id, type):
     # SAVE DOCUMENT
     document_query = await session.execute(
         sa.insert(Document)
-            .values(name=pyfile.name, status_processing_files="queued", type=type, case_id=case_id)
+            .values(name=pyfile.name, status_processing_files="queued", type=type, case_id=case_id, organization_id=organization_id, user_id=user_id)
             .returning(Document.id)) # can't seem to return anything except id
     document_id = document_query.scalar_one_or_none()
     # SAVE FILE TO S3

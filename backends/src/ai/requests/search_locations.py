@@ -4,18 +4,21 @@ from ai.agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent
 from dbs.vectordb_pinecone import get_embeddings_from_search_vectors
 
 
-async def search_locations(session, query_text, case_id, document_id=None):
+async def search_locations(session, query_text, case_id=None, document_id=None, user_id=None):
     # 0. SETUP (to allow case or document focus)
     query_filters = {}
+    # --- query focus
     if case_id != None:
         query_filters.update({ 'case_id': { '$eq': int(case_id) } })
     if document_id != None:
         query_filters.update({ 'document_id': { '$eq': int(document_id) } })
     logger.info(f"query all documents via '{query_text}'", query_filters)
+    # --- get action locks depending on if a case/org/user owned document
+
     
     # 1. SEARCH & SERIALIZE
     # --- pdfs/transcripts
-    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentence_search, case_id=case_id)
+    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentence_search, case_id=case_id, user_id=user_id)
     text_search_vectors = aigent_location_text_searcher.index_query(
         query_text,
         query_filters=query_filters,
@@ -27,7 +30,7 @@ async def search_locations(session, query_text, case_id, document_id=None):
     text_search_embeddings = await get_embeddings_from_search_vectors(session, text_search_vectors)
 
     # --- images (including video frames)
-    aigent_location_image_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_to_image_search, case_id=case_id)
+    aigent_location_image_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_to_image_search, case_id=case_id, user_id=user_id)
     image_search_vectors = aigent_location_image_searcher.index_query(
         query_text,
         query_filters=query_filters,

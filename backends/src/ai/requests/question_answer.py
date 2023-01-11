@@ -7,7 +7,7 @@ from ai.requests.utils.location_from_search_vector_embedding import location_fro
 
 
 # QUERY
-async def question_answer(session, query_text, case_id, document_id=None):
+async def question_answer(session, query_text, case_id=None, document_id=None, user_id=None):
     # 0. SETUP (filters to allow case or document focus)
     query_filters = {}
     if case_id != None:
@@ -17,7 +17,7 @@ async def question_answer(session, query_text, case_id, document_id=None):
     print(f'INFO (question_answer.py): querying with question "{query_text}"', query_filters)
     
     # 1. get similar vectors
-    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentences_20_search, case_id=case_id)
+    aigent_location_text_searcher = await create_ai_action_agent(session, action=AI_ACTIONS.case_similarity_text_sentences_20_search, case_id=case_id, user_id=user_id)
     search_vectors = aigent_location_text_searcher.index_query(
         query_text,
         query_filters=query_filters,
