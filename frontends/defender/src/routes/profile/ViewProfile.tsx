@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { AppHeader } from "../../components/AppHeader";
 import { StyledViewCase } from "../../components/styled/StyledViewCase";
-import { useUser, useUserLogout } from "../../data/useUser";
+import { reqUserAILocksReset, useUser, useUserLogout } from "../../data/useUser";
 
 export const ViewProfile = () => {
   const { mutateAsync: logout } = useUserLogout();
@@ -16,6 +16,11 @@ export const ViewProfile = () => {
         <div className="section-lead">
           <h3>Logged in as {user?.email}</h3>
         </div>
+        <section>
+          <button style={{ width: "100%" }} onClick={() => reqUserAILocksReset(user!.id)}>
+            Reset AI Action Locks
+          </button>
+        </section>
         <section>
           <button style={{ width: "100%" }} onClick={() => logout()}>
             Logout

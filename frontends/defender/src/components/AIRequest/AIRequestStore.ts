@@ -40,8 +40,8 @@ type TAIRequestStore = {
   inquiryScope: TInquiryScope;
   setInquiryScope: (inquiryScope: TInquiryScope) => void;
   // --- query & answers
-  query: string;
-  setQuery: (query: string) => void;
+  inquiryQuery: string;
+  setInquiryQuery: (inquiryQuery: string) => void;
   answerQuestion?: {
     answer?: string;
     inProgress: boolean;
@@ -69,7 +69,7 @@ type TAIRequestStore = {
   summaryScope?: TSummaryScope;
   setSummaryScope: (summaryScope: TSummaryScope) => void;
   summaryInput: Partial<TUseBriefCreateBody> & { text: string };
-  setSummaryInput: (query: Partial<TUseBriefCreateBody> & { text: string }) => void;
+  setSummaryInput: (summaryInput: Partial<TUseBriefCreateBody> & { text: string }) => void;
   // --- query
   summarize: (params: any) => void;
   // --- answers
@@ -112,7 +112,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   isScrollingToAIRequestBox: false,
   scrollToAIRequestBox: () => {
     set({ isScrollingToAIRequestBox: true });
-    const el = document.querySelector("#ai-request-box");
+    const el = document.inquiryQuerySelector("#ai-request-box");
     if (el) {
       // el.scrollIntoView({ behavior: "smooth" });
       window.scrollTo(0, 0);
@@ -133,7 +133,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       answerWritingSimilarity: undefined,
       answerWriting: undefined,
       // --- inputs
-      query: "",
+      inquiryQuery: "",
       summaryInput: { text: "", issues: [] },
       writingInput: { promptText: "", writingTemplateId: undefined, writingModel: undefined },
       // --- meta
@@ -146,14 +146,14 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   inquiryScope: "organization",
   setInquiryScope: (inquiryScope) => set({ inquiryScope }),
   // --- query & answers
-  query: "",
-  setQuery: (query) => set({ query }),
+  inquiryQuery: "",
+  setInquiryQuery: (inquiryQuery) => set({ inquiryQuery }),
   answerQuestion: undefined,
   answerDetailsLocations: undefined,
   answerCaseFactsSimilarity: undefined,
   answerWritingSimilarity: undefined,
   answerCaselaw: undefined,
-  inquiry: ({ caseId, documentId, organizationId }) => {
+  inquiry: ({ caseId, documentId, organizationId, userId }) => {
     set({ isAIRequestSubmitted: true });
     // ORG
     if (get().inquiryScope === "organization") {
@@ -163,18 +163,18 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
         reqQueryBriefFactSimilarity({ caseId, organizationId }).then(({ locations }) =>
           set({
             answerCaseFactsSimilarity: { inProgress: false, locations },
-            query: `Case facts similar to case #${caseId}`,
+            inquiryQuery: `Case facts similar to case #${caseId}`,
           })
         );
       } else {
-        reqQueryBriefFactSimilarity({ organizationId, query: get().query }).then(({ locations }) =>
+        reqQueryBriefFactSimilarity({ organizationId, query: get().inquiryQuery }).then(({ locations }) =>
           set({ answerCaseFactsSimilarity: { inProgress: false, locations } })
         );
       }
       // --- writing (skip if provided caseId)
       if (!caseId) {
         set({ answerWritingSimilarity: { inProgress: true } });
-        reqQueryWritingSimilarity({ organizationId, query: get().query }).then(({ locations }) =>
+        reqQueryWritingSimilarity({ organizationId, query: get().inquiryQuery }).then(({ locations }) =>
           set({ answerWritingSimilarity: { inProgress: false, locations } })
         );
       } else {
@@ -185,14 +185,14 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
     } else if (get().inquiryScope === "case") {
       // --- detail
       set({ answerDetailsLocations: { inProgress: true } });
-      reqQueryDocumentLocations({ caseId, query: get().query }).then(({ locations }) =>
+      reqQueryDocumentLocations({ caseId, query: get().inquiryQuery }).then(({ locations }) =>
         set({ answerDetailsLocations: { inProgress: false, locations } })
       );
       // --- answer
       set({ answerQuestion: { inProgress: true } });
       reqQueryDocument({
         caseId,
-        query: get().query,
+        query: get().inquiryQuery,
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
       set({ focusAnswer: "location" });
       // DOCUMENT
@@ -202,21 +202,23 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       reqQueryDocumentLocations({
         caseId,
         documentId,
-        query: get().query,
+        query: get().inquiryQuery,
+        userId,
       }).then(({ locations }) => set({ answerDetailsLocations: { locations, inProgress: false } }));
       //} --- answer
       set({ answerQuestion: { inProgress: true } });
       reqQueryDocument({
         caseId,
         documentId,
-        query: get().query,
+        query: get().inquiryQuery,
+        userId,
       }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
       // set default focus
       set({ focusAnswer: "location" });
       // CASELAW
     } else if (get().inquiryScope === "caselaw") {
       set({ answerCaselaw: { inProgress: true } });
-      reqQueryCaselaw({ query: get().query }).then(({ capCases }) =>
+      reqQueryCaselaw({ query: get().inquiryQuery }).then(({ capCases }) =>
         set({ answerCaselaw: { inProgress: false, capCases } })
       );
       set({ focusAnswer: "caselaw" });

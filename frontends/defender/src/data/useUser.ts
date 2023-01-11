@@ -73,3 +73,8 @@ export const useUserLogout = () => {
     },
   });
 };
+
+// MISC
+export const reqUserAILocksReset = async (userId: number): Promise<void> => {
+  return axios.put(`${Env.getGideonApiUrl()}/v1/user/${userId}/ai_action_locks_reset`);
+};

@@ -5,7 +5,7 @@ import { useAppStore } from "../data/AppStore";
 import { useDocuments } from "../data/useDocuments";
 
 export const TimelineSummary: React.FC<{ documentId?: number; caseId: number }> = ({ documentId, caseId }) => {
-  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments(caseId);
+  const { data: documents, isSuccess: isSuccessDocuments } = useDocuments({ caseId });
   const documentIdMap = keyBy(documents, "id");
 
   // RENDER

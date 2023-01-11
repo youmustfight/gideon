@@ -5,19 +5,22 @@ import { formatSecondToTime } from "./formatSecondToTime";
 import { formatHashForSentenceHighlight } from "./hashUtils";
 
 export const DocumentContentLocationBox = ({ location }: { location: TQueryLocation }) => {
+  // SETUP
+  // --- base path for internal anchor link/jumps. if no case, it's a user level view in playground
+  const basePath = location.case_id ? `/case/${location.case_id}/document/${location.document.id}` : ``;
+
+  // RENDER
   return (
     <StyledDocumentContentLocationBox>
       {location.document && (
         <div className="answer-location-box__text">
           <b>
-            <Link to={`/case/${location.case_id}/document/${location.document.id}`}>
-              {location.document.name ?? "n/a"}
-            </Link>
+            <Link to={basePath}>{location.document.name ?? "n/a"}</Link>
             <span>
               {["docx", "pdf"].includes(location.document.type) ? (
                 <>
                   <Link
-                    to={`/case/${location.case_id}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    to={`${basePath}#${formatHashForSentenceHighlight(
                       location.document_content.sentence_number ?? location.document_content.sentence_start,
                       location.document_content.sentence_end
                     )}`}
@@ -34,7 +37,7 @@ export const DocumentContentLocationBox = ({ location }: { location: TQueryLocat
               {["audio", "video"].includes(location.document.type) ? (
                 <>
                   <Link
-                    to={`/case/${location.case_id}/document/${location.document.id}#${formatHashForSentenceHighlight(
+                    to={`${basePath}#${formatHashForSentenceHighlight(
                       location.document_content.sentence_number ?? location.document_content.sentence_start,
                       location.document_content.sentence_end
                     )}`}

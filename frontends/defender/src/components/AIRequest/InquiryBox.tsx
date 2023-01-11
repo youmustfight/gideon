@@ -12,6 +12,7 @@ import { WritingPanel } from "../WritingsBox";
 import { useAIRequestStore } from "./AIRequestStore";
 import { CapCasePanel } from "../CapCasePanel";
 import { AIRequestTypeSelect } from "./AIRequestBox";
+import { StyledAIRequestBoxTabs } from "./styled/StyledAIRequestBoxTabs";
 
 type TInquiryBoxProps = {
   isCaseLawSearch?: boolean;
@@ -26,8 +27,8 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
   const {
     inquiryScope,
     setInquiryScope,
-    query,
-    setQuery,
+    inquiryQuery,
+    setInquiryQuery,
     answerQuestion,
     answerDetailsLocations,
     answerCaseFactsSimilarity,
@@ -88,18 +89,18 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
               if (inquiryScope === "organization") return "Ex) Cases involving Syrian refugees";
               return "Ex) What address was the search warrant for?";
             })()}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={inquiryQuery}
+            onChange={(e) => setInquiryQuery(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={isAIRequestSubmitted || query.length < 4}>
+        <button type="submit" disabled={isAIRequestSubmitted || inquiryQuery.length < 4}>
           Request
         </button>
       </form>
 
       {isAIRequestSubmitted && (
         <>
-          <div className="ai-request-box__tabs">
+          <StyledAIRequestBoxTabs>
             {answerDetailsLocations && (
               <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
                 Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
@@ -134,7 +135,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
             <label className="ai-request-box__reset-inquiry-btn" onClick={clearAIRequest}>
               <ResetIcon />
             </label>
-          </div>
+          </StyledAIRequestBoxTabs>
           <div className="ai-request-box__focus">
             {/* ANSWER */}
             {focusAnswer === "question" ? (

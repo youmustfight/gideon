@@ -98,7 +98,7 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
 
 export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
   const { data: cse } = useCase(caseId);
-  const { data: documents } = useDocuments(caseId);
+  const { data: documents } = useDocuments({ caseId });
   const { data: brief } = useBrief({ caseId });
   const { mutateAsync: briefCreate, isIdle: isIdleBriefCreate } = useBriefCreate();
   const { scrollToAIRequestBox, setAIRequestType } = useAIRequestStore();

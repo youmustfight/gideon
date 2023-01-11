@@ -5,6 +5,7 @@ import ReactPlayer from "react-player";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
+import { reqIndexDocument } from "../data/reqIndexDocument";
 import { TDocument, useDocuments } from "../data/useDocuments";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
@@ -86,39 +87,15 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
 };
 
 export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
-  const { data: documents, refetch } = useDocuments(caseId);
+  const { data: documents, refetch } = useDocuments({ caseId });
 
   // @ts-ignore
   const onSubmitFile = (e) => {
     e.preventDefault();
-    if (!e.target.file?.files?.[0]) return;
-    // --- get type from mime_type
-    const mimeType = e.target.file.files[0].type;
-    console.log(mimeType);
-    let type;
-    if (mimeType.includes("image")) {
-      type = "image";
-    } else if (mimeType.includes("video")) {
-      type = "video";
-    } else if (mimeType.includes("audio")) {
-      type = "audio";
-    } else if (mimeType.includes("/pdf")) {
-      type = "pdf";
-    } else if (mimeType.includes("/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
-      type = "docx";
-    }
-    // --- setup form data/submit
-    const formData = new FormData();
-    formData.append("file", e.target.file.files[0]);
-    axios
-      .post(`${getGideonApiUrl()}/v1/index/document/${type}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        params: { case_id: caseId },
-      })
-      .then(() => {
-        // after a few seconds, refetch documents to get files processing
-        setTimeout(() => refetch(), 1000 * 2);
-      });
+    // @ts-ignore
+    reqIndexDocument(e.target?.file?.files ?? [], { caseId }).then(() => {
+      setTimeout(() => refetch(), 1000 * 2);
+    });
     // --- clear file in input if successful
     e.target.file.value = "";
   };

@@ -56,7 +56,11 @@ export const SummarizeBox = () => {
             type="submit"
             disabled={
               isAIRequestSubmitted ||
-              !(summaryInput?.text.length > 400 || summaryInput?.issues?.length > 0 || params?.documentId != null)
+              !(
+                summaryInput?.text.length > 400 ||
+                (summaryInput?.issues ?? [])?.length > 0 ||
+                params?.documentId != null
+              )
             }
             onClick={() => summarize({ caseId: params?.caseId, documentId: params?.documentId })}
           >
