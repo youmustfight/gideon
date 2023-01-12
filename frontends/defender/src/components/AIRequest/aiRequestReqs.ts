@@ -16,16 +16,19 @@ export const reqQueryDocument = async ({
   caseId,
   documentId,
   query,
+  userId,
 }: {
   caseId: number;
   documentId?: number;
   query: string;
+  userId?: number;
 }): Promise<{ answer: string; locations: TQueryLocation[] }> =>
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-document-answer`, {
       case_id: caseId,
       document_id: documentId,
       query,
+      user_id: userId,
     })
     .then((res) => ({ answer: res.data.data.answer, locations: res.data.data.locations }));
 
@@ -33,16 +36,19 @@ export const reqQueryDocumentLocations = async ({
   caseId,
   documentId,
   query,
+  userId,
 }: {
   caseId: number;
   documentId?: number;
   query: string;
+  userId?: number;
 }): Promise<{ locations: TQueryLocation[] }> =>
   axios
     .post(`${getGideonApiUrl()}/v1/ai/query-document-locations`, {
       case_id: caseId,
       document_id: documentId,
       query,
+      user_id: userId,
     })
     .then((res) => ({ locations: res.data.data.locations }));
 

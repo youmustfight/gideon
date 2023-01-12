@@ -35,6 +35,8 @@ export type TDocument = {
   // v2 (now with a database/orm)
   id: number;
   case_id: number;
+  organization_id: number;
+  user_id: number;
   name?: string;
   type: "audio" | "docx" | "image" | "pdf" | "video";
   status_processing_files?: "queued" | "completed";
@@ -68,11 +70,29 @@ export type TDocument = {
 };
 
 // Filters for user via forUser
-const reqDocumentsGet = async (caseId: number): Promise<TDocument[]> =>
-  axios.get(`${getGideonApiUrl()}/v1/documents`, { params: { case_id: caseId } }).then((res) => res.data.documents);
+const reqDocumentsGet = async (params: TUseDocumentsParams): Promise<TDocument[]> =>
+  axios
+    .get(`${getGideonApiUrl()}/v1/documents`, {
+      params: { case_id: params.caseId, organization_id: params.organizationId, user_id: params.userId },
+    })
+    .then((res) => res.data.documents);
 
-export const useDocuments = (caseId: number) => {
-  return useQuery<TDocument[]>(["documents", caseId], async () => reqDocumentsGet(caseId), {
+type TUseDocumentsParams = {
+  caseId?: number;
+  organizationId?: number;
+  userId?: number;
+};
+
+export const useDocuments = ({ caseId, organizationId, userId }: TUseDocumentsParams) => {
+  // Setup key for case/org/user context
+  const getKey = (): string[] => {
+    if (caseId) return ["documents", "case", String(caseId)];
+    if (organizationId) return ["documents", "organization", String(organizationId)];
+    if (userId) return ["documents", "user", String(userId)];
+    throw new Error("Can't create cache key for useDocument");
+  };
+
+  return useQuery<TDocument[]>(getKey(), async () => reqDocumentsGet({ caseId, organizationId, userId }), {
     refetchInterval: 1000 * 15,
   });
 };

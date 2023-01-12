@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import styled, { css } from "styled-components";
+import { useAppStore } from "../../data/AppStore";
 import { TAIRequestType, useAIRequestStore } from "./AIRequestStore";
 import { InquiryBox } from "./InquiryBox";
 import { SummarizeBox } from "./SummarizeBox";
 import { WriteBox } from "./WriteBox";
 
 export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
+  const { focusedOrgId } = useAppStore();
   const { aiRequestType, setAIRequestType } = useAIRequestStore();
   return (
     <select
@@ -16,12 +18,14 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
     >
       <option value="inquiry">Ask</option>
       <option value="summarize">Summarize</option>
-      <option value="write">Write</option>
+      <option value="write" disabled={focusedOrgId == null}>
+        Write
+      </option>
     </select>
   );
 };
 
-export const AIRequestBox: React.FC<{ forceInitialAiRequestType: TAIRequestType }> = ({
+export const AIRequestBox: React.FC<{ forceInitialAiRequestType?: TAIRequestType }> = ({
   forceInitialAiRequestType,
 }) => {
   const { aiRequestType, clearAIRequest, isScrollingToAIRequestBox, setAIRequestType } = useAIRequestStore();

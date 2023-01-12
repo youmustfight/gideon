@@ -32,7 +32,7 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   );
 };
 
-const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
+export const DocumentViewTranscript = ({ document: doc }: { document: TDocument }) => {
   const { hash } = useLocation();
   // const { setSentenceStartIndex, setSentenceEndIndex } = useHighlightStore();
   // ON MOUNT

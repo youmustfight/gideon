@@ -1,4 +1,4 @@
-from arq import create_pool, cron
+from arq import cron
 from arq.connections import RedisSettings
 from arq.worker import run_worker
 from env import env_queue_host, env_queue_port
@@ -12,17 +12,16 @@ from indexers.jobs.job_index_document_docx import job_index_document_docx
 from indexers.jobs.job_index_document_pdf import job_index_document_pdf
 from indexers.jobs.job_index_document_image import job_index_document_image
 from indexers.jobs.job_index_document_video import job_index_document_video
+from indexers.jobs.job_process_document_extras import job_process_document_extras
+
 
 # V3 ARQ
-# --- queue creator
-async def create_queue_pool():
-    return await create_pool(RedisSettings(host=env_queue_host(), port=env_queue_port()))
-
 # --- worker
 def start_worker():
     print('INFO (worker.py:start_worker) start')
     class Settings:
         redis_settings = RedisSettings(host=env_queue_host(), port=env_queue_port())
+        job_timeout= 60 * 30 # defaults to 300. we need longer timeouts bc document png processing + embedding can take awhile
         functions = [
             # cron
             job_cron_embeddings_upserter,
@@ -36,6 +35,7 @@ def start_worker():
             job_index_document_image,
             job_index_document_pdf,
             job_index_document_video,
+            job_process_document_extras,
         ]
         cron_jobs = [
             # to run each minute, going to say run at second 0

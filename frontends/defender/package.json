@@ -39,6 +39,7 @@
     "zustand": "^4.1.1"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.5",
     "@types/html-to-pdfmake": "^2.1.1",
     "@types/lodash": "^4.14.185",
     "@types/react": "^18.0.21",

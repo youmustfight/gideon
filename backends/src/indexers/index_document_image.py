@@ -34,7 +34,7 @@ async def _index_document_image_process_embeddings(session, document_id) -> None
     print('INFO (index_document_image.py:_index_document_image_process_embeddings): document content', document_content)
     # CREATE EMBEDDINGS (context is derived from relation)
     # --- agent
-    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id)
+    aiagent_image_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.document_similarity_image_embed, case_id=document.case_id, user_id=document.user_id)
     # --- images
     image_embeddings_as_models = []
     for content in list(document_content):
@@ -61,8 +61,8 @@ async def _index_document_image_process_embeddings(session, document_id) -> None
     document.status_processing_embeddings = "completed"
     session.add(document)
 
-async def _index_document_image_process_extractions(session, document_id) -> None:
-    print('INFO (index_document_image.py:_index_document_image_process_extractions): start')
+async def _index_document_image_process_description(session, document_id) -> None:
+    print('INFO (index_document_image.py:_index_document_image_process_description): start')
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     # 1. vectors... for search... inspired by... https://adeshg7.medium.com/build-your-own-search-engine-using-openais-clip-and-fastapi-part-1-89995aefbcdd
@@ -79,28 +79,10 @@ async def _index_document_image_process_extractions(session, document_id) -> Non
     )[0]
     document.generated_description = ", ".join(map(lambda prediction: prediction['classification'], document_type_classifications))
     print('INFO (index_document_image.py): document_description', document.generated_description)
-    # 3. document summary (multiple breakdowns w/ contrast between classifications)
-    document_summary_classifications = []
-    document_summary_classifications += clip_classifications(
-        classifications=["a photo during the day", "a photo during the night"],
-        image_file_urls=image_file_urls,
-        min_similarity=0.6
-    )[0]
-    document_summary_classifications += clip_classifications(
-        classifications=["a photo of a person", "a photo containing multiple people", "a photo containing no people", "a photo containing documents"],
-        image_file_urls=image_file_urls,
-        min_similarity=0.6
-    )[0]
-    document_summary_classifications += clip_classifications(
-        classifications=["a photo indoors", "a photo outdoors"],
-        image_file_urls=image_file_urls,
-        min_similarity=0.6
-    )[0]
-    document.generated_summary = ", ".join(map(lambda prediction: prediction['classification'], document_summary_classifications))
-    print('INFO (index_document_image.py): document_summary', document.generated_summary)
-    # 4. SAVE
-    document.status_processing_extractions = "completed"
+    # --- do other extractions in separate processing job since they can be long running when having lots of text
+    # 3. SAVE
     session.add(document)
+    print('INFO (index_document_docx.py:_index_document_image_process_description): done')
 
 
 async def index_document_image(session, document_id) -> int:
@@ -112,7 +94,7 @@ async def index_document_image(session, document_id) -> int:
         print(f"INFO (index_document_image.py): processing document #{document_id} embeddings")
         await _index_document_image_process_embeddings(session=session, document_id=document_id)
         print(f"INFO (index_document_image.py): processing document #{document_id} extractions")
-        await _index_document_image_process_extractions(session=session, document_id=document_id)
+        await _index_document_image_process_description(session=session, document_id=document_id)
         print(f"INFO (index_document_image.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)
         return document_id

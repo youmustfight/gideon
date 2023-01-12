@@ -22,11 +22,6 @@ from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
-from indexers.index_document_audio import _index_document_audio_process_extractions
-from indexers.index_document_docx import _index_document_docx_process_extractions
-from indexers.index_document_image import _index_document_image_process_extractions
-from indexers.index_document_pdf import _index_document_pdf_process_extractions
-from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.utils.extract_document_summary import extract_document_summary
 from ai.requests.cap_caselaw_search import cap_caselaw_search
@@ -36,7 +31,7 @@ from ai.requests.search_locations import search_locations
 from ai.requests.writing_similarity import writing_similarity
 from ai.requests.utils.serialize_location import serialize_location
 from ai.requests.write_template_with_ai import write_template_with_ai
-from worker import create_queue_pool
+from arq_queue.create_queue_pool import create_queue_pool
 
 # INIT
 api_app = Sanic('api')
@@ -123,11 +118,13 @@ async def app_route_ai_query_document_answer(request):
     async with session.begin():
         case_id = request.json.get('case_id')
         document_id = request.json.get('document_id')
+        user_id = request.json.get('user_id')
         answer, locations = await question_answer(
             session,
             query_text=request.json.get('query'),
             case_id=int(case_id) if case_id != None else None,
-            document_id=int(document_id) if document_id != None else None)
+            document_id=int(document_id) if document_id != None else None,
+            user_id=int(user_id) if user_id != None else None)
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'answer': answer, 'locations': locations } })
 
@@ -139,11 +136,13 @@ async def app_route_ai_query_document_locations(request):
         # Fetch
         case_id = request.json.get('case_id')
         document_id = request.json.get('document_id')
+        user_id = request.json.get('user_id')
         locations = await search_locations(
             session,
             query_text=request.json.get('query'),
             case_id=int(case_id) if case_id != None else None,
-            document_id=int(document_id) if document_id != None else None)
+            document_id=int(document_id) if document_id != None else None,
+            user_id=int(user_id) if user_id != None else None)
         # Serialize (TODO): make 'Location' class rather than plain dict
         locations = list(map(serialize_location, locations))
     return json({ 'status': 'success', 'data': { 'locations': locations } })
@@ -249,8 +248,7 @@ async def app_route_case_put_action_locks(request, case_id):
     async with session.begin():
         case_id = int(case_id)
         # --- delete existing action locks
-        await session.execute(sa.delete(AIActionLock)
-            .where(AIActionLock.case_id == case_id))
+        await session.execute(sa.delete(AIActionLock).where(AIActionLock.case_id == case_id))
         # --- add new action locks
         session.add_all(generate_ai_action_locks(case_id))
     return json({ 'status': 'success' })
@@ -479,40 +477,29 @@ async def app_route_document_delete(request, document_id):
 @api_app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
 @auth_route
 async def app_route_document_extractions(request, document_id):
-    session = request.ctx.session
-    # update
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document).where(Document.id == int(document_id)))
-        document = query_document.scalars().first()
-        if (document.type == 'audio'):
-            await _index_document_audio_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'docx'):
-            await _index_document_docx_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'image'):
-            await _index_document_image_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'pdf'):
-            await _index_document_pdf_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'video'):
-            await _index_document_video_process_extractions(session=session, document_id=document.id)
-    # fetch result
-    query_document = await session.execute(
-        sa.select(Document).where(Document.id == int(document_id)))
-    document = query_document.scalars().first()
+    # queue up
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_process_document_extras', document_id)
     # respond
-    return json({ 'status': 'success', 'data': { 'document': document.serialize() } })
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/documents', methods = ['GET'])
 @auth_route
 async def app_route_documents(request):
     session = request.ctx.session
     async with session.begin():
-        query_documents = await session.execute(
-            sa.select(Document)
-                .options(subqueryload(Document.content), subqueryload(Document.files))
-                .where(Document.case_id == int(request.args.get('case_id')))
-                .order_by(sa.desc(Document.id)))
-        documents = query_documents.scalars().all()
+        # --- query
+        query_builder_documents = sa.select(Document).options(subqueryload(Document.content), subqueryload(Document.files))
+        # --- filter based on params / TODO: is there a better way to do this?
+        if request.args.get('case_id'):
+            query_builder_documents = query_builder_documents.where(Document.case_id == int(request.args.get('case_id')))
+        if request.args.get('organization_id'):
+            query_builder_documents = query_builder_documents.where(Document.organization_id == int(request.args.get('organization_id')))
+        if request.args.get('user_id'):
+            query_builder_documents = query_builder_documents.where(Document.user_id == int(request.args.get('user_id')))
+        # --- exec fetch w/ ordering
+        query_documents = await session.execute(query_builder_documents.order_by(sa.desc(Document.id)))
+        documents = query_documents.scalars().unique().all()
         # there's got to be a better way to deal w/ this
         def map_documents_and_content(d):
             doc = d.serialize()
@@ -531,70 +518,80 @@ async def app_route_documents(request):
 async def app_route_index_document_pdf(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
-    case_id = int(request.args.get('case_id'))
+    case_id = int(request.args.get('case_id')) if request.args.get('case_id') else None
+    organization_id = int(request.args.get('organization_id')) if request.args.get('organization_id') else None
+    user_id = int(request.args.get('user_id')) if request.args.get('user_id') else None
     # --- setup document + file
-    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="pdf")
+    document_id = await index_document_prep(session, pyfile=pyfile, type="pdf", case_id=case_id, organization_id=organization_id, user_id=user_id)
     await session.commit()
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_pdf', document_id)
-    return json({ 'status': 'success' })
+    return json({ 'status': 'success', 'data': { 'document': { 'id': document_id } } })
 
 @api_app.route('/v1/index/document/docx', methods = ['POST'])
 @auth_route
 async def app_route_index_document_docx(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
-    case_id = int(request.args.get('case_id'))
+    case_id = int(request.args.get('case_id')) if request.args.get('case_id') else None
+    organization_id = int(request.args.get('organization_id')) if request.args.get('organization_id') else None
+    user_id = int(request.args.get('user_id')) if request.args.get('user_id') else None
     # --- setup document + file
-    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="docx")
+    document_id = await index_document_prep(session, pyfile=pyfile, type="docx", case_id=case_id, organization_id=organization_id, user_id=user_id)
     await session.commit()
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_docx', document_id)
-    return json({ 'status': 'success' })
+    return json({ 'status': 'success', 'data': { 'document': { 'id': document_id } } })
 
 @api_app.route('/v1/index/document/image', methods = ['POST'])
 @auth_route
 async def app_route_index_document_image(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
-    case_id = int(request.args.get('case_id'))
+    case_id = int(request.args.get('case_id')) if request.args.get('case_id') else None
+    organization_id = int(request.args.get('organization_id')) if request.args.get('organization_id') else None
+    user_id = int(request.args.get('user_id')) if request.args.get('user_id') else None
     # --- setup document + file
-    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="image")
+    document_id = await index_document_prep(session, pyfile=pyfile, type="image", case_id=case_id, organization_id=organization_id, user_id=user_id)
     await session.commit()
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_image', document_id)
-    return json({ 'status': 'success' })
+    return json({ 'status': 'success', 'data': { 'document': { 'id': document_id } } })
 
 @api_app.route('/v1/index/document/audio', methods = ['POST'])
 @auth_route
 async def app_route_index_document_audio(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
-    case_id = int(request.args.get('case_id'))
+    case_id = int(request.args.get('case_id')) if request.args.get('case_id') else None
+    organization_id = int(request.args.get('organization_id')) if request.args.get('organization_id') else None
+    user_id = int(request.args.get('user_id')) if request.args.get('user_id') else None
     # --- setup document + file
-    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="audio")
+    document_id = await index_document_prep(session, pyfile=pyfile, type="audio", case_id=case_id, organization_id=organization_id, user_id=user_id)
     await session.commit()
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_audio', document_id)
-    return json({ 'status': 'success' })
+    return json({ 'status': 'success', 'data': { 'document': { 'id': document_id } } })
 
 @api_app.route('/v1/index/document/video', methods = ['POST'])
 @auth_route
 async def app_route_index_document_video(request):
     pyfile = request.files['file'][0]
     session = request.ctx.session
-    case_id = int(request.args.get('case_id'))
+    case_id = int(request.args.get('case_id')) if request.args.get('case_id') else None
+    organization_id = int(request.args.get('organization_id')) if request.args.get('organization_id') else None
+    user_id = int(request.args.get('user_id')) if request.args.get('user_id') else None
     # --- setup document + file
-    document_id = await index_document_prep(session, pyfile=pyfile, case_id=case_id, type="video")
+    document_id = await index_document_prep(session, pyfile=pyfile, type="video", case_id=case_id, organization_id=organization_id, user_id=user_id)
     await session.commit()
     # --- queue processing
     arq_pool = await create_queue_pool()
     await arq_pool.enqueue_job('job_index_document_video', document_id)
-    return json({ 'status': 'success' })
+    return json({ 'status': 'success', 'data': { 'document': { 'id': document_id } } })
 
 
 # HEALTH
@@ -653,8 +650,7 @@ async def app_route_organization_put_action_locks(request, organization_id):
     async with session.begin():
         organization_id = int(organization_id)
         # --- delete existing action locks
-        await session.execute(sa.delete(AIActionLock)
-            .where(AIActionLock.organization_id == organization_id))
+        await session.execute(sa.delete(AIActionLock).where(AIActionLock.organization_id == organization_id))
         # --- add new action locks
         session.add_all(generate_ai_action_locks(organization_id=organization_id))
     return json({ 'status': 'success' })
@@ -682,6 +678,7 @@ async def app_route_organization_user(request, organization_id):
             user_to_insert = User(
                 name=request.json.get('user').get('name'),
                 email=request.json.get('user').get('email'),
+                ai_action_locks=generate_ai_action_locks(),
                 organizations=[organization]
             )
             session.add(user_to_insert)
@@ -838,6 +835,18 @@ async def app_route_user_put(request, user_id):
         if (request.json.get('user').get('password')):
             user.password = request.json['user']['password']
         session.add(user)
+    return json({ 'status': 'success' })
+
+@api_app.route('/v1/user/<user_id>/ai_action_locks_reset', methods = ['PUT'])
+@auth_route
+async def app_route_user_put_action_locks(request, user_id):
+    session = request.ctx.session
+    async with session.begin():
+        user_id = int(user_id)
+        # --- delete existing action locks
+        await session.execute(sa.delete(AIActionLock).where(AIActionLock.user_id == user_id))
+        # --- add new action locks
+        session.add_all(generate_ai_action_locks(user_id=user_id))
     return json({ 'status': 'success' })
 
 
