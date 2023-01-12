@@ -36,7 +36,7 @@ from ai.requests.search_locations import search_locations
 from ai.requests.writing_similarity import writing_similarity
 from ai.requests.utils.serialize_location import serialize_location
 from ai.requests.write_template_with_ai import write_template_with_ai
-from worker import create_queue_pool
+from arq_queue.create_queue_pool import create_queue_pool
 
 # INIT
 api_app = Sanic('api')

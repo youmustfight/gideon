@@ -5,7 +5,7 @@ import requests
 from dbs.sa_models import CAPCaseLaw
 import env
 from caselaw.utils.upsert_caselaw import upsert_caselaw
-from worker import create_queue_pool
+from arq_queue.create_queue_pool import create_queue_pool
 
 
 async def cap_caselaw_search(session, query):
