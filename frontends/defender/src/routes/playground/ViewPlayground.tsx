@@ -59,17 +59,20 @@ const PlaygroundAIRequest = () => {
     clearAIRequest();
   };
   // @ts-ignore
+  const [isFileSubmitted, setIsFileSubmitted] = useState(false);
   const onSubmitFile = (e) => {
     e.preventDefault();
     // @ts-ignore
+    setIsFileSubmitted(true);
     reqIndexDocument(e.target?.file?.files ?? [], { userId: user.id }).then((data) =>
       refetch().then(() => {
         setSelectedDocumentId(data.document.id);
         setIsUploadingDoc(false);
+        // --- clear file in input if successful
+        e.target.file.value = "";
+        setIsFileSubmitted(false);
       })
     );
-    // --- clear file in input if successful
-    e.target.file.value = "";
   };
 
   // ON MOUNT
@@ -178,8 +181,10 @@ const PlaygroundAIRequest = () => {
                 <button type="button" onClick={() => setIsUploadingDoc(false)}>
                   𝗫
                 </button>
-                <input type="file" name="file" accept=".pdf,.m4a,.mp3,.mp4,.mov,.docx" />
-                <button type="submit">+ Upload Doc</button>
+                <input type="file" name="file" accept=".pdf,.m4a,.mp3,.mp4,.mov,.docx" disabled={isFileSubmitted} />
+                <button type="submit" disabled={isFileSubmitted}>
+                  + Upload Doc
+                </button>
               </form>
             )}
           </>
@@ -223,7 +228,7 @@ const PlaygroundAIRequest = () => {
         </div>
       ) : null}
       {/* --- summarize */}
-      {aiRequestType === "summarize" ? (
+      {aiRequestType === "summarize" && selectedDocument ? (
         <div className="playground-ai-request__answers">
           {selectedDocument?.content?.length === 0 ? (
             <StyledAIRequestBoxTabs>
@@ -249,16 +254,17 @@ const PlaygroundAIRequest = () => {
             <>
               <DocumentViewTranscript document={selectedDocument} />
               <hr />
-              <section>
-                <ConfirmButton
-                  prompts={["Delete Document", "Yes, Delete Document"]}
-                  onClick={deleteHandler}
-                  disabled={isDeleting}
-                  style={{ width: "100%" }}
-                />
-              </section>
             </>
           )}
+          <br />
+          <div>
+            <ConfirmButton
+              prompts={["Delete Document", "Yes, Delete Document"]}
+              onClick={deleteHandler}
+              disabled={isDeleting}
+              style={{ width: "100%" }}
+            />
+          </div>
         </div>
       ) : null}
     </StyledPlaygroundAIRequest>
