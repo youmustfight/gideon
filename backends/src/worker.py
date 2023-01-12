@@ -35,6 +35,7 @@ def start_worker():
             job_index_document_image,
             job_index_document_pdf,
             job_index_document_video,
+            job_process_document_extras,
         ]
         cron_jobs = [
             # to run each minute, going to say run at second 0

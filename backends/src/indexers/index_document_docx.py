@@ -123,8 +123,8 @@ async def _index_document_docx_process_embeddings(session, document_id: int) -> 
     session.add(document)
     print('INFO (index_document_docx.py:_index_document_docx_process_embeddings): done')
 
-async def _index_document_docx_process_extractions(session, document_id: int) -> None:
-    print('INFO (index_document_docx.py:_index_document_docx_process_extractions): start')
+async def _index_document_docx_process_description(session, document_id: int) -> None:
+    print('INFO (index_document_docx.py:_index_document_docx_process_description): start')
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(
@@ -133,31 +133,15 @@ async def _index_document_docx_process_extractions(session, document_id: int) ->
             .where(DocumentContent.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value))
     document_content_sentences = document_content_query.scalars()
     document_content_text = " ".join(map(lambda content: content.text, document_content_sentences))
-    print(f'INFO (index_document_docx.py:_index_document_docx_process_extractions): len(document_text) = {len(document_content_text)}')
+    print(f'INFO (index_document_docx.py:_index_document_docx_process_description): len(document_text) = {len(document_content_text)}')
     # EXTRACT
     # --- classification/description
-    print('INFO (index_document_docx.py:_index_document_docx_process_extractions): document_description')
+    print('INFO (index_document_docx.py:_index_document_docx_process_description): document_description')
     document.generated_description = extract_document_type(document_content_text)
-    # --- summary
-    print('INFO (index_document_docx.py:_index_document_docx_process_extractions): document_summary')
-    if len(document_content_text) < 250_000:
-        document.generated_summary = extract_document_summary(document_content_text)
-        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
-    else:
-        print('INFO (index_document_docx.py:_index_document_docx_process_extractions): document is too long')
-    # --- cases/laws mentioned
-    #  TODO: await extract_document_caselaw_mentions(document_content_text)
-    # --- event timeline v2
-    print('INFO (index_document_docx.py:_index_document_docx_process_extractions): events')
-    # document.genereated_events = await extract_document_events_v1(document_content_text)
-    # --- organizations mentioned
-    #  TODO: await extract_document_organizations(document_content_text)
-    # --- people mentioned + context within document
-    #  TODO: await extract_document_people(document_content_text)
-    # --- SAVE
-    document.status_processing_extractions = "completed"
+    # --- do other extractions in separate processing job since they can be long running when having lots of text
+    # SAVE
     session.add(document)
-    print('INFO (index_document_docx.py:_index_document_docx_process_extractions): done')
+    print('INFO (index_document_docx.py:_index_document_docx_process_description): done')
 
 
 # INDEX_DOCX
@@ -170,7 +154,7 @@ async def index_document_docx(session, document_id) -> int:
         print(f"INFO (index_document_docx.py): processing document #{document_id} embeddings")
         await _index_document_docx_process_embeddings(session=session, document_id=document_id)
         print(f"INFO (index_document_docx.py): processing document #{document_id} extractions")
-        await _index_document_docx_process_extractions(session=session, document_id=document_id)
+        await _index_document_docx_process_description(session=session, document_id=document_id)
         print(f"INFO (index_document_docx.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)
         return document_id

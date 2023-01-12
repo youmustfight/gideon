@@ -22,11 +22,6 @@ from dbs.sa_sessions import create_sqlalchemy_session
 import env
 from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
-from indexers.index_document_audio import _index_document_audio_process_extractions
-from indexers.index_document_docx import _index_document_docx_process_extractions
-from indexers.index_document_image import _index_document_image_process_extractions
-from indexers.index_document_pdf import _index_document_pdf_process_extractions
-from indexers.index_document_video import _index_document_video_process_extractions
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.utils.extract_document_summary import extract_document_summary
 from ai.requests.cap_caselaw_search import cap_caselaw_search
@@ -482,28 +477,11 @@ async def app_route_document_delete(request, document_id):
 @api_app.route('/v1/document/<document_id>/extractions', methods = ['POST'])
 @auth_route
 async def app_route_document_extractions(request, document_id):
-    session = request.ctx.session
-    # update
-    async with session.begin():
-        query_document = await session.execute(
-            sa.select(Document).where(Document.id == int(document_id)))
-        document = query_document.scalars().first()
-        if (document.type == 'audio'):
-            await _index_document_audio_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'docx'):
-            await _index_document_docx_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'image'):
-            await _index_document_image_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'pdf'):
-            await _index_document_pdf_process_extractions(session=session, document_id=document.id)
-        if (document.type == 'video'):
-            await _index_document_video_process_extractions(session=session, document_id=document.id)
-    # fetch result
-    query_document = await session.execute(
-        sa.select(Document).where(Document.id == int(document_id)))
-    document = query_document.scalars().first()
+    # queue up
+    arq_pool = await create_queue_pool()
+    await arq_pool.enqueue_job('job_process_document_extras', document_id)
     # respond
-    return json({ 'status': 'success', 'data': { 'document': document.serialize() } })
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/documents', methods = ['GET'])
 @auth_route

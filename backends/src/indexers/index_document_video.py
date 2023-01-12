@@ -137,13 +137,13 @@ async def _index_document_video_process_content(session, document_id: int) -> No
     print("INFO (index_document_video.py:_index_document_video_process_content) done", document_id)
 
 async def _index_document_video_process_embeddings(session, document_id: int) -> None:
-    print('INFO (index_document_video.py:_index_document_image_process_embeddings): start')
+    print('INFO (index_document_video.py:_index_document_video_process_embeddings): start')
     # SETUP
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
     document_content_query = await session.execute(sa.select(DocumentContent).where(DocumentContent.document_id == document_id))
     document_content = document_content_query.scalars().all()
-    print('INFO (index_document_video.py:_index_document_image_process_embeddings): document content', document_content)
+    print('INFO (index_document_video.py:_index_document_video_process_embeddings): document content', document_content)
     document_content_sentences = list(filter(lambda c: c.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value, document_content))
     document_content_sentences_20 = list(filter(lambda c: c.tokenizing_strategy == TOKENIZING_STRATEGY.sentences_20.value, document_content))
     document_content_images = list(filter(lambda c: c.image_file_id != None, document_content))
@@ -215,8 +215,8 @@ async def _index_document_video_process_embeddings(session, document_id: int) ->
     session.add(document)
     print('INFO (index_document_video.py:_index_document_video_process_embeddings): done')
 
-async def _index_document_video_process_extractions(session, document_id: int) -> None:
-    print('INFO (index_document_video.py:_index_document_video_process_extractions): start')
+async def _index_document_video_process_description(session, document_id: int) -> None:
+    print('INFO (index_document_video.py:_index_document_video_process_description): start')
     # FETCH
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
@@ -226,21 +226,14 @@ async def _index_document_video_process_extractions(session, document_id: int) -
         lambda content: content.text if content.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value else "", document_content))
     # COMPILE/EXTRACT
     # --- classification/description
-    print('INFO (index_document_video.py:_index_document_video_process_extractions): document_description')
+    print('INFO (index_document_video.py:_index_document_video_process_description): document_description')
     document.generated_description = gpt_completion(
         gpt_prompt_video_type.replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
         max_tokens=75)
-    # --- summary
-    print('INFO (index_document_video.py:_index_document_video_process_extractions): document_summary')
-    if len(document_content_text) < 250_000:
-        document.generated_summary = extract_document_summary(document_content_text)
-        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
-    # --- events
-    print('INFO (index_document_video.py:_index_document_video_process_extractions): generated_events')
-    document.generated_events = await extract_document_events_v1(document_content_text)
+    # --- do other extractions in separate processing job since they can be long running when having lots of text
     # SAVE
-    document.status_processing_extractions = "completed"
     session.add(document)
+    print('INFO (index_document_video.py:_index_document_video_process_description): done')
 
 
 # INDEX_VIDEO
@@ -253,7 +246,7 @@ async def index_document_video(session, document_id) -> int:
         print(f"INFO (index_document_video.py): processing document #{document_id} embeddings")
         await _index_document_video_process_embeddings(session=session, document_id=document_id)
         print(f"INFO (index_document_video.py): processing document #{document_id} extractions")
-        await _index_document_video_process_extractions(session=session, document_id=document_id)
+        await _index_document_video_process_description(session=session, document_id=document_id)
         print(f"INFO (index_document_video.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)
         return document_id

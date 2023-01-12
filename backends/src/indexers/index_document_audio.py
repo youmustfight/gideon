@@ -121,8 +121,8 @@ async def _index_document_audio_process_embeddings(session, document_id: int) ->
     session.add(document)
     print('INFO (index_document_audio.py:_index_document_audio_process_embeddings): done')
 
-async def _index_document_audio_process_extractions(session, document_id: int) -> None:
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): start')
+async def _index_document_audio_process_description(session, document_id: int) -> None:
+    print('INFO (index_document_audio.py:_index_document_audio_process_description): start')
     # FETCH
     document_query = await session.execute(sa.select(Document).where(Document.id == document_id))
     document = document_query.scalars().one()
@@ -132,21 +132,13 @@ async def _index_document_audio_process_extractions(session, document_id: int) -
         lambda content: content.text if content.tokenizing_strategy == TOKENIZING_STRATEGY.sentence.value else "", document_content))
     # COMPILE/EXTRACT
     # --- classification/description
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): generated_description')
+    print('INFO (index_document_audio.py:_index_document_audio_process_description): generated_description')
     document.generated_description = gpt_completion(
         gpt_prompt_document_type.replace('<<SOURCE_TEXT>>', document_content_text[0:11_000]),
         max_tokens=75)
-    # --- summary
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): document_summary')
-    if len(document_content_text) < 250_000:
-        document.generated_summary = gpt_summarize(document_content_text, max_length=1500)
-        document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
-    # --- events
-    print('INFO (index_document_audio.py:_index_document_audio_process_extractions): generated_events')
-    document.generated_events = await extract_document_events_v1(document_content_text)
-    # SAVE
-    document.status_processing_extractions = "completed"
+    # --- do other extractions in separate processing job since they can be long running when having lots of text
     session.add(document)
+    print('INFO (index_document_audio.py:_index_document_audio_process_description): done')
 
 
 # INDEX AUDIO
@@ -159,7 +151,7 @@ async def index_document_audio(session, document_id) -> int:
         print(f"INFO (index_document_audio.py): processing document #{document_id} embeddings")
         await _index_document_audio_process_embeddings(session=session, document_id=document_id)
         print(f"INFO (index_document_audio.py): processing document #{document_id} extractions")
-        await _index_document_audio_process_extractions(session=session, document_id=document_id)
+        await _index_document_audio_process_description(session=session, document_id=document_id)
         print(f"INFO (index_document_audio.py): finished intake of document #{document_id}")
         # RETURN (SAVE/COMMIT happens via context/caller of this func)
         return document_id
