@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
+import { reqSystemAILocksReset } from "../../components/AIRequest/aiRequestReqs";
 import { AppHeader } from "../../components/AppHeader";
 import { StyledViewCase } from "../../components/styled/StyledViewCase";
 import { reqUserAILocksReset, useUser, useUserLogout } from "../../data/useUser";
@@ -17,6 +18,11 @@ export const ViewProfile = () => {
           <h3>Logged in as {user?.email}</h3>
         </div>
         <section>
+          <button style={{ width: "100%" }} onClick={() => reqSystemAILocksReset()}>
+            Set System AI Action Locks
+          </button>
+          <br />
+          <br />
           <button style={{ width: "100%" }} onClick={() => reqUserAILocksReset(user!.id)}>
             Reset AI Action Locks
           </button>

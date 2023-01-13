@@ -3,13 +3,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { Link } from "react-router-dom";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
-import { reqWriteCapCaseBrief, useCapCase } from "../../data/useCapCase";
+import { reqCapCaseExtractions, reqCapCaseIndex, useCapCase } from "../../data/useCapCase";
 
 export const ViewCapCase = () => {
   const capRef = useRef();
   const { capId } = useParams();
   const [isSummaryFullyVisible, setIsSummaryFullyVisible] = useState(false);
-  const { data: capCase } = useCapCase(capId);
+  const { data: capCase, refetch } = useCapCase(capId);
 
   // ON MOUNT
   useEffect(() => {
@@ -26,7 +26,9 @@ export const ViewCapCase = () => {
   return !capCase ? (
     <div>
       <div className="section-lead title">
-        <h3>Loading...</h3>
+        <button onClick={() => reqCapCaseIndex(capId!).then(() => refetch())} style={{ flexGrow: "1" }}>
+          Index Case
+        </button>
       </div>
     </div>
   ) : (
@@ -55,19 +57,18 @@ export const ViewCapCase = () => {
             </u>{" "}
           </p>
         </div>
-        <hr />
-        <div>
+        <br />
+        <div style={{ display: "flex", width: "100%" }}>
+          <button onClick={() => reqCapCaseExtractions(capId!)} style={{ flexGrow: "1" }}>
+            Regenerate Summary
+          </button>
+        </div>
+        {/* <div>
           <h4>Case Brief</h4>
         </div>
         <div>
           <p>TODO</p>
-        </div>
-        <br />
-        <div style={{ display: "flex", width: "100%" }}>
-          <button onClick={() => reqWriteCapCaseBrief(capId!)} style={{ flexGrow: "1" }}>
-            Write Case Brief (Takes 1-2+ Minutes)
-          </button>
-        </div>
+        </div> */}
       </section>
 
       {/* PARTIES */}

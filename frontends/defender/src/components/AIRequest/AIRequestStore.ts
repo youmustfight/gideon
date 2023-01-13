@@ -112,6 +112,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   isScrollingToAIRequestBox: false,
   scrollToAIRequestBox: () => {
     set({ isScrollingToAIRequestBox: true });
+    // @ts-ignore
     const el = document.inquiryQuerySelector("#ai-request-box");
     if (el) {
       // el.scrollIntoView({ behavior: "smooth" });

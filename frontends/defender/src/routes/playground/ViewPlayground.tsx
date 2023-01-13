@@ -60,10 +60,11 @@ const PlaygroundAIRequest = () => {
   };
   // @ts-ignore
   const [isFileSubmitted, setIsFileSubmitted] = useState(false);
+  // @ts-ignore
   const onSubmitFile = (e) => {
     e.preventDefault();
-    // @ts-ignore
     setIsFileSubmitted(true);
+    // @ts-ignore
     reqIndexDocument(e.target?.file?.files ?? [], { userId: user.id }).then((data) =>
       refetch().then(() => {
         setSelectedDocumentId(data.document.id);
