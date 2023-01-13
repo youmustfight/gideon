@@ -22,7 +22,7 @@ async def search_locations(session, query_text, case_id=None, document_id=None, 
     text_search_vectors = aigent_location_text_searcher.index_query(
         query_text,
         query_filters=query_filters,
-        # query_filters={ "string_length": { "$gt": 80 } }, # DEPRECATED: do we need to ensure a minimum anymore? we should be catch this when embedding
+        # query_filters={ "content_text_length": { "$gt": 80 } }, # DEPRECATED: do we need to ensure a minimum anymore? we should be catch this when embedding
         top_k=10,
         score_max=1,
         score_max_diff_percent=0.2,

@@ -1,6 +1,3 @@
-import io
-import os
-from arq.jobs import JobStatus
 from contextvars import ContextVar
 from datetime import datetime
 from htmldocx import HtmlToDocx
@@ -10,13 +7,12 @@ from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
-from time import sleep
 
 from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from brief.create_case_brief import create_case_brief
-from caselaw.index_cap_caselaw import _index_cap_caselaw_process_extractions
+from caselaw.index_cap_case import _index_cap_case_process_extractions
+from caselaw.utils.upsert_cap_case import upsert_cap_case
 from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, Brief, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
@@ -189,6 +185,25 @@ async def app_route_ai_summarize(request):
         # Summarize
         summary = extract_document_summary(request.json.get('text'))
     return json({ 'status': 'success', 'data': { 'summary': summary } })
+
+
+# AI ACTION LOCK
+@api_app.route('/v1/ai_action_locks', methods = ['POST'])
+@auth_route
+async def app_route_case_put_action_locks(request):
+    session = request.ctx.session
+    async with session.begin():
+        # --- check for existing action locks
+        query_locks = await session.execute(sa.select(AIActionLock).where(sa.and_(
+            AIActionLock.case_id.is_(None),
+            AIActionLock.organization_id.is_(None),
+            AIActionLock.user_id.is_(None),
+        )))
+        locks = query_locks.scalars().all()
+        # --- if no global locks exist, add new action locks
+        if len(locks) == 0:
+            session.add_all(generate_ai_action_locks())
+    return json({ 'status': 'success' })
 
 
 # CASES
@@ -379,11 +394,16 @@ async def app_route_brief_put(request, brief_id):
 @auth_route
 async def app_route_cap_case_index(request):
     session = request.ctx.session
+    cap_ids = request.json.get('cap_ids') or []
+    project_tag = request.json.get('project_tag')
+    # --- fetch/insert via CAP api
     async with session.begin():
-        cap_ids = request.json['cap_ids']
-        arq_pool = await create_queue_pool()
         for cap_id in cap_ids:
-            await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
+            await upsert_cap_case(session, cap_id, project_tag)
+    # --- queue jobs after initial fetch/insert
+    arq_pool = await create_queue_pool()
+    for cap_id in cap_ids:
+        await arq_pool.enqueue_job('job_index_cap_case', cap_id)
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/<cap_id>', methods = ['GET'])
@@ -391,26 +411,9 @@ async def app_route_cap_case_index(request):
 async def app_route_cap_case_get(request, cap_id):
     session = request.ctx.session
     async with session.begin():
-        # --- queue if we need to process
-        arq_pool = await create_queue_pool()
-        arq_job = await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
-        is_processing_jobs = True
-        is_processing_time = 0
-        # --- check if done fetching/saving
-        while is_processing_jobs:
-            # set to false to start
-            is_processing_jobs = False
-            status = await arq_job.status()
-            # and flip if we get it once
-            is_processing_jobs = status in [JobStatus.deferred, JobStatus.queued, JobStatus.in_progress]
-            sleep(1)
-            is_processing_time += 1
-            if (is_processing_time > 10): raise 'CAP Case Query Timeout'
-        # --- query for returning data
         query_cap_caselaw = await session.execute(
             sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
-        cap_case = query_cap_caselaw.scalars().one()
-    # Return after we've executed the query when the indexing job finished
+        cap_case = query_cap_caselaw.scalar_one_or_none()
     return json({ 'status': 'success', 'data': { 'cap_case': cap_case.serialize() } })
 
 @api_app.route('/v1/cap/case/<cap_id>/extractions', methods = ['POST'])
@@ -418,7 +421,7 @@ async def app_route_cap_case_get(request, cap_id):
 async def app_route_cap_case_extractions(request, cap_id):
     session = request.ctx.session
     async with session.begin():
-        await _index_cap_caselaw_process_extractions(session=session, cap_id=int(cap_id))
+        await _index_cap_case_process_extractions(session=session, cap_id=int(cap_id))
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/search', methods = ['GET'])

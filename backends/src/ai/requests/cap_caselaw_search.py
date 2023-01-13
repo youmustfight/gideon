@@ -4,7 +4,7 @@ from time import sleep
 import requests
 from dbs.sa_models import CAPCaseLaw
 import env
-from caselaw.utils.upsert_caselaw import upsert_caselaw
+from caselaw.utils.upsert_cap_case import upsert_cap_case
 from arq_queue.create_queue_pool import create_queue_pool
 
 
@@ -29,7 +29,7 @@ async def cap_caselaw_search(session, query):
     arq_pool = await create_queue_pool()    
     arq_jobs = []
     for cap_result in cap_results:
-        job = await arq_pool.enqueue_job('job_index_cap_caselaw', cap_result['id'])
+        job = await arq_pool.enqueue_job('job_index_cap_case', cap_result['id'])
         arq_jobs.append(job)
     # --- await results (ids of the cap_case models)
     is_processing_jobs = True

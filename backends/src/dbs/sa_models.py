@@ -207,44 +207,6 @@ class DocumentContent(BaseModel):
             "second_end": self.second_end,
         }
 
-class Embedding(BaseModel):
-    __tablename__ = "embedding"
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime(timezone=True))
-    updated_at = Column(DateTime(timezone=True))
-    # --- relations
-    case_id = Column(Integer, ForeignKey("case.id"))
-    case = relationship("Case", back_populates="embeddings")
-    document_id = Column(Integer, ForeignKey("document.id"))
-    document = relationship("Document", back_populates="embeddings")
-    document_content_id = Column(Integer, ForeignKey("document_content.id"))
-    document_content = relationship("DocumentContent", back_populates="embedding")
-    writing_id = Column(Integer, ForeignKey("writing.id"))
-    writing = relationship("Writing", back_populates="embeddings")
-    # --- encoding model/engine info
-    encoded_model_type = Column(Text()) # DEPRECATED: gpt3, clip
-    encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
-    encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram
-    # --- post-encoding/index
-    ai_action = Column(Text()) # enum value
-    index_id = Column(Text()) # aka Pinecone DB index id
-    index_partition_id = Column(Text()) # aka Pinecone DB namespace
-    indexed_status = Column(String()) # 'error', 'completed', 'queued'
-    vector_dimensions=Column(Integer())
-    vector_json=Column(JSONB) # for storing raw values to easily access later
-    npy_url = Column(Text()) # DEPRECATED: save npy binary to S3? probably unnecessary so now doing vector_json
-    def serialize(self, serialize_relationships=[]):
-        return {
-            "id": self.id,
-            "document_id": self.document_id,
-            "document_content_id": self.document_content_id,
-            "encoded_model_type": self.encoded_model_type,
-            "encoded_model_engine": self.encoded_model_engine,
-            "encoding_strategy": self.encoding_strategy,
-            "ai_action": self.ai_action,
-            "indexed_status": self.indexed_status,
-        }
-
 class File(BaseModel):
     __tablename__ = "file"
     id = Column(Integer, primary_key=True)
@@ -334,6 +296,9 @@ class Writing(BaseModel):
 # CAP
 class CAPCaseLaw(BaseModel):
     __tablename__ = "cap_case"
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
     cap_id = Column(Integer()) # maps just bad to their "id"
     url = Column(Text())
     name = Column(Text())
@@ -360,11 +325,15 @@ class CAPCaseLaw(BaseModel):
     status_processing_embeddings = Column(Text()) # queued, processing, completed, error
     status_processing_extractions = Column(Text()) # queued, processing, completed, error
     # extras
+    project_tag = Column(Text()) # ex: citing_slavery (for search filtering later)
     generated_summary = Column(Text())
     generated_summary_one_liner = Column(Text())
     generated_citing_slavery_summary = Column(Text())
     generated_citing_slavery_summary_one_liner = Column(Text())
+    # relations to
     brief = relationship("Brief", back_populates="cap_case")
+    cap_case_content = relationship("CAPCaseLawContent", back_populates="cap_case")
+    embeddings = relationship("Embedding", back_populates="cap_case")
     def serialize(self, serialize_relationships=[]):
         return {
             "id": self.id,
@@ -389,8 +358,77 @@ class CAPCaseLaw(BaseModel):
             'last_updated': self.last_updated,
             'provenance': self.provenance,
             'casebody': self.casebody,
+            # extras
+            'project_tag': self.project_tag,
             'generated_summary': self.generated_summary,
             'generated_summary_one_liner': self.generated_summary_one_liner,
             'generated_citing_slavery_summary': self.generated_citing_slavery_summary,
             'generated_citing_slavery_summary_one_liner': self.generated_citing_slavery_summary_one_liner,
         }
+
+class CAPCaseLawContent(BaseModel):
+    __tablename__ = "cap_case_content"
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
+    # --- general
+    type = Column(Text()) # head_matter, opinion_majority_paragraph, opinion_minority_paragraph, ???
+    text = Column(Text())
+    # --- head_matter ?
+    # --- opinion
+    paragraph_number = Column(Integer())
+    # --- relations
+    cap_case_id = Column(Integer, ForeignKey("cap_case.id"))
+    cap_case = relationship("CAPCaseLaw", back_populates="cap_case_content")
+    embedding = relationship("Embedding", back_populates="cap_case_content")
+    def serialize(self, serialize_relationships=[]):
+        return {
+            "id": self.id,
+            "cap_case_id": self.cap_case_id,
+            "type": self.type,
+            "text": self.text,
+            "paragraph_number": self.paragraph_number,
+        }
+
+class Embedding(BaseModel):
+    __tablename__ = "embedding"
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True))
+    # --- relations
+    case_id = Column(Integer, ForeignKey("case.id"))
+    case = relationship("Case", back_populates="embeddings")
+    cap_case_id = Column(Integer, ForeignKey("cap_case.id"))
+    cap_case = relationship("CAPCaseLaw", back_populates="embeddings")
+    cap_case_content_id = Column(Integer, ForeignKey("cap_case_content.id"))
+    cap_case_content = relationship("CAPCaseLawContent", back_populates="embedding")
+    document_id = Column(Integer, ForeignKey("document.id"))
+    document = relationship("Document", back_populates="embeddings")
+    document_content_id = Column(Integer, ForeignKey("document_content.id"))
+    document_content = relationship("DocumentContent", back_populates="embedding")
+    writing_id = Column(Integer, ForeignKey("writing.id"))
+    writing = relationship("Writing", back_populates="embeddings")
+    # --- encoding model/engine info
+    encoded_model_type = Column(Text()) # DEPRECATED: gpt3, clip
+    encoded_model_engine = Column(Text()) # text-davinci-002 or text-similarity-davinci-001 vs. ViT-B/32 or ViT-L/14@336
+    encoding_strategy = Column(Text()) # image, text, page, minute, nsentence, sentence, ngram
+    # --- post-encoding/index
+    ai_action = Column(Text()) # enum value
+    index_id = Column(Text()) # aka Pinecone DB index id
+    index_partition_id = Column(Text()) # aka Pinecone DB namespace
+    indexed_status = Column(String()) # 'error', 'completed', 'queued'
+    vector_dimensions=Column(Integer())
+    vector_json=Column(JSONB) # for storing raw values to easily access later
+    npy_url = Column(Text()) # DEPRECATED: save npy binary to S3? probably unnecessary so now doing vector_json
+    def serialize(self, serialize_relationships=[]):
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "document_content_id": self.document_content_id,
+            "encoded_model_type": self.encoded_model_type,
+            "encoded_model_engine": self.encoded_model_engine,
+            "encoding_strategy": self.encoding_strategy,
+            "ai_action": self.ai_action,
+            "indexed_status": self.indexed_status,
+        }
+
