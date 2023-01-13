@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
+from caselaw.deindex_cap_case import deindex_cap_case
 from caselaw.index_cap_case import _index_cap_case_process_extractions
 from caselaw.utils.upsert_cap_case import upsert_cap_case
 from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, Brief, Document, DocumentContent, File, Organization, Writing, User
@@ -415,6 +416,18 @@ async def app_route_cap_case_get(request, cap_id):
             sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
         cap_case = query_cap_caselaw.scalar_one_or_none()
     return json({ 'status': 'success', 'data': { 'cap_case': cap_case.serialize() } })
+
+@api_app.route('/v1/cap/case/<cap_id>', methods = ['DELETE'])
+@auth_route
+async def app_route_cap_case_delete(request, cap_id):
+    session = request.ctx.session
+    async with session.begin():
+        # --- cap case content & embeddings
+        await deindex_cap_case(session, int(cap_id))
+        # --- cap_case
+        await session.execute(sa.delete(CAPCaseLaw)
+            .where(CAPCaseLaw.cap_id == int(cap_id)))
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/<cap_id>/extractions', methods = ['POST'])
 @auth_route

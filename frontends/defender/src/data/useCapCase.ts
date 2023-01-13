@@ -63,6 +63,10 @@ export const useCapCase = (capId: number | string | undefined) => {
   );
 };
 
+// DELETE
+export const reqCapCaseDelete = async (capId: number): Promise<void> =>
+  axios.delete(`${getGideonApiUrl()}/v1/cap/case/${capId}`);
+
 // MISC
 export const reqCapCaseIndex = async (capId: number | string): Promise<void> =>
   axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/index`).then((res) => res.data);

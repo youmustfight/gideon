@@ -1,15 +1,24 @@
 import { startCase } from "lodash";
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { Link } from "react-router-dom";
+import { ConfirmButton } from "../../components/ConfirmButton";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
-import { reqCapCaseExtractions, reqCapCaseIndex, useCapCase } from "../../data/useCapCase";
+import { reqCapCaseDelete, reqCapCaseExtractions, reqCapCaseIndex, useCapCase } from "../../data/useCapCase";
 
 export const ViewCapCase = () => {
+  const navigate = useNavigate();
   const capRef = useRef();
   const { capId } = useParams();
   const [isSummaryFullyVisible, setIsSummaryFullyVisible] = useState(false);
   const { data: capCase, refetch } = useCapCase(capId);
+  // --- deletion
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteHandler = async () => {
+    setIsDeleting(true);
+    await reqCapCaseDelete(Number(capId));
+    navigate(`/caselaw`);
+  };
 
   // ON MOUNT
   useEffect(() => {
@@ -154,6 +163,17 @@ export const ViewCapCase = () => {
             </span>
           ))}
         </p>
+      </section>
+
+      {/* DELETES */}
+      <hr />
+      <section>
+        <ConfirmButton
+          prompts={["Delete Case Law", "Yes, Delete Case Law"]}
+          onClick={deleteHandler}
+          disabled={isDeleting}
+          style={{ width: "100%" }}
+        />
       </section>
     </div>
   );

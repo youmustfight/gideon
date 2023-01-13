@@ -53,8 +53,8 @@ async def _index_cap_case_process_embeddings(session, cap_id: int) -> None:
         cap_case_head_matter_content_query = await session.execute(sa.select(CAPCaseLawContent).where(
             sa.and_(CAPCaseLawContent.cap_case_id == cap_case.id, CAPCaseLawContent.type == "head_matter")
         ))
-        cap_case_content = cap_case_head_matter_content_query.scalars().first()
-        head_matter_text = cap_case_content.text
+        cap_case_content_head_matter = cap_case_head_matter_content_query.scalars().first()
+        head_matter_text = cap_case_content_head_matter.text
         # --- head_matter: process
         if head_matter_text != None and len(head_matter_text) > 0:
             head_matter_text_embeddings = aiagent_cap_case_head_matter_embeder.encode_text([head_matter_text])
@@ -62,6 +62,7 @@ async def _index_cap_case_process_embeddings(session, cap_id: int) -> None:
             for embedding in head_matter_text_embeddings:
                 head_matter_text_embeddings_as_models.append(Embedding(
                     cap_case_id=cap_case.id,
+                    cap_case_content_id=cap_case_content_head_matter.id,
                     encoded_model_engine=aiagent_cap_case_head_matter_embeder.model_name,
                     encoding_strategy="text",
                     vector_dimensions=len(embedding),
