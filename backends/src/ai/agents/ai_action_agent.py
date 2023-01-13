@@ -21,6 +21,10 @@ class AI_ACTIONS(Enum):
     document_similarity_text_max_size_embed = 'document_similarity_text_max_size_embed'
     brief_facts_similarity_embed = 'brief_facts_similarity_embed'
     brief_facts_similarity_search = 'brief_facts_similarity_search'
+    cap_case_head_matter_similarity_text_embed = 'cap_case_head_matter_similarity_text_embed'
+    cap_case_head_matter_similarity_text_search = 'cap_case_head_matter_similarity_text_search'
+    cap_case_opinion_paragraph_similarity_text_embed = 'cap_case_opinion_paragraph_similarity_text_embed'
+    cap_case_opinion_paragraph_similarity_text_search = 'cap_case_opinion_paragraph_similarity_text_search'
     case_similarity_text_sentence_search = 'case_similarity_text_sentence_search'
     case_similarity_text_sentences_20_search = 'case_similarity_text_sentences_20_search'
     case_similarity_text_max_size_search = 'case_similarity_text_max_size_search'
@@ -282,6 +286,39 @@ def generate_ai_action_locks(case_id = None, organization_id = None, user_id = N
         case_id=case_id,
         organization_id=organization_id,
         user_id=user_id),
+    # CAP CASE EMBED+SEARCH
+    AIActionLock(
+        action=AI_ACTIONS.cap_case_head_matter_similarity_text_embed.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.cap_case_head_matter_similarity_text_embed.value,
+        case_id=case_id,
+        organization_id=organization_id,
+        user_id=user_id),
+    AIActionLock(
+        action=AI_ACTIONS.cap_case_head_matter_similarity_text_search.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.cap_case_head_matter_similarity_text_search.value,
+        case_id=case_id,
+        organization_id=organization_id,
+        user_id=user_id),
+    AIActionLock(
+        action=AI_ACTIONS.cap_case_opinion_paragraph_similarity_text_embed.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.cap_case_opinion_paragraph_similarity_text_embed.value,
+        case_id=case_id,
+        organization_id=organization_id,
+        user_id=user_id),
+    AIActionLock(
+        action=AI_ACTIONS.cap_case_opinion_paragraph_similarity_text_search.value,
+        model_name=AI_MODELS.text_embedding_ada_002.value,
+        index_id=VECTOR_INDEX_ID.index_1536_cosine.value,
+        index_partition_id=AI_ACTIONS.cap_case_opinion_paragraph_similarity_text_search.value,
+        case_id=case_id,
+        organization_id=organization_id,
+        user_id=user_id),
     # CASE FACTS EMBED+SEARCH
     AIActionLock(
         action=AI_ACTIONS.brief_facts_similarity_embed.value,
@@ -351,3 +388,10 @@ def generate_ai_action_locks(case_id = None, organization_id = None, user_id = N
         user_id=user_id),
   ]
 
+async def get_global_ai_action_locks(session):
+    query_locks = await session.execute(sa.select(AIActionLock).where(sa.and_(
+        AIActionLock.case_id.is_(None),
+        AIActionLock.organization_id.is_(None),
+        AIActionLock.user_id.is_(None),
+    )))
+    return query_locks.scalars().all()

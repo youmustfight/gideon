@@ -1,10 +1,10 @@
-from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE
+from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003
 from models.gpt_prompts import gpt_prompt_summary_one_liner
 
 def extract_document_summary_one_liner(document_text):
   # V2
   one_liner = gpt_completion(
-      engine=GTP3_COMPLETION_MODEL_ENGINE,
+      engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003,
       max_tokens=500,
       prompt=gpt_prompt_summary_one_liner.replace('<<SOURCE_TEXT>>', document_text))
   

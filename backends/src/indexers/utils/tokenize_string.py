@@ -34,11 +34,14 @@ def split_text_gpt(text):
     # TODO: make better. rough shot but puncutation affects this (https://beta.openai.com/tokenizer)
     return textwrap.wrap(text, 3, drop_whitespace=False)
 
+def safe_string(string): 
+    return string.encode(encoding='ASCII',errors='ignore').decode()
+
 # TOKENIZING
 def tokenize_string(text, strategy, token_count=None):
     # CLEAN
     # --- clear error causing characters
-    text_safe = text.encode(encoding='ASCII',errors='ignore').decode()
+    text_safe = safe_string(text)
     # --- remove deeply repeating \n 
     text_safe = re.sub(r'\n\n\n+', '\n\n', text_safe)
 

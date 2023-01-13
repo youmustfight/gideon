@@ -19,6 +19,14 @@ Write a detailed summary of the following:
 DETAILED SUMMARY:
 """
 
+gpt_prompt_summary_caselaw_detailed = """
+Write a detailed summary of the following case law opinion:
+
+CASE LAW OPINION: <<SOURCE_TEXT>>
+
+DETAILED SUMMARY:
+"""
+
 gpt_prompt_summary_one_liner = """
 In a single sentence, summarize the following passage.':
 
@@ -81,10 +89,11 @@ DIFFERENCE DESCRIPTION:
 # V1 - can't remember
 # V2 - initial
 # V3 - added strictness, "no explicit mention of slaves or slavery occurs".
+# V4 - got rid of end sentence: 'If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}
 gpt_prompt_citing_slavery_summary = f"""
-In the fewest words, summarize the context mentioning slaves in the following passage. If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}':
+In the fewest words, summarize the context mentioning slaves in the following case law opinion.
 
-PASSAGE: <<SOURCE_TEXT>>
+CASE LAW OPINION: <<SOURCE_TEXT>>
 
 SUMMARY:
 """
