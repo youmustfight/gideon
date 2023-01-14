@@ -48,8 +48,12 @@ def env_get_database_pinecone_environment():
     return _env_getter('DATABASE_PINECONE_ENVIRONMENT')
 def env_get_database_pinecone_index_1536_cosine():
     return _env_getter('DATABASE_PINECONE_INDEX_1536_COSINE')
+def env_get_database_pinecone_index_1536_cosine_url():
+    return _env_getter('DATABASE_PINECONE_INDEX_1536_COSINE_URL')
 def env_get_database_pinecone_index_768_cosine():
     return _env_getter('DATABASE_PINECONE_INDEX_768_COSINE')
+def env_get_database_pinecone_index_768_cosine_url():
+    return _env_getter('DATABASE_PINECONE_INDEX_768_COSINE_URL')
 
 
 # ENV

@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from dbs.sa_sessions import create_sqlalchemy_session
 from dbs.sa_models import Document, DocumentContent, Embedding
+from dbs.vectordb_pinecone import pinecone_index_upsert
 
 # Schedule to run every ??? minute (see scheduled.py)
 async def job_cron_embeddings_upserter(job_ctx):
@@ -72,9 +73,10 @@ async def job_cron_embeddings_upserter(job_ctx):
         # Upsert by index/partition (http calls to pinecone are incredibly slow if done individually)
         for index_tuple in upserts_tuple_dict:
             # --- upsert records to pinecone db
-            pinecone.Index(index_name=index_tuple[0]).upsert(
-                vectors=upserts_tuple_dict[index_tuple],
-                namespace=index_tuple[1])
+            # pinecone.Index(index_name=index_tuple[0]).upsert(
+            #     vectors=upserts_tuple_dict[index_tuple],
+            #     namespace=index_tuple[1])
+            pinecone_index_upsert(index=index_tuple[0], namespace=index_tuple[1], values=upserts_tuple_dict[index_tuple])
             # --- update embedding indexd_status = 'completed'
             embedding_ids = list(map(lambda upsert_tuple: int(upsert_tuple[0]), upserts_tuple_dict[index_tuple]))
             print('INFO (scheduled_job_embeddings_upserter) embedding_ids upserted:', embedding_ids)

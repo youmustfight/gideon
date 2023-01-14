@@ -12,7 +12,7 @@ async def search_locations(session, query_text, case_id=None, document_id=None, 
         query_filters.update({ 'case_id': { '$eq': int(case_id) } })
     if document_id != None:
         query_filters.update({ 'document_id': { '$eq': int(document_id) } })
-    logger.info(f"query all documents via '{query_text}'", query_filters)
+    print(f"INFO (search_locations) query all documents via '{query_text}'", query_filters)
     # --- get action locks depending on if a case/org/user owned document
 
     

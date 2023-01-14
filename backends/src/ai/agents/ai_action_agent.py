@@ -1,12 +1,10 @@
 from enum import Enum
 from typing import List
 import sqlalchemy as sa
-import numpy as np
 from sqlalchemy.orm import joinedload, Session
-import pinecone
 
 from dbs.sa_models import AIActionLock, Case, Organization, User
-from dbs.vectordb_pinecone import VECTOR_INDEX_ID
+from dbs.vectordb_pinecone import pinecone_index_query, VECTOR_INDEX_ID
 from models.clip import clip_text_embedding, clip_image_embedding
 from models.gpt import gpt_embedding
 from models.sentence import sentence_encode_embeddings
@@ -65,8 +63,6 @@ class AIActionAgent():
         pass # defined by w/ each inheriting class
     def encode_image(self):
         pass # defined by w/ each inheriting class
-    def _get_vector_index(self):
-        return pinecone.Index(self.index_id)
     def index_query(self, query_text=None, query_image=None, query_vectors=None, query_filters={}, top_k=12, score_max=1, score_min=0, score_min_diff_percent=None, score_max_diff_percent=None):
         # --- vector
         vectors = query_vectors or self.encode_text([query_text])
@@ -80,29 +76,27 @@ class AIActionAgent():
         if (query_filters != None):
             filters.update(query_filters)
         # --- query for vector
-        print(f'INFO (AIActionAgent:index_query): querying with "{self.model_name}" on index "{self.index_id}"', filters)
-        query_results = self._get_vector_index().query(
+        matches = pinecone_index_query(
+            index=self.index_id,
             namespace=self.index_partition_id,
-            vector=vector,
             top_k=top_k,
-            include_values=False,
-            includeMetadata=True,
-            filter=filters)
+            vector=vector,
+            filters=query_filters,
+        )
         # --- rank sort & vectors
-        vectors = query_results['matches']
-        print(f'INFO (AIActionAgent:index_query): "{self.model_name}" vectors', vectors[:5], '...')
-        if (score_max != None and len(vectors) > 0):
-            vectors = list(filter(lambda m: m['score'] < score_max, vectors))
-        if (score_min != None and len(vectors) > 0):
-            vectors = list(filter(lambda m: m['score'] > score_min, vectors))
-        if (score_max_diff_percent != None and len(vectors) > 0):
-            highest_score = vectors[0].score
-            vectors = list(filter(lambda m: m['score'] > (highest_score - (highest_score * score_max_diff_percent)), vectors))
-        if (score_min_diff_percent != None and len(vectors) > 0):
-            lowest_score = vectors[0].score
-            vectors = list(filter(lambda m: m['score'] < (lowest_score + (lowest_score * score_min_diff_percent)), vectors))
-        print(f'INFO (AIActionAgent:index_query): "{self.model_name}" vectors filtered') # vectors
-        return vectors
+        print(f'INFO (AIActionAgent:index_query): "{self.model_name}" vectors', matches[:5], '...')
+        if (score_max != None and len(matches) > 0):
+            matches = list(filter(lambda m: m['score'] < score_max, matches))
+        if (score_min != None and len(matches) > 0):
+            matches = list(filter(lambda m: m['score'] > score_min, matches))
+        if (score_max_diff_percent != None and len(matches) > 0):
+            highest_score = matches[0]['score']
+            matches = list(filter(lambda m: m['score'] > (highest_score - (highest_score * score_max_diff_percent)), matches))
+        if (score_min_diff_percent != None and len(matches) > 0):
+            lowest_score = matches[0]['score']
+            matches = list(filter(lambda m: m['score'] < (lowest_score + (lowest_score * score_min_diff_percent)), matches))
+        print(f'INFO (AIActionAgent:index_query): "{self.model_name}" matches filtered') # matches
+        return matches
     def index_upsert(self, vectors):
         # TODO: not sure if we should do this tbh since we save all the index info on the embedding model
         pass

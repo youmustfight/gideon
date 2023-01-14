@@ -30,4 +30,3 @@ async def process_document_extras(session, document_id: int) -> None:
     # SAVE
     document.status_processing_extractions = "completed"
     session.add(document)
-
