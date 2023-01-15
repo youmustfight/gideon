@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useParams } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../../data/AppStore";
-import { useWritings } from "../../data/useWritings";
+import { TWriting, useWritings } from "../../data/useWritings";
 import { WritingPanel } from "../WritingsBox";
 import { AIRequestTypeSelect } from "./AIRequestBox";
 import { TWritingScope, useAIRequestStore } from "./AIRequestStore";
@@ -125,7 +125,8 @@ export const WriteBox = () => {
           </div>
           {/* FOCUS */}
           <div className="ai-request-box__focus">
-            {answerWriting?.writing ? <WritingPanel writing={answerWriting?.writing} /> : null}
+            {/* if we have an id, it's not a partial TWriting */}
+            {answerWriting?.writing?.id ? <WritingPanel writing={answerWriting?.writing as TWriting} /> : null}
           </div>
         </>
       )}
