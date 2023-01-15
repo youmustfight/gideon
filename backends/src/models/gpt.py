@@ -3,6 +3,7 @@ import requests
 import textwrap
 from time import sleep
 import env
+from indexers.utils.tokenize_string import safe_string
 from models.gpt_prompts import gpt_prompt_summary_detailed
 
 # SETUP
@@ -99,14 +100,14 @@ def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMP
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, prompt, input)
 
-def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
+def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, max_length=4000, use_prompt=None):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
+    prompt = use_prompt or gpt_prompt_summary_detailed
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list()
     for idx, chunk in enumerate(chunks):
         # use_prompt should be text files
-        prompt = use_prompt.replace('<<SOURCE_TEXT>>', chunk)
-        prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
+        prompt = safe_string(prompt.replace('<<SOURCE_TEXT>>', chunk))
         # TEST: not sure if we should limit token length
         # max_tokens_from_length = math.floor(max_length / 3) # read online that a token is 3~4 characters
         # max_tokens = min(max_tokens_from_length, 500)

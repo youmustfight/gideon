@@ -25,7 +25,7 @@ async def _index_cap_case_process_content(session, cap_id: int) -> None:
         ))
         # --- opinion paragraphs: majority
         opinion_majority_text = _.find(cap_case.casebody['opinions'], lambda o: o['type'] == 'majority')['text']
-        opinion_majority_text_paragraphs = opinion_majority_text.split('\n')
+        opinion_majority_text_paragraphs = safe_string(opinion_majority_text).split('\n')
         for idx, opinion_majority_text_paragraph in enumerate(opinion_majority_text_paragraphs):
             cap_case_content_models.append(CAPCaseLawContent(
                 cap_case_id=cap_case.id,
@@ -48,7 +48,7 @@ async def _index_cap_case_process_embeddings(session, cap_id: int) -> None:
     ai_action_locks = await get_global_ai_action_locks(session)
     # EMBED
     if cap_case.status_processing_embeddings != 'completed':
-        # --- head_matter 
+        # --- head_matter
         aiagent_cap_case_head_matter_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.cap_case_head_matter_similarity_text_embed, ai_action_locks=ai_action_locks)
         cap_case_head_matter_content_query = await session.execute(sa.select(CAPCaseLawContent).where(
             sa.and_(CAPCaseLawContent.cap_case_id == cap_case.id, CAPCaseLawContent.type == "head_matter")
