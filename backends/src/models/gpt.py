@@ -3,6 +3,7 @@ import requests
 import textwrap
 from time import sleep
 import env
+from indexers.utils.tokenize_string import safe_string
 from models.gpt_prompts import gpt_prompt_summary_detailed
 
 # SETUP
@@ -12,7 +13,8 @@ from models.gpt_prompts import gpt_prompt_summary_detailed
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
 # https://openai.com/blog/introducing-text-and-code-embeddings/
 # https://beta.openai.com/docs/guides/embeddings/what-are-embeddings
-GTP3_COMPLETION_MODEL_ENGINE = 'text-davinci-003' # 'text-ada-001'
+GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003 = 'text-davinci-003'
+GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002 = 'text-davinci-002' # this seems to handle classification better
 GTP3_EDIT_MODEL_ENGINE = 'text-davinci-edit-001' # free atm because its in beta
 GTP3_TEMPERATURE_DEFAULT = 0
 OPENAI_REQUEST_TIMEOUT = 60
@@ -38,7 +40,7 @@ def gpt_embedding(content, engine):
         raise err
 
 # COMPLETION
-def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
+def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 3
     retry = 0
     while True:
@@ -62,13 +64,13 @@ def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE, temperature=GTP3
             response = response.json()
             print('INFO (GPT3): gpt_completion usage: ', response['usage'])
             text = response['choices'][0]['text'].strip()
-            print(f'INFO (GPT3): gpt_completion - {engine}: RESPONSE for "{prompt[0:120]}"...'.replace('\n', ' '), text)
+            print(f'INFO (GPT3): gpt_completion - {engine}: RESPONSE for "{prompt[0:320]}"...'.replace('\n', ' '), text)
             return text
         except Exception as err:
             retry += 1
             if retry >= max_retry:
                 return "Error (GTP3 Completion): %s" % err
-            print('Error (GPT3):', err, '\n', f'{prompt[0:120]}...')
+            print('Error (GPT3):', err, '\n', f'{prompt[0:320]}...')
 
 def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0):
     max_retry = 3
@@ -98,22 +100,22 @@ def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMP
                 return "Error (GTP3 Edit): %s" % err
             print('Error (GPT3):', err, prompt, input)
 
-def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE, max_length=4000, use_prompt=gpt_prompt_summary_detailed):
+def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, max_length=4000, use_prompt=None):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
+    prompt = use_prompt or gpt_prompt_summary_detailed
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)
     result = list()
     for idx, chunk in enumerate(chunks):
         # use_prompt should be text files
-        prompt = use_prompt.replace('<<SOURCE_TEXT>>', chunk)
-        prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
+        prompt = safe_string(prompt.replace('<<SOURCE_TEXT>>', chunk))
         # TEST: not sure if we should limit token length
         # max_tokens_from_length = math.floor(max_length / 3) # read online that a token is 3~4 characters
         # max_tokens = min(max_tokens_from_length, 500)
-        summary = gpt_completion(prompt,max_tokens=500,engine=engine) # limiting inserted completion length to get us to < 2k
+        summary = gpt_completion(prompt, max_tokens=500, engine=engine) # limiting inserted completion length to get us to < 2k
         print('\n', idx + 1, 'of', len(chunks), ' - ', summary, '\n')
         result.append(summary)
     results_string = ' '.join(result)
     # --- check if to summarize again (this can get stuck in a loop if it can't summarize further)
     if len(results_string) > max_length:
-        return gpt_summarize(results_string,engine=engine)
+        return gpt_summarize(results_string, engine=engine, use_prompt=use_prompt)
     return results_string

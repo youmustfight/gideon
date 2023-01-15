@@ -106,3 +106,8 @@ export const reqQuerySummarize = async ({
       text,
     })
     .then((res) => ({ summary: res.data.data.summary }));
+
+// MISC
+export const reqSystemAILocksReset = async (): Promise<void> => {
+  return axios.post(`${getGideonApiUrl()}/v1/ai_action_locks`);
+};

@@ -21,7 +21,7 @@ async def question_answer(session, query_text, case_id=None, document_id=None, u
     search_vectors = aigent_location_text_searcher.index_query(
         query_text,
         query_filters=query_filters,
-        # query_filters={ "string_length": { "$gt": 480 } }, # DEPRECATED: idk if we need this anymore, tokenizing is better now and ensures min lengths
+        # query_filters={ "content_text_length": { "$gt": 480 } }, # DEPRECATED: idk if we need this anymore, tokenizing is better now and ensures min lengths
         top_k=3, # was 8, I feel like only focusing on high matches will get less noisy answers + be faster
         score_min=0.5,
         score_max=1.2,

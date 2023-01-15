@@ -19,6 +19,14 @@ Write a detailed summary of the following:
 DETAILED SUMMARY:
 """
 
+gpt_prompt_summary_caselaw_detailed = """
+Write a detailed summary of the following case law opinion:
+
+CASE LAW OPINION: <<SOURCE_TEXT>>
+
+DETAILED SUMMARY:
+"""
+
 gpt_prompt_summary_one_liner = """
 In a single sentence, summarize the following passage.':
 
@@ -41,6 +49,15 @@ In the fewest words, write what type of video content this is:
 <<SOURCE_TEXT>>
 
 TYPE OF VIDEO CONTENT:
+"""
+
+# TITLES
+gpt_prompt_article_title = """
+Write an article title given the following set of questions.
+
+QUESTIONS: <<SOURCE_TEXT>>
+
+ARTICLE TITLE: 
 """
 
 
@@ -81,10 +98,11 @@ DIFFERENCE DESCRIPTION:
 # V1 - can't remember
 # V2 - initial
 # V3 - added strictness, "no explicit mention of slaves or slavery occurs".
+# V4 - got rid of end sentence: 'If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}
 gpt_prompt_citing_slavery_summary = f"""
-In the fewest words, summarize the context mentioning slaves in the following passage. If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}':
+In the fewest words, summarize the context mentioning slaves in the following case law opinion.
 
-PASSAGE: <<SOURCE_TEXT>>
+CASE LAW OPINION: <<SOURCE_TEXT>>
 
 SUMMARY:
 """
@@ -127,4 +145,12 @@ Delete any line that does not mention a calendar date.
 
 gpt_prompt_edit_event_timeline_structure = """
 Remove bullet points and start each line with the mentioned calendar date as ISO
+"""
+
+gpt_prompt_edit_separate_research_questions_list = """
+Separate each research question into a list prefixed with a dash.
+"""
+
+gpt_prompt_edit_organize_as_html_markup = """
+Organize content in html structure. Exclude markup for head, body, and doctype.
 """

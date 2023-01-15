@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useParams } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../../data/AppStore";
-import { useWritings } from "../../data/useWritings";
+import { TWriting, useWritings } from "../../data/useWritings";
 import { WritingPanel } from "../WritingsBox";
 import { AIRequestTypeSelect } from "./AIRequestBox";
 import { TWritingScope, useAIRequestStore } from "./AIRequestStore";
@@ -37,7 +37,7 @@ export const WriteBox = () => {
     // } else {
     //   setWritingScope("prompt");
     // }
-    setWritingScope("prompt");
+    setWritingScope("templatePrompt");
   }, []);
 
   // RENDER
@@ -73,8 +73,8 @@ export const WriteBox = () => {
             style={{ maxWidth: "100%" }}
           >
             <option value="">--- Select Data Source ---</option>
-            <option value="prompt">Using Text Input</option>
-            <option value="case" disabled={params.caseId == null}>
+            <option value="templatePrompt">Using Text Input</option>
+            <option value="templateCase" disabled={params.caseId == null}>
               Using Case Brief
             </option>
           </select>
@@ -83,7 +83,7 @@ export const WriteBox = () => {
             disabled={
               isAIRequestSubmitted ||
               !selectedWriting ||
-              (writingScope === "prompt" && writingInput.promptText.length < 20)
+              (writingScope === "templatePrompt" && writingInput.promptText.length < 20)
             }
             onClick={() => write({ caseId: params?.caseId, organizationId: focusedOrgId })}
           >
@@ -92,7 +92,7 @@ export const WriteBox = () => {
         </div>
       </div>
       <div className="prompt-writer">
-        {writingScope === "prompt" ? (
+        {writingScope === "templatePrompt" ? (
           <>
             <div>
               <p>
@@ -125,7 +125,8 @@ export const WriteBox = () => {
           </div>
           {/* FOCUS */}
           <div className="ai-request-box__focus">
-            {answerWriting?.writing ? <WritingPanel writing={answerWriting?.writing} /> : null}
+            {/* if we have an id, it's not a partial TWriting */}
+            {answerWriting?.writing?.id ? <WritingPanel writing={answerWriting?.writing as TWriting} /> : null}
           </div>
         </>
       )}

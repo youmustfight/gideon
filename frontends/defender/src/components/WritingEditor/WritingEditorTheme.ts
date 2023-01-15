@@ -440,6 +440,31 @@ export const StyledWritingEditorCSS = createGlobalStyle`
       margin-right: 2px;
     }
   
+    .toolbar button.toolbar-item.download {
+      padding: 0;
+      height: 36px;
+      width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      i {
+        background-size: contain;
+        display: inline-block;
+        height: 36px;
+        width: 36px;
+        margin-top: 4px;
+        padding: 2px;
+        vertical-align: -0.25em;
+        display: flex;
+        opacity: 0.6;
+        justify-content: center;
+        align-items: center;
+        svg {
+          margin-top: 4px;
+        }
+      }
+    }
+    
     .toolbar button.toolbar-item i.format {
       background-size: contain;
       display: inline-block;

@@ -63,6 +63,15 @@ export const useCapCase = (capId: number | string | undefined) => {
   );
 };
 
+// DELETE
+export const reqCapCaseDelete = async (capId: number): Promise<void> =>
+  axios.delete(`${getGideonApiUrl()}/v1/cap/case/${capId}`);
+
 // MISC
-export const reqWriteCapCaseBrief = async (capId: number | string): Promise<void> =>
-  axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/extractions`).then((res) => res.data.document);
+export const reqCapCaseIndex = async (capId: number | string): Promise<void> =>
+  axios
+    .post(`${getGideonApiUrl()}/v1/cap/case/index`, { cap_ids: [capId], project_tag: "citing_slavery" })
+    .then((res) => res.data);
+
+export const reqCapCaseExtractions = async (capId: number | string): Promise<void> =>
+  axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/extractions`).then((res) => res.data);

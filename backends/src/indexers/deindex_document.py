@@ -2,6 +2,7 @@ import pinecone
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 from dbs.sa_models import Document, DocumentContent, Embedding
+from dbs.vectordb_pinecone import pinecone_index_delete
 
 async def deindex_document(session, document_id):
     '''
@@ -33,7 +34,8 @@ async def deindex_document(session, document_id):
 
     print('INFO (deindex_document.py) Deleting Embeddings: ', deletes_tuple_dict)
     for delete_tuple in deletes_tuple_dict:
-        pinecone.Index(index_name=delete_tuple[0]).delete(ids=embeddings_ids_strs, namespace=delete_tuple[1])
+        # pinecone.Index(index_name=delete_tuple[0]).delete(ids=embeddings_ids_strs, namespace=delete_tuple[1])
+        pinecone_index_delete(index=delete_tuple[0], namespace=delete_tuple[1], ids=embeddings_ids_strs)
 
     # DELETE MODELS/DATA
     # --- embeddings

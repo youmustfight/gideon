@@ -1,6 +1,3 @@
-import io
-import os
-from arq.jobs import JobStatus
 from contextvars import ContextVar
 from datetime import datetime
 from htmldocx import HtmlToDocx
@@ -10,13 +7,13 @@ from sanic.response import json
 from sanic_cors import CORS
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
-from time import sleep
 
 from ai.agents.ai_action_agent import generate_ai_action_locks
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
-from brief.create_case_brief import create_case_brief
-from caselaw.index_cap_caselaw import _index_cap_caselaw_process_extractions
+from caselaw.deindex_cap_case import deindex_cap_case
+from caselaw.index_cap_case import _index_cap_case_process_extractions
+from caselaw.utils.upsert_cap_case import upsert_cap_case
 from dbs.sa_models import serialize_list, AIActionLock, Case, CAPCaseLaw, Brief, Document, DocumentContent, File, Organization, Writing, User
 from dbs.sa_sessions import create_sqlalchemy_session
 import env
@@ -24,12 +21,13 @@ from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.utils.extract_document_summary import extract_document_summary
-from ai.requests.cap_caselaw_search import cap_caselaw_search
+from ai.requests.cap_api_search import cap_api_search
 from ai.requests.brief_fact_similarity import brief_fact_similarity
 from ai.requests.question_answer import question_answer
 from ai.requests.search_locations import search_locations
 from ai.requests.writing_similarity import writing_similarity
 from ai.requests.utils.serialize_location import serialize_location
+from ai.requests.write_memo_for_document import write_memo_for_document
 from ai.requests.write_template_with_ai import write_template_with_ai
 from arq_queue.create_queue_pool import create_queue_pool
 
@@ -107,9 +105,25 @@ async def app_route_ai_fill_writing_template(request):
         updated_writing_model = await write_template_with_ai(session, writing_model, request.json.get('prompt_text'))
         # save
         session.add(updated_writing_model)
-    # TODO: send back data to frontend
+    # send back data to frontend
     session.refresh(updated_writing_model)
     return json({ 'status': 'success', 'data': { 'writing': updated_writing_model.serialize() } })
+
+@api_app.route('/v1/ai/write-memo-for-document', methods = ['POST'])
+@auth_route
+async def app_route_ai_write_document_memo(request):
+    session = request.ctx.session
+    async with session.begin():
+        writing_model = await write_memo_for_document(
+            session,
+            document_id=int(request.json.get('document_id')),
+            prompt_text=request.json.get('prompt_text'),
+            user_id=int(request.json.get('user_id')))
+        # save
+        session.add(writing_model)
+    # send back data to frontend
+    await session.refresh(writing_model)
+    return json({ 'status': 'success', 'data': { 'writing': writing_model.serialize() } })
 
 @api_app.route('/v1/ai/query-document-answer', methods = ['POST'])
 @auth_route
@@ -189,6 +203,25 @@ async def app_route_ai_summarize(request):
         # Summarize
         summary = extract_document_summary(request.json.get('text'))
     return json({ 'status': 'success', 'data': { 'summary': summary } })
+
+
+# AI ACTION LOCK
+@api_app.route('/v1/ai_action_locks', methods = ['POST'])
+@auth_route
+async def app_route_ai_action_locks_post(request):
+    session = request.ctx.session
+    async with session.begin():
+        # --- check for existing action locks
+        query_locks = await session.execute(sa.select(AIActionLock).where(sa.and_(
+            AIActionLock.case_id.is_(None),
+            AIActionLock.organization_id.is_(None),
+            AIActionLock.user_id.is_(None),
+        )))
+        locks = query_locks.scalars().all()
+        # --- if no global locks exist, add new action locks
+        if len(locks) == 0:
+            session.add_all(generate_ai_action_locks())
+    return json({ 'status': 'success' })
 
 
 # CASES
@@ -379,11 +412,16 @@ async def app_route_brief_put(request, brief_id):
 @auth_route
 async def app_route_cap_case_index(request):
     session = request.ctx.session
+    cap_ids = request.json.get('cap_ids') or []
+    project_tag = request.json.get('project_tag')
+    # --- fetch/insert via CAP api
     async with session.begin():
-        cap_ids = request.json['cap_ids']
-        arq_pool = await create_queue_pool()
         for cap_id in cap_ids:
-            await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
+            await upsert_cap_case(session, cap_id, project_tag)
+    # --- queue jobs after initial fetch/insert
+    arq_pool = await create_queue_pool()
+    for cap_id in cap_ids:
+        await arq_pool.enqueue_job('job_index_cap_case', cap_id)
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/<cap_id>', methods = ['GET'])
@@ -391,34 +429,29 @@ async def app_route_cap_case_index(request):
 async def app_route_cap_case_get(request, cap_id):
     session = request.ctx.session
     async with session.begin():
-        # --- queue if we need to process
-        arq_pool = await create_queue_pool()
-        arq_job = await arq_pool.enqueue_job('job_index_cap_caselaw', cap_id)
-        is_processing_jobs = True
-        is_processing_time = 0
-        # --- check if done fetching/saving
-        while is_processing_jobs:
-            # set to false to start
-            is_processing_jobs = False
-            status = await arq_job.status()
-            # and flip if we get it once
-            is_processing_jobs = status in [JobStatus.deferred, JobStatus.queued, JobStatus.in_progress]
-            sleep(1)
-            is_processing_time += 1
-            if (is_processing_time > 10): raise 'CAP Case Query Timeout'
-        # --- query for returning data
         query_cap_caselaw = await session.execute(
             sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
-        cap_case = query_cap_caselaw.scalars().one()
-    # Return after we've executed the query when the indexing job finished
+        cap_case = query_cap_caselaw.scalar_one_or_none()
     return json({ 'status': 'success', 'data': { 'cap_case': cap_case.serialize() } })
+
+@api_app.route('/v1/cap/case/<cap_id>', methods = ['DELETE'])
+@auth_route
+async def app_route_cap_case_delete(request, cap_id):
+    session = request.ctx.session
+    async with session.begin():
+        # --- cap case content & embeddings
+        await deindex_cap_case(session, int(cap_id))
+        # --- cap_case
+        await session.execute(sa.delete(CAPCaseLaw)
+            .where(CAPCaseLaw.cap_id == int(cap_id)))
+    return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/<cap_id>/extractions', methods = ['POST'])
 @auth_route
 async def app_route_cap_case_extractions(request, cap_id):
     session = request.ctx.session
     async with session.begin():
-        await _index_cap_caselaw_process_extractions(session=session, cap_id=int(cap_id))
+        await _index_cap_case_process_extractions(session=session, cap_id=int(cap_id))
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/search', methods = ['GET'])
@@ -427,7 +460,7 @@ async def app_route_cap_case_search(request):
     session = request.ctx.session
     async with session.begin():
         query = request.args.get('query')
-        cap_cases = await cap_caselaw_search(session, query)
+        cap_cases = await cap_api_search(session, query)
         cap_cases = serialize_list(cap_cases)
     return json({ 'status': 'success', 'data': { 'cap_cases': cap_cases } })
 
@@ -618,7 +651,7 @@ async def app_route_organizations(request):
             sa.select(Organization)
                 .options(
                     joinedload(Organization.users),
-                    joinedload(Organization.writing_templates)
+                    joinedload(Organization.writings)
                 ))
         organizations_models = query_orgs.scalars().unique().all()
         # organizations_json = serialize_list(organizations_models)
@@ -626,7 +659,7 @@ async def app_route_organizations(request):
         # https://github.com/n0nSmoker/SQLAlchemy-serializer
         # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
         # organizations_json = list(map(lambda o: o.to_dict(), organizations_models))
-        organizations_json = list(map(lambda o: o.serialize(['users', 'writing_templates']), organizations_models))
+        organizations_json = list(map(lambda o: o.serialize(['users', 'writings']), organizations_models))
     return json({ 'status': 'success', 'data': { 'organizations': organizations_json } })
 
 @api_app.route('/v1/organization', methods = ['POST'])
@@ -733,7 +766,7 @@ async def app_route_writing_get(request, writing_id):
 
 @api_app.route('/v1/writing/<writing_id>/docx', methods = ['GET'])
 @auth_route
-async def app_route_writing_get(request, writing_id):
+async def app_route_writing_get_docx(request, writing_id):
     session = request.ctx.session
     async with session.begin():
         # get writing w/ html
@@ -755,13 +788,13 @@ async def app_route_writing_get(request, writing_id):
 async def app_route_writings_post(request):
     session = request.ctx.session
     writing_model = Writing(
-        body_html=request.json.get('body_html'),
-        body_text=request.json.get('body_text'),
-        case_id=request.json.get('case_id'),
-        is_template=request.json.get('is_template'),
-        name=request.json.get('name'),
-        organization_id=request.json.get('organization_id'),
-        forked_writing_id=int(request.json.get('forked_writing_id')) if request.json.get('forked_writing_id') != None else None,
+        body_html=request.json.get('writing').get('body_html'),
+        body_text=request.json.get('writing').get('body_text'),
+        case_id=request.json.get('writing').get('case_id'),
+        is_template=request.json.get('writing').get('is_template'),
+        name=request.json.get('writing').get('name'),
+        organization_id=request.json.get('writing').get('organization_id'),
+        forked_writing_id=int(request.json.get('writing').get('forked_writing_id')) if request.json.get('writing').get('forked_writing_id') != None else None,
     )
     session.add(writing_model)
     await session.commit()

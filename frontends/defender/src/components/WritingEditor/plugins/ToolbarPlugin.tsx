@@ -44,6 +44,8 @@ import {
   TextAlignJustifyIcon,
   UnderlineIcon,
 } from "@radix-ui/react-icons";
+import { IconDOCX } from "../icons/IconDOCX";
+import { IconPDF } from "../icons/IconPDF";
 const LowPriority = 1;
 
 const supportedBlockTypes = new Set(["paragraph", "quote", "code", "h1", "h2", "ul", "ol"]);
@@ -406,7 +408,7 @@ function BlockOptionsDropdownList({ editor, blockType, toolbarRef, setShowBlockO
   );
 }
 
-export function ToolbarPlugin() {
+export function ToolbarPlugin({ onDownloadDocx, onDownloadPdf }) {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
@@ -427,7 +429,8 @@ export function ToolbarPlugin() {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
       const anchorNode = selection.anchor.getNode();
-      const element = anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+      const element =
+        anchorNode.getKey() === "writing-editor-root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
       const elementKey = element.getKey();
       const elementDOM = editor.getElementByKey(elementKey);
       if (elementDOM !== null) {
@@ -619,7 +622,7 @@ export function ToolbarPlugin() {
               <UnderlineIcon />
             </i>
           </button>
-          <button
+          {/* <button
             onClick={() => {
               editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough");
             }}
@@ -629,7 +632,7 @@ export function ToolbarPlugin() {
             <i className="format strikethrough">
               <StrikethroughIcon />
             </i>
-          </button>
+          </button> */}
           {/* <button
             onClick={() => {
               editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code");
@@ -683,7 +686,7 @@ export function ToolbarPlugin() {
               <TextAlignRightIcon />
             </i>
           </button>
-          <button
+          {/* <button
             onClick={() => {
               editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "justify");
             }}
@@ -693,9 +696,20 @@ export function ToolbarPlugin() {
             <i className="format justify-align">
               <TextAlignJustifyIcon />
             </i>
-          </button>{" "}
+          </button> */}
         </>
       )}
+      <Divider />
+      <button onClick={onDownloadPdf} className="toolbar-item download" aria-label="PDF Download">
+        <i className="">
+          <IconPDF />
+        </i>
+      </button>
+      <button onClick={onDownloadDocx} className="toolbar-item download" aria-label="DOCX Download">
+        <i className="">
+          <IconDOCX />
+        </i>
+      </button>
     </div>
   );
 }
