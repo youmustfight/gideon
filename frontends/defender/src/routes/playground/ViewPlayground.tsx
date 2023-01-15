@@ -7,6 +7,7 @@ import { useAIRequestStore } from "../../components/AIRequest/AIRequestStore";
 import { StyledAIRequestBoxTabs } from "../../components/AIRequest/styled/StyledAIRequestBoxTabs";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { DocumentContentLocationBox } from "../../components/DocumentContentLocationBox";
+import { WritingEditor } from "../../components/WritingEditor/WritingEditor";
 import { useAppStore } from "../../data/AppStore";
 import { reqIndexDocument } from "../../data/reqIndexDocument";
 import { reqDocumentDelete } from "../../data/useDocument";
@@ -20,6 +21,7 @@ const PlaygroundAIRequest = () => {
     aiRequestType,
     answerDetailsLocations,
     answerQuestion,
+    answerWriting,
     clearAIRequest,
     inquiry,
     inquiryQuery,
@@ -28,7 +30,11 @@ const PlaygroundAIRequest = () => {
     setInquiryScope,
     setInquiryQuery,
     setSummaryScope,
+    setWritingInput,
+    setWritingScope,
     summarize,
+    write,
+    writingInput,
   } = useAIRequestStore();
   const { data: documents, refetch } = useDocuments({ userId: user!.id });
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -42,7 +48,9 @@ const PlaygroundAIRequest = () => {
       setIsDeleting(true);
       await reqDocumentDelete(Number(selectedDocumentId));
       refetch();
+      // clear both the query values but also w/e document is selected since that id no longer exists
       clearAIRequest();
+      setSelectedDocumentId("");
       setIsDeleting(false);
     }
   };
@@ -56,6 +64,11 @@ const PlaygroundAIRequest = () => {
   const selectAsk = () => {
     setAIRequestType("inquiry");
     setInquiryScope("document");
+    clearAIRequest();
+  };
+  const selectWriteMemo = () => {
+    setAIRequestType("write");
+    setWritingScope("memoDocument");
     clearAIRequest();
   };
   // @ts-ignore
@@ -95,6 +108,9 @@ const PlaygroundAIRequest = () => {
         <button className={aiRequestType === "summarize" ? "active" : ""} onClick={selectSummary}>
           Document Summary
         </button>
+        <button className={aiRequestType === "write" ? "active" : ""} onClick={selectWriteMemo}>
+          Document Memo
+        </button>
       </div>
       <div className="playground-ai-request__input">
         {/* INPUT */}
@@ -103,7 +119,7 @@ const PlaygroundAIRequest = () => {
             className="playground-ai-request__input__actions"
             onSubmit={(e) => {
               e.preventDefault();
-              inquiry({ documentId: selectedDocumentId, userId: user!.id });
+              inquiry({ documentId: Number(selectedDocumentId), userId: user!.id });
             }}
           >
             <p>Ask Gideon AI a question about a document:</p>
@@ -125,10 +141,10 @@ const PlaygroundAIRequest = () => {
             className="playground-ai-request__input__actions"
             onSubmit={(e) => {
               e.preventDefault();
-              summarize({ documentId: selectedDocumentId, userId: user!.id });
+              summarize({ documentId: Number(selectedDocumentId), userId: user!.id });
             }}
           >
-            <p>Get document summary from Gideon AI:</p>
+            <p>Get Gideon AI document summary:</p>
             {/* <div className="input-row">
               <input
                 placeholder="Ex) Family reunification policy"
@@ -142,8 +158,39 @@ const PlaygroundAIRequest = () => {
             </div> */}
           </form>
         ) : null}
+        {aiRequestType === "write" ? (
+          <form
+            className="playground-ai-request__input__actions"
+            onSubmit={(e) => {
+              e.preventDefault();
+              write({ documentId: Number(selectedDocumentId), userId: user!.id });
+            }}
+          >
+            <p>Ask Gideon AI questions about a document, and get a written memo:</p>
+            <div className="input-row">
+              {/* "What are examples of oppressive lease clauses? What are examples of favorable clauses on leases for tenants?" */}
+              <textarea
+                placeholder="Ex) Question 1... Question 2... Question 3..."
+                value={writingInput.promptText}
+                disabled={isAIRequestSubmitted}
+                rows={4}
+                onChange={(e) => setWritingInput({ promptText: e.target.value })}
+                style={{ flexGrow: 1 }}
+              ></textarea>
+            </div>
+            <div className="input-row">
+              <button
+                disabled={isAIRequestSubmitted || !selectedDocumentId}
+                type="submit"
+                style={{ flexGrow: 1, maxWidth: "100%", width: "100%" }}
+              >
+                ✏️
+              </button>
+            </div>
+          </form>
+        ) : null}
         {/* DOCUMENT */}
-        {["inquiry", "summarize"].includes(aiRequestType) ? (
+        {["inquiry", "summarize", "write"].includes(aiRequestType) ? (
           <>
             {!isUploadingDoc ? (
               <div className="playground-ai-request__input__file-uploader">
@@ -193,9 +240,9 @@ const PlaygroundAIRequest = () => {
       </div>
 
       {/* ANSWER */}
-      {isAIRequestSubmitted ? (
+      {/* --- inquiry */}
+      {isAIRequestSubmitted && (answerQuestion || answerDetailsLocations) ? (
         <div className="playground-ai-request__answers">
-          {/* --- inquiry */}
           {answerQuestion && (
             <>
               {answerQuestion?.inProgress && (
@@ -225,7 +272,22 @@ const PlaygroundAIRequest = () => {
             </div>
           )}
           {/* --- clear */}
-          <button onClick={clearAIRequest}>Clear Answer</button>
+          {!answerWriting ? <button onClick={clearAIRequest}>Clear Answer</button> : null}
+        </div>
+      ) : null}
+      {/* --- writing */}
+      {isAIRequestSubmitted && answerWriting ? (
+        <div className="playground-ai-request__writing">
+          {answerWriting?.inProgress || answerWriting?.writing?.id == null ? (
+            <StyledAIRequestBoxTabs>
+              <label>Writing (Processing...)</label>
+            </StyledAIRequestBoxTabs>
+          ) : (
+            <div>
+              <WritingEditor writingId={answerWriting.writing.id} />
+            </div>
+          )}
+          {answerWriting ? <button onClick={clearAIRequest}>Clear Writing</button> : null}
         </div>
       ) : null}
       {/* --- summarize */}
@@ -378,7 +440,8 @@ const StyledViewPlayground = styled.div`
       flex-grow: 1;
     }
   }
-  .playground-ai-request__answers {
+  .playground-ai-request__answers,
+  .playground-ai-request__writing {
     padding: 12px 32px;
     background: #f8f8f8;
     & > div > p {
@@ -400,6 +463,9 @@ const StyledViewPlayground = styled.div`
       padding-top: 6px;
       border-top: 2px solid #fafafa;
     }
+  }
+  .playground-ai-request__writing {
+    padding: 12px;
   }
   .playground-ai-request__transcript {
     padding: 12px;

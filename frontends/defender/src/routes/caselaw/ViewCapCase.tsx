@@ -7,7 +7,6 @@ import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { reqCapCaseDelete, reqCapCaseExtractions, reqCapCaseIndex, useCapCase } from "../../data/useCapCase";
 
 export const ViewCapCase = () => {
-  const navigate = useNavigate();
   const capRef = useRef();
   const { capId } = useParams();
   const [isSummaryFullyVisible, setIsSummaryFullyVisible] = useState(false);
@@ -17,7 +16,6 @@ export const ViewCapCase = () => {
   const deleteHandler = async () => {
     setIsDeleting(true);
     await reqCapCaseDelete(Number(capId));
-    navigate(`/caselaw`);
   };
 
   // ON MOUNT

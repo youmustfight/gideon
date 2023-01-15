@@ -8,8 +8,8 @@ from caselaw.utils.upsert_cap_case import upsert_cap_case
 from arq_queue.create_queue_pool import create_queue_pool
 
 
-async def cap_caselaw_search(session, query):
-    print('INFO (cap_caselaw_search): query = ', query)
+async def cap_api_search(session, query):
+    print('INFO (cap_api_search): query = ', query)
     # Search CAP (w/ full results)
     cap_response = requests.get(
         f'https://api.case.law/v1/cases/',
@@ -23,7 +23,7 @@ async def cap_caselaw_search(session, query):
     )
     cap_response = cap_response.json()
     cap_results = cap_response['results']
-    print('INFO (cap_caselaw_search): cap_response = ', cap_response)
+    print('INFO (cap_api_search): cap_response = ', cap_response)
 
     # V2 Queue Processing for cases (so we ensure consistent processing/updates)
     arq_pool = await create_queue_pool()    

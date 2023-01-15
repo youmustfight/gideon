@@ -119,7 +119,7 @@ async def _index_cap_case_process_extractions(session, cap_id: int) -> None:
         #     cap_caselaw.generated_summary = extract_document_summary(caselaw_content_text, use_prompt=gpt_prompt_summary_caselaw_detailed)
         #     cap_caselaw.generated_summary_one_liner = extract_document_summary_one_liner(cap_caselaw.generated_summary)
         # --- summaries & extractions (citing slavery)
-        if text_contains_mentions_of_slavery(caselaw_content_text):
+        if text_contains_mentions_of_slavery(caselaw_content_text) == True:
             cap_caselaw.generated_citing_slavery_summary = extract_document_citing_slavery_summary(caselaw_content_text)
             cap_caselaw.generated_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(cap_caselaw.generated_citing_slavery_summary)
         else:

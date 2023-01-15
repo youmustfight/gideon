@@ -21,7 +21,7 @@ from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
 from indexers.utils.index_document_prep import index_document_prep
 from indexers.utils.extract_document_summary import extract_document_summary
-from ai.requests.cap_caselaw_search import cap_caselaw_search
+from ai.requests.cap_api_search import cap_api_search
 from ai.requests.brief_fact_similarity import brief_fact_similarity
 from ai.requests.question_answer import question_answer
 from ai.requests.search_locations import search_locations

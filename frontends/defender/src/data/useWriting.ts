@@ -9,7 +9,7 @@ const reqWritingGet = async (writingId: number | string): Promise<TWriting> =>
   axios.get(`${getGideonApiUrl()}/v1/writing/${writingId}`).then((res) => res.data.writing);
 
 export const useWriting = (writingId: number | string) => {
-  return useQuery<TWriting>(["writing", writingId], async () => reqWritingGet(writingId), {
+  return useQuery<TWriting>(["writing", Number(writingId)], async () => reqWritingGet(writingId), {
     refetchInterval: 1000 * 60,
   });
 };
@@ -25,10 +25,27 @@ export type TWritingCreateParams = {
   forkedWritingId?: number;
 };
 
-export const reqWritingPost = async (
+export const reqWritingDocumentMemo = async ({
+  documentId,
+  promptText,
+  userId,
+}: {
+  documentId: number;
+  promptText: string;
+  userId: number;
+}): Promise<Partial<TWriting>> =>
+  axios
+    .post(`${getGideonApiUrl()}/v1/ai/write-memo-for-document`, {
+      document_id: documentId,
+      prompt_text: promptText,
+      user_id: userId,
+    })
+    .then((res) => res.data.data.writing);
+
+export const reqWritingTemplate = async (
   { bodyHtml, bodyText, caseId, forkedWritingId, isTemplate, name, organizationId }: TWritingCreateParams,
   { promptText, runAIWriter }: { promptText?: string; runAIWriter: boolean }
-): Promise<any> =>
+): Promise<TWriting> =>
   axios
     .post(runAIWriter ? `${getGideonApiUrl()}/v1/ai/fill-writing-template` : `${getGideonApiUrl()}/v1/writing`, {
       writing: {
@@ -42,12 +59,12 @@ export const reqWritingPost = async (
       },
       prompt_text: promptText,
     })
-    .then((res) => res.data.data.writing);
+    .then((res) => res.data?.data?.writing);
 
 export const useWritingCreate = () =>
   useMutation(
     async ({ params, runAIWriter }: { params: TWritingCreateParams; runAIWriter: boolean }) =>
-      reqWritingPost(params, { runAIWriter }),
+      reqWritingTemplate(params, { runAIWriter }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(["writing"]);

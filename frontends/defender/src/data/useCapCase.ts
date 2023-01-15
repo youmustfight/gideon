@@ -69,7 +69,9 @@ export const reqCapCaseDelete = async (capId: number): Promise<void> =>
 
 // MISC
 export const reqCapCaseIndex = async (capId: number | string): Promise<void> =>
-  axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/index`).then((res) => res.data);
+  axios
+    .post(`${getGideonApiUrl()}/v1/cap/case/index`, { cap_ids: [capId], project_tag: "citing_slavery" })
+    .then((res) => res.data);
 
 export const reqCapCaseExtractions = async (capId: number | string): Promise<void> =>
   axios.post(`${getGideonApiUrl()}/v1/cap/case/${capId}/extractions`).then((res) => res.data);

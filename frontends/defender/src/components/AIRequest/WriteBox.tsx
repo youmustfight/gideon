@@ -37,7 +37,7 @@ export const WriteBox = () => {
     // } else {
     //   setWritingScope("prompt");
     // }
-    setWritingScope("prompt");
+    setWritingScope("templatePrompt");
   }, []);
 
   // RENDER
@@ -73,8 +73,8 @@ export const WriteBox = () => {
             style={{ maxWidth: "100%" }}
           >
             <option value="">--- Select Data Source ---</option>
-            <option value="prompt">Using Text Input</option>
-            <option value="case" disabled={params.caseId == null}>
+            <option value="templatePrompt">Using Text Input</option>
+            <option value="templateCase" disabled={params.caseId == null}>
               Using Case Brief
             </option>
           </select>
@@ -83,7 +83,7 @@ export const WriteBox = () => {
             disabled={
               isAIRequestSubmitted ||
               !selectedWriting ||
-              (writingScope === "prompt" && writingInput.promptText.length < 20)
+              (writingScope === "templatePrompt" && writingInput.promptText.length < 20)
             }
             onClick={() => write({ caseId: params?.caseId, organizationId: focusedOrgId })}
           >
@@ -92,7 +92,7 @@ export const WriteBox = () => {
         </div>
       </div>
       <div className="prompt-writer">
-        {writingScope === "prompt" ? (
+        {writingScope === "templatePrompt" ? (
           <>
             <div>
               <p>

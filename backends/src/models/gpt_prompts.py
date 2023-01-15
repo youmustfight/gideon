@@ -137,3 +137,11 @@ Delete any line that does not mention a calendar date.
 gpt_prompt_edit_event_timeline_structure = """
 Remove bullet points and start each line with the mentioned calendar date as ISO
 """
+
+gpt_prompt_edit_separate_research_questions_list = """
+Separate each research question into a list prefixed with a dash.
+"""
+
+gpt_prompt_edit_organize_as_html_markup = """
+Organize content in html structure. Exclude markup for head, body, and doctype.
+"""

@@ -13,10 +13,10 @@ import { TCapCase } from "../../data/useCapCase";
 import { reqBriefCreate, TUseBriefCreateBody } from "../../data/useBrief";
 import { reqDocumentSummarize } from "../../data/useDocument";
 import { TWriting } from "../../data/useWritings";
-import { reqWritingPost } from "../../data/useWriting";
+import { reqWritingDocumentMemo, reqWritingTemplate } from "../../data/useWriting";
 
 export type TAIRequestType = "inquiry" | "summarize" | "write";
-export type TWritingScope = "case" | "prompt";
+export type TWritingScope = "templateCase" | "templatePrompt" | "memoDocument";
 export type TSummaryScope = "case" | "document" | "text";
 export type TInquiryScope = "caselaw" | "organization" | "case" | "document";
 export type TFocusAnswer = "question" | "location" | "caseFacts" | "writingSimilarity" | "caselaw";
@@ -82,9 +82,9 @@ type TAIRequestStore = {
   writingScope?: TWritingScope;
   setWritingScope: (writingScope: TWritingScope) => void;
   writingInput: {
+    promptText: string;
     writingTemplateId?: number | string;
     writingModel?: Partial<TWriting>;
-    promptText: string;
   };
   setWritingInput: (input: {
     writingTemplateId?: number | string;
@@ -96,7 +96,7 @@ type TAIRequestStore = {
   // --- answers
   answerWriting?: {
     inProgress: boolean;
-    writing?: TWriting;
+    writing?: TWriting | Partial<TWriting>;
   };
 };
 
@@ -233,7 +233,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   summaryInput: { text: "", issues: [] },
   setSummaryInput: (summaryInput) => set({ summaryInput }),
   // --- query
-  summarize: ({ caseId, documentId }) => {
+  summarize: ({ caseId, documentId, userId }) => {
     set({ isAIRequestSubmitted: true, answerSummary: { inProgress: true } });
     // TEXT
     if (get().summaryScope === "text") {
@@ -267,21 +267,29 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   writingInput: { writingTemplateId: undefined, writingModel: undefined, promptText: "" },
   setWritingInput: (writingInput) => set({ writingInput }),
   // --- query
-  write: ({ caseId, organizationId }) => {
+  write: ({ caseId, documentId, organizationId, userId }) => {
     set({ isAIRequestSubmitted: true, answerWriting: { inProgress: true } });
     const { promptText, writingTemplateId, writingModel } = get().writingInput;
-    reqWritingPost(
-      {
-        caseId: Number(caseId),
-        isTemplate: false,
-        name: writingModel!.name,
-        organizationId,
-        forkedWritingId: Number(writingTemplateId),
-        bodyHtml: writingModel!.body_html,
-        bodyText: writingModel!.body_text,
-      },
-      { runAIWriter: true, promptText }
-    ).then((writing) => set({ answerWriting: { inProgress: false, writing } }));
+    // MEMOS
+    if (get().writingScope === "memoDocument") {
+      reqWritingDocumentMemo({ documentId, promptText, userId }).then((writing) =>
+        set({ answerWriting: { inProgress: false, writing } })
+      );
+      // TEMPLATE FILLS
+    } else if (["templateCase", "templatePrompt"].includes(get().writingScope ?? "")) {
+      reqWritingTemplate(
+        {
+          caseId: Number(caseId),
+          isTemplate: false,
+          name: writingModel!.name,
+          organizationId,
+          forkedWritingId: Number(writingTemplateId),
+          bodyHtml: writingModel!.body_html,
+          bodyText: writingModel!.body_text,
+        },
+        { runAIWriter: true, promptText }
+      ).then((writing) => set({ answerWriting: { inProgress: false, writing } }));
+    }
   },
   // --- answers
   answerWriting: undefined,
