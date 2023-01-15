@@ -3,15 +3,13 @@ import sqlalchemy as sa
 from ai.requests.question_answer import question_answer
 from dbs.sa_models import Brief, Document, Writing
 from models.gpt import gpt_completion, gpt_edit
-from models.gpt_prompts import gpt_prompt_edit_separate_research_questions_list
+from models.gpt_prompts import gpt_prompt_article_title, gpt_prompt_edit_separate_research_questions_list
 
 
 async def write_memo_for_document(session, document_id: int, prompt_text: str, user_id: int):
     print('INFO (write_memo_for_document.py) start')
-    # fetch document for name
-    query_document = await session.execute(sa.select(Document).where(Document.id == int(document_id)))
-    document = query_document.scalars().first()
-    
+    # CONTENT
+    # --- prompts
     # Separate out research questions from prompt
     research_prompt_edited = gpt_edit(
         gpt_prompt_edit_separate_research_questions_list,
@@ -23,7 +21,6 @@ async def write_memo_for_document(session, document_id: int, prompt_text: str, u
     # --- clean start/end line breaks or gaps
     research_prompt_arr = list(map(lambda str: str.strip(), research_prompt_arr))
     print('INFO (write_memo_for_document.py) research_prompt_arr', research_prompt_arr)
-    
     # Run Q&A with each question against document
     research_prompt_responses = []
     for research_prompt in research_prompt_arr:
@@ -39,24 +36,27 @@ async def write_memo_for_document(session, document_id: int, prompt_text: str, u
         ))
     print('INFO (write_memo_for_document.py) research_prompt_responses', research_prompt_responses)
     
-    # BUILD CONTENT
-    writing_name = f'Memo for {document.name}'
-    writing_byline = f'Draft memo written by AI on {date.today()}'
+    # GENERATED
+    # writing_name = f'Memo for {document.name}'
+    writing_title = gpt_completion(prompt=gpt_prompt_article_title.replace('<<SOURCE_TEXT>>', prompt_text), max_tokens=150)
+    writing_byline = f'Drafted by AI on {date.today()}'
     
     # TEXT
     def write_research_memo_response_to_text(research_response):
-        return f"{research_response.get('research_prompt')}:\n{research_response.get('answer')}"
+        sources_text = '\n-'.join(map(lambda loc: f"{loc.get('document').name} ({loc.get('document_content').sentence_start}-{loc.get('document_content').sentence_end})", research_response.get('locations')))
+        return f"{research_response.get('research_prompt')}:\n{research_response.get('answer')}\nSources:{sources_text}"
     research_prompts_text = "\n\n".join(map(write_research_memo_response_to_text, research_prompt_responses))
     print('INFO (write_memo_for_document.py) research_prompts_text', research_prompts_text)
-    research_memo_text = f'{writing_name}\n{writing_byline}\n\n{research_prompts_text}'
+    research_memo_text = f'{writing_title}\n{writing_byline}\n\n{research_prompts_text}'
     print('INFO (write_memo_for_document.py) research_memo_text', research_memo_text)
 
     # HTML
     def write_research_memo_response_to_html(research_response):
-        return f"<h2>{research_response.get('research_prompt')}</h2><p>{research_response.get('answer')}</p>"
-    research_prompts_html = "<br>".join(map(write_research_memo_response_to_html, research_prompt_responses))
+        sources_html = '</li><li>'.join(map(lambda loc: f"{loc.get('document').name} ({loc.get('document_content').sentence_start}-{loc.get('document_content').sentence_end})", research_response.get('locations')))
+        return f"<h2>{research_response.get('research_prompt')}</h2><p>{research_response.get('answer')}</p><p>Sources:</p><ul><li>{sources_html}</li></ul>"
+    research_prompts_html = "<br><br><br>".join(map(write_research_memo_response_to_html, research_prompt_responses))
     print('INFO (write_memo_for_document.py) research_prompts_html', research_prompts_html)
-    research_memo_html = f'<h1>Memo for {document.name}</h1><p>{writing_byline}</p><br>{research_prompts_html}'
+    research_memo_html = f'<h1>{writing_title}</h1><p>{writing_byline}</p><br><br>{research_prompts_html}'
     print('INFO (write_memo_for_document.py) research_memo_html', research_memo_html)
 
     # BUILD MODEL
@@ -64,7 +64,7 @@ async def write_memo_for_document(session, document_id: int, prompt_text: str, u
         document_id=document_id,
         user_id=user_id,
         type="memo_document",
-        name=writing_name,
+        name=writing_title,
         generated_body_text=research_memo_text,
         body_text=research_memo_text, # this is what the user will edit
         generated_body_html=research_memo_html,

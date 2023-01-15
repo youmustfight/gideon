@@ -61,7 +61,7 @@ export const Gideon: React.FC = () => {
         element={
           <ProtectedRoute user={user}>
             <AppHeader />
-            <ToolWindow>
+            <ToolWindow maxWidth="720px">
               <ViewPlayground />
             </ToolWindow>
           </ProtectedRoute>

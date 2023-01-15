@@ -51,6 +51,15 @@ In the fewest words, write what type of video content this is:
 TYPE OF VIDEO CONTENT:
 """
 
+# TITLES
+gpt_prompt_article_title = """
+Write an article title given the following set of questions.
+
+QUESTIONS: <<SOURCE_TEXT>>
+
+ARTICLE TITLE: 
+"""
+
 
 # EVENTS
 gpt_prompt_timeline = """
