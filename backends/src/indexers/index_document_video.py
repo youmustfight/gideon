@@ -8,7 +8,7 @@ from dbs.sa_models import Document, DocumentContent, Embedding, File
 from files.opencv_utils import video_frames
 from files.s3_utils import s3_get_file_url, s3_upload_file_string
 from indexers.utils.extract_document_events import extract_document_events_v1
-from indexers.utils.extract_document_summary import extract_document_summary
+from indexers.utils.extract_text_summary import extract_text_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.tokenize_string import TOKENIZING_STRATEGY
 from models.assemblyai import assemblyai_transcribe
