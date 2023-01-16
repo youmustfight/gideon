@@ -38,7 +38,7 @@ def _get_pinecone_index_url(vector_index_id: str):
 #     includeMetadata=True,
 #     filter=filters)
 def pinecone_index_query(index: str, namespace: str, vector: List[float], top_k: int, filters=None):
-    print(f'INFO (pinecone_index_query): {index}:{namespace}')
+    print(f'INFO (pinecone_index_query): {index}:{namespace}', filters)
     query_results = requests.post(
         f'{_get_pinecone_index_url(index)}/query',
         json={
@@ -61,12 +61,12 @@ def pinecone_index_query(index: str, namespace: str, vector: List[float], top_k:
     query_result_matches = list(map(lambda m: dict(m), query_results['matches']))
     # return
     return query_result_matches
+
 # DEPRECATED: can't use the python library because it's causing SSL issues ffs
 # pinecone.Index(index_name=index_tuple[0]).upsert(
 #     vectors=upserts_tuple_dict[index_tuple],
 #     namespace=index_tuple[1])
 def pinecone_index_upsert(index: str, namespace: str, values):
-    print(f'INFO (pinecone_index_upsert): {index}:{namespace}')
     # TODO: syntax follows pinecone lib but it's a little jank feeling
     for value in values:
         upsert_value = {
@@ -74,11 +74,12 @@ def pinecone_index_upsert(index: str, namespace: str, values):
             'values': value[1],
             'metadata': value[2],
         }
+        print(f'INFO (pinecone_index_upsert): {index}:{namespace}', value[0], value[2])
         requests.post(
             f'{_get_pinecone_index_url(index)}/vectors/upsert',
             json={
                 'namespace': namespace,
-                'values': [upsert_value]
+                'vectors': [upsert_value]
             },
             headers={
                 'Accept': 'application/json',
@@ -87,6 +88,7 @@ def pinecone_index_upsert(index: str, namespace: str, values):
             }
         )
     return None
+
 # DEPRECATED: can't use the python library because it's causing SSL issues ffs
 # pinecone.Index(index_name=delete_tuple[0]).delete(ids=embeddings_ids_strs, namespace=delete_tuple[1])
 def pinecone_index_delete(index: str, namespace: str, ids: List[str]):

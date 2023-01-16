@@ -1,8 +1,11 @@
+from time import sleep
+from typing import List
 import boto3
 import io
 import os
 from pdf2image import convert_from_bytes
 from dbs.sa_models import File
+import env
 from files.s3_utils import s3_get_file_bytes
 
 # PDF SPLITTING (not really ocr but w/e same gist/world)
@@ -65,3 +68,65 @@ async def ocr_parse_image_text(pil_image):
         # --- return
         print(f'INFO (ocr.py:ocr_parse_image_text) Word count: {len(words_arr)}')
         return words
+
+
+# PDF -> TEXT BY PAGE
+async def ocr_parse_pdf_to_text(file_pdf: File) -> List[str]:
+    print('INFO (ocr.py:ocr_parse_pdf_to_text) start')
+    try:
+        # --- analyze (async job w/ file s3 location): https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/textract.html#Textract.Client.start_document_text_detection
+        start_textract_response = textract_client.start_document_text_detection(
+            DocumentLocation={
+                'S3Object': {
+                    'Bucket': env.env_get_aws_s3_files_bucket(),
+                    'Name': file_pdf.upload_key,
+                }
+            },
+            OutputConfig={
+                'S3Bucket':  env.env_get_aws_s3_files_bucket(),
+            }
+        )
+        textract_job_id = start_textract_response['JobId']
+    except Exception as err:
+        print("ERROR (ocr.py:ocr_parse_pdf_to_text) Couldn't detect text.", err)
+        raise
+    else:
+        number_seconds_waited_for_textract_job = 0
+        is_textract_job_done = False
+        top_level_blocks = []
+        # --- await textract job to finish: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/textract.html#Textract.Client.get_document_text_detection
+        while is_textract_job_done == False:
+            get_textract_response = textract_client.get_document_text_detection(JobId=textract_job_id)
+            print(f'INFO (ocr.py:ocr_parse_pdf_to_text) getting textract job {textract_job_id}....', get_textract_response['JobStatus'])
+            # --- if failed, raise 
+            if get_textract_response['JobStatus'] == 'FAILED':
+                raise get_textract_response
+            # --- if in succeeded 
+            elif get_textract_response['JobStatus'] == 'SUCCEEDED':
+                print(f'INFO (ocr.py:ocr_parse_pdf_to_text) successful textract job {textract_job_id}....')
+                is_textract_job_done = True
+                # --- next token handler
+                def get_next_blocks(blocks, NextToken):
+                    print(f'INFO (ocr.py:ocr_parse_pdf_to_text) get_next_blocks {textract_job_id} - {NextToken}')
+                    if (NextToken == None):
+                        return blocks
+                    next_get_textract_response = textract_client.get_document_text_detection(JobId=textract_job_id, NextToken=NextToken)
+                    return get_next_blocks(blocks + next_get_textract_response['Blocks'], next_get_textract_response.get('NextToken'))
+                # --- start
+                top_level_blocks = get_next_blocks(get_textract_response['Blocks'], get_textract_response.get('NextToken'))
+            # --- otherwise wait (IN_PROGRESS or PARTIAL_SUCCESS)
+            number_seconds_waited_for_textract_job += 2
+            sleep(2)
+
+        # --- handle finished response, parsing by page
+        print(f'INFO (ocr.py:ocr_parse_pdf_to_text) Detected page blocks count:', len(top_level_blocks))
+        # --- block id map for page reference
+        pages_text = dict()
+        for block in top_level_blocks:
+            if (block.get('BlockType') == 'WORD'):
+                if (pages_text.get(block.get('Page')) == None): pages_text.update({ block.get('Page'): "" })
+                pages_text.update({ block.get('Page'): pages_text.get(block.get('Page')) + f" {block.get('Text')}" })
+
+        # --- return
+        print(f'INFO (ocr.py:ocr_parse_pdf_to_text) Pages of text:', len(pages_text.keys()))
+        return pages_text.values()

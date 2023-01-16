@@ -1,3 +1,4 @@
+import pydash as _
 from sentence_transformers import SentenceTransformer
 
 # Sentence embeddings are more effective + cheaper than GTP3
@@ -9,7 +10,7 @@ SENTENCE_MODEL_NAME = 'sentence-transformers/all-mpnet-base-v2'
 model = SentenceTransformer(SENTENCE_MODEL_NAME)
 
 def sentence_encode_embeddings(sentences):
-    print('INFO (sentence.py:sentence_embeddings) start', sentences) # embeddings
-    embeddings = model.encode(sentences)
-    print('INFO (sentence.py:sentence_embeddings) embedded') # embeddings
+    print(f'INFO (sentence.py:sentence_embeddings) start embedding {len(sentences)} sentences') # embeddings
+    embeddings = model.encode(sentences, batch_size=20, show_progress_bar=False)
+    print(f'INFO (sentence.py:sentence_embeddings) {len(sentences)} sentences = {len(embeddings)} embeddings')
     return embeddings

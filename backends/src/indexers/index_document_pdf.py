@@ -4,11 +4,8 @@ import sqlalchemy as sa
 from ai.agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from indexers.utils.extract_document_type import extract_document_type
-from indexers.utils.extract_document_events import extract_document_events_v1
-from indexers.utils.extract_text_summary import extract_text_summary
-from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.tokenize_string import tokenize_string, TOKENIZING_STRATEGY
-from models.ocr import split_file_pdf_to_pil, ocr_parse_image_text
+from models.ocr import split_file_pdf_to_pil, ocr_parse_image_text, ocr_parse_pdf_to_text
 
 
 async def _index_document_pdf_process_content(session, document_id: int) -> None:
@@ -21,17 +18,24 @@ async def _index_document_pdf_process_content(session, document_id: int) -> None
     document_content = document_content_query.scalars().all()
 
     if len(document_content) == 0:
-        # 1. PDF OCR -> TEXT (SENTENCES) / IMAGES
-        print(f"INFO (index_document_pdf.py:_index_document_pdf_process_content): converting {file.filename} to pngs")
-        pdf_image_files = split_file_pdf_to_pil(file)
-        # 2. DOCUMENT CONTENT CREATE
-        # --- 2a. Process text for all pages
-        # --- tasks
-        pages_text_coroutines = map(lambda pdf_image_file: ocr_parse_image_text(pdf_image_file), pdf_image_files)
-        print(f'INFO (index_document_pdf.py:_index_document_pdf_process_content): coroutines', pages_text_coroutines)
-        # --- results
-        pages_text = await asyncio.gather(*pages_text_coroutines)
-        print(f'INFO (index_document_pdf.py:_index_document_pdf_process_content): pages_text', pages_text)
+        # V1
+        # # 1. PDF OCR -> TEXT (SENTENCES) / IMAGES
+        # print(f"INFO (index_document_pdf.py:_index_document_pdf_process_content): converting {file.filename} to pngs")
+        # pdf_image_files = split_file_pdf_to_pil(file)
+        # # 2. DOCUMENT CONTENT CREATE
+        # # --- 2a. Process text for all pages
+        # # --- tasks
+        # pages_text_coroutines = map(lambda pdf_image_file: ocr_parse_image_text(pdf_image_file), pdf_image_files)
+        # print(f'INFO (index_document_pdf.py:_index_document_pdf_process_content): coroutines', pages_text_coroutines)
+        # # --- results
+        # pages_text = await asyncio.gather(*pages_text_coroutines)
+        # print(f'INFO (index_document_pdf.py:_index_document_pdf_process_content): pages_text', pages_text)
+
+        # V2
+        # 1. PDF OCR -> TEXT (string for each page)
+        pages_text = await ocr_parse_pdf_to_text(file)
+
+        # 2. Tokenize
         # --- 2b. Tokenize/process text by sentence
         document_content_sentences = []
         counter_pages = 0

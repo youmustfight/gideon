@@ -498,6 +498,10 @@ async def app_route_document_delete(request, document_id):
     async with session.begin():
         # --- document content & embeddings
         await deindex_document(session, document_id)
+        # --- writings
+        await session.execute(sa.update(Writing)
+            .where(Writing.document_id == int(document_id))
+            .values(document_id=None))
         # --- files
         await session.execute(sa.update(File)
             .where(File.document_id == int(document_id))
