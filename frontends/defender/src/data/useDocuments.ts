@@ -89,7 +89,7 @@ export const useDocuments = ({ caseId, organizationId, userId }: TUseDocumentsPa
     if (caseId) return ["documents", "case", String(caseId)];
     if (organizationId) return ["documents", "organization", String(organizationId)];
     if (userId) return ["documents", "user", String(userId)];
-    throw new Error("Can't create cache key for useDocument");
+    return ["documents", "examples"];
   };
 
   return useQuery<TDocument[]>(getKey(), async () => reqDocumentsGet({ caseId, organizationId, userId }), {

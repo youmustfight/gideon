@@ -13,6 +13,7 @@ import { reqIndexDocument } from "../../data/reqIndexDocument";
 import { reqDocumentDelete } from "../../data/useDocument";
 import { useDocuments } from "../../data/useDocuments";
 import { useUser } from "../../data/useUser";
+import { useWritings } from "../../data/useWritings";
 import { DocumentViewTranscript } from "../case/ViewCaseDocument";
 
 const PlaygroundAIRequest = () => {
@@ -27,6 +28,7 @@ const PlaygroundAIRequest = () => {
     inquiryQuery,
     isAIRequestSubmitted,
     setAIRequestType,
+    setAnswerWriting,
     setInquiryScope,
     setInquiryQuery,
     setSummaryScope,
@@ -36,10 +38,13 @@ const PlaygroundAIRequest = () => {
     write,
     writingInput,
   } = useAIRequestStore();
-  const { data: documents, refetch } = useDocuments({ userId: user!.id });
+  // --- example documents
+  const { data: exampleDocuments = [] } = useDocuments({});
+  // --- user documents
+  const { data: documents = [], refetch } = useDocuments({ userId: user!.id });
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
-  const selectedDocument = documents?.find((doc) => doc.id === Number(selectedDocumentId));
+  const selectedDocument = [...exampleDocuments, ...documents]?.find((doc) => doc.id === Number(selectedDocumentId));
   // --- document deletion
   const [isDeleting, setIsDeleting] = useState(false);
   const deleteHandler = async () => {
@@ -54,6 +59,8 @@ const PlaygroundAIRequest = () => {
       setIsDeleting(false);
     }
   };
+  // --- writings for selected document + option to view a writing
+  const { data: documentWritings = [] } = useWritings({ documentId: selectedDocument?.id });
 
   // --- do extra calls/setup for changes until we have universal task interface
   const selectSummary = () => {
@@ -180,7 +187,7 @@ const PlaygroundAIRequest = () => {
             </div>
             <div className="input-row">
               <button
-                disabled={isAIRequestSubmitted || !selectedDocumentId}
+                disabled={isAIRequestSubmitted || !selectedDocumentId || writingInput.promptText?.length < 40}
                 type="submit"
                 style={{ flexGrow: 1, maxWidth: "100%", width: "100%" }}
               >
@@ -208,9 +215,14 @@ const PlaygroundAIRequest = () => {
                     ))}
                   </optgroup>
                   <optgroup label="Example Uploads">
-                    <option>Gideon vs. Wainwright</option>
+                    {/* <option>Gideon vs. Wainwright</option>
                     <option>Inflation Reduction Act</option>
-                    <option>U.S. Constitution</option>
+                    <option>U.S. Constitution</option> */}
+                    {exampleDocuments?.map((ed) => (
+                      <option key={ed.name} value={ed.id}>
+                        {ed.name}
+                      </option>
+                    ))}
                   </optgroup>
                 </select>
                 <button
@@ -305,6 +317,40 @@ const PlaygroundAIRequest = () => {
         </div>
       ) : null}
 
+      {/* DOCUMENT -> WRITING */}
+      {aiRequestType === "write" && documentWritings?.length > 0 && !answerWriting?.writing ? (
+        // <div className="playground-ai-request__previous-writings">
+        //   <p>
+        //     <small>Recent Memos Written</small>
+        //   </p>
+        //   {documentWritings?.map((dw) => (
+        //     <button key={dw.id} onClick={() => setAnswerWriting(dw)}>
+        //       {dw.name}
+        //     </button>
+        //   ))}
+        // </div>
+        <div className="playground-ai-request__previous-writings">
+          <p>
+            <small>Recent AI Written Memos</small>
+          </p>
+          <select
+            onChange={(e) => {
+              const id = Number(e.target.value);
+              const writingToRead = documentWritings?.find((dw) => Number(dw.id) === id);
+              if (id && writingToRead) setAnswerWriting(writingToRead);
+            }}
+            style={{ maxWidth: "100%", textAlign: "center" }}
+          >
+            <option value="">--- Read a Memo ---</option>
+            {documentWritings?.slice(0, 6)?.map((dw) => (
+              <option key={dw.id} value={dw.id}>
+                {dw.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       {/* DOCUMENT VIEW */}
       {selectedDocument ? (
         <div className="playground-ai-request__transcript">
@@ -321,12 +367,15 @@ const PlaygroundAIRequest = () => {
           )}
           <br />
           <div>
-            <ConfirmButton
-              prompts={["Delete Document", "Yes, Delete Document"]}
-              onClick={deleteHandler}
-              disabled={isDeleting}
-              style={{ width: "100%" }}
-            />
+            {/* check if user_id exists, otherwise a person can delete example documents */}
+            {selectedDocument?.user_id != null && (
+              <ConfirmButton
+                prompts={["Delete Document", "Yes, Delete Document"]}
+                onClick={deleteHandler}
+                disabled={isDeleting}
+                style={{ width: "100%" }}
+              />
+            )}
           </div>
         </div>
       ) : null}
@@ -401,6 +450,20 @@ const StyledPlaygroundAIRequest = styled.div`
       button {
         max-width: 80px;
       }
+    }
+  }
+  .playground-ai-request__previous-writings {
+    width: 540px;
+    margin: 12px auto;
+    padding: 12px;
+    text-align: center;
+    p > small {
+      font-size: 13px;
+      font-style: italic;
+      opacity: 0.7;
+    }
+    select {
+      margin-top: 6px;
     }
   }
 `;
