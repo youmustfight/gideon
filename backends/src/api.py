@@ -534,6 +534,9 @@ async def app_route_documents(request):
             query_builder_documents = query_builder_documents.where(Document.organization_id == int(request.args.get('organization_id')))
         if request.args.get('user_id'):
             query_builder_documents = query_builder_documents.where(Document.user_id == int(request.args.get('user_id')))
+        # --- filter for example documents if no requsts exist
+        if request.args.get('case_id') == None and request.args.get('organization_id') == None and request.args.get('user_id') == None:
+            query_builder_documents = query_builder_documents.where(sa.and_(Document.case_id.is_(None), Document.organization_id.is_(None), Document.user_id.is_(None)))
         # --- exec fetch w/ ordering
         query_documents = await session.execute(query_builder_documents.order_by(sa.desc(Document.id)))
         documents = query_documents.scalars().unique().all()
@@ -743,8 +746,13 @@ async def app_route_writings_get(request):
         # --- filter for org or case related writing
         if (request.args.get('case_id')):
             query_builder = query_builder.where(Writing.case_id == int(request.args.get('case_id')))
+        elif (request.args.get('document_id')):
+            query_builder = query_builder.where(Writing.document_id == int(request.args.get('document_id')))
         elif (request.args.get('organization_id')):
             query_builder = query_builder.where(Writing.organization_id == int(request.args.get('organization_id')))
+        else:
+            # --- if no id filter, return
+            return json({ 'status': 'error' })
         # --- filter for templates
         if (request.args.get('is_template')):
             is_template_true = request.args.get('is_template') == 'true'
