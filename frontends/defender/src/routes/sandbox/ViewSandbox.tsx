@@ -116,7 +116,10 @@ const SandboxAIRequest = () => {
     <StyledSandboxAIRequest>
       <div className="sandbox-ai-request__value-prop">
         <h1>A.I. Sandbox</h1>
-        <p>Explore what's possible with Gideon</p>
+        <p>
+          Start exploring Gideon AI for <u>documents</u>. <a href="mailto:mark@gideon.foundation">Ask us</a> about AI
+          for <u>legal research and writing</u>.
+        </p>
       </div>
       <div className="sandbox-ai-request__options">
         <button className={aiRequestType === "inquiry" ? "active" : ""} onClick={selectAsk}>
