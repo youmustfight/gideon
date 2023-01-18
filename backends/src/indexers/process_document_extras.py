@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from indexers.utils.extract_document_events import extract_document_events_v1
-from indexers.utils.extract_document_summary import extract_document_summary
+from indexers.utils.extract_text_summary import extract_text_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.tokenize_string import TOKENIZING_STRATEGY
 
@@ -20,7 +20,7 @@ async def process_document_extras(session, document_id: int) -> None:
     # --- summary
     print(f'INFO (process_document_extras.py): document_summary. len = {len(document_content_text)}')
     if len(document_content_text) > 0 and len(document_content_text) < 250_000:
-        document.generated_summary = extract_document_summary(document_content_text)
+        document.generated_summary = extract_text_summary(document_content_text)
         document.generated_summary_one_liner = extract_document_summary_one_liner(document.generated_summary)
     # --- TODO: event timeline v2
     # --- TODO: cases/laws mentioned

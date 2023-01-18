@@ -17,7 +17,7 @@ async def index_writing(session: Session, writing_id):
     # --- Create agent
     # TODO SENTENCE LEVEL
     # TODO GET ACTION LOCKS FOR ORG, SO WE CAN SEARCH TEMPLATES
-    aiagent_writing_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.writing_similarity_embed, case_id=writing.case_id, organization_id=writing.organization_id)
+    aiagent_writing_embeder = await create_ai_action_agent(session, action=AI_ACTIONS.writing_similarity_embed, case_id=writing.case_id, organization_id=writing.organization_id, user_id=writing.user_id)
     # --- Encode Text
     writing_embeddings = aiagent_writing_embeder.encode_text([writing.body_text])
     writing_embedding = writing_embeddings[0]

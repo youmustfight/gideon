@@ -13,8 +13,8 @@ export const reqIndexDocument = (
     return;
   }
   // --- size (2MB for now)
-  if (file.size > 1000 * 1000 * 10) {
-    alert("Please upload a file less than 10MB");
+  if (file.size > 1000 * 1000 * 30) {
+    alert("Please upload a file less than 25MB");
     return;
   }
 

@@ -116,7 +116,7 @@ async def _index_cap_case_process_extractions(session, cap_id: int) -> None:
         caselaw_content_text = ' '.join(map(lambda content: content['text'], list(cap_caselaw.casebody['opinions'])))
         # --- summaries & extractions TODO: not doing this to save $. utilize cap case "head_matter"
         # if cap_caselaw.generated_summary == None:
-        #     cap_caselaw.generated_summary = extract_document_summary(caselaw_content_text, use_prompt=gpt_prompt_summary_caselaw_detailed)
+        #     cap_caselaw.generated_summary = extract_text_summary(caselaw_content_text, use_prompt=gpt_prompt_summary_caselaw_detailed)
         #     cap_caselaw.generated_summary_one_liner = extract_document_summary_one_liner(cap_caselaw.generated_summary)
         # --- summaries & extractions (citing slavery)
         if text_contains_mentions_of_slavery(caselaw_content_text) == True:

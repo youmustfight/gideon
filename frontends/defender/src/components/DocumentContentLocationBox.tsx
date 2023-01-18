@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { TQueryLocation } from "./AIRequest/aiRequestReqs";
 import { formatSecondToTime } from "./formatSecondToTime";
 import { formatHashForSentenceHighlight } from "./hashUtils";
+import { P } from "./styled/common/Typography";
 
 export const DocumentContentLocationBox = ({ location }: { location: TQueryLocation }) => {
   // SETUP
@@ -49,7 +50,7 @@ export const DocumentContentLocationBox = ({ location }: { location: TQueryLocat
             </span>
           </b>
           {location.document_content.text && location.document_content.tokenizing_strategy === "sentence" ? (
-            <p>"...{location.document_content.text}..."</p>
+            <P>"...{location.document_content.text}..."</P>
           ) : null}
         </div>
       )}
@@ -65,7 +66,7 @@ const StyledDocumentContentLocationBox = styled.div`
   display: flex;
   align-items: center;
   background: white;
-  padding: 8px;
+  padding: 8px 12px;
   border-radius: 6px;
   & > div.answer-location-box__text {
     flex-grow: 1;
@@ -76,6 +77,7 @@ const StyledDocumentContentLocationBox = styled.div`
     }
     p {
       margin: 8px 0 0;
+      font-size: 12px;
     }
   }
 `;

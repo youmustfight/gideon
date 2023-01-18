@@ -9,6 +9,15 @@ import sqlalchemy as sa
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from ai.agents.ai_action_agent import generate_ai_action_locks
+from ai.requests.cap_api_search import cap_api_search
+from ai.requests.brief_fact_similarity import brief_fact_similarity
+from ai.requests.question_answer import question_answer
+from ai.requests.search_locations import search_locations
+from ai.requests.writing_similarity import writing_similarity
+from ai.requests.utils.serialize_location import serialize_location
+from ai.requests.write_memo_for_document import write_memo_for_document
+from ai.requests.write_template_with_ai import write_template_with_ai
+from arq_queue.create_queue_pool import create_queue_pool
 from auth.auth_route import auth_route
 from auth.token import decode_token, encode_token
 from caselaw.deindex_cap_case import deindex_cap_case
@@ -20,16 +29,7 @@ import env
 from indexers.deindex_document import deindex_document
 from indexers.deindex_writing import deindex_writing
 from indexers.utils.index_document_prep import index_document_prep
-from indexers.utils.extract_document_summary import extract_document_summary
-from ai.requests.cap_api_search import cap_api_search
-from ai.requests.brief_fact_similarity import brief_fact_similarity
-from ai.requests.question_answer import question_answer
-from ai.requests.search_locations import search_locations
-from ai.requests.writing_similarity import writing_similarity
-from ai.requests.utils.serialize_location import serialize_location
-from ai.requests.write_memo_for_document import write_memo_for_document
-from ai.requests.write_template_with_ai import write_template_with_ai
-from arq_queue.create_queue_pool import create_queue_pool
+from indexers.utils.extract_text_summary import extract_text_summary
 
 # INIT
 api_app = Sanic('api')
@@ -201,7 +201,7 @@ async def app_route_ai_summarize(request):
     async with session.begin():
         # TODO: save request query + results
         # Summarize
-        summary = extract_document_summary(request.json.get('text'))
+        summary = extract_text_summary(request.json.get('text'))
     return json({ 'status': 'success', 'data': { 'summary': summary } })
 
 
@@ -498,6 +498,10 @@ async def app_route_document_delete(request, document_id):
     async with session.begin():
         # --- document content & embeddings
         await deindex_document(session, document_id)
+        # --- writings
+        await session.execute(sa.update(Writing)
+            .where(Writing.document_id == int(document_id))
+            .values(document_id=None))
         # --- files
         await session.execute(sa.update(File)
             .where(File.document_id == int(document_id))
@@ -530,6 +534,9 @@ async def app_route_documents(request):
             query_builder_documents = query_builder_documents.where(Document.organization_id == int(request.args.get('organization_id')))
         if request.args.get('user_id'):
             query_builder_documents = query_builder_documents.where(Document.user_id == int(request.args.get('user_id')))
+        # --- filter for example documents if no requsts exist
+        if request.args.get('case_id') == None and request.args.get('organization_id') == None and request.args.get('user_id') == None:
+            query_builder_documents = query_builder_documents.where(sa.and_(Document.case_id.is_(None), Document.organization_id.is_(None), Document.user_id.is_(None)))
         # --- exec fetch w/ ordering
         query_documents = await session.execute(query_builder_documents.order_by(sa.desc(Document.id)))
         documents = query_documents.scalars().unique().all()
@@ -739,8 +746,13 @@ async def app_route_writings_get(request):
         # --- filter for org or case related writing
         if (request.args.get('case_id')):
             query_builder = query_builder.where(Writing.case_id == int(request.args.get('case_id')))
+        elif (request.args.get('document_id')):
+            query_builder = query_builder.where(Writing.document_id == int(request.args.get('document_id')))
         elif (request.args.get('organization_id')):
             query_builder = query_builder.where(Writing.organization_id == int(request.args.get('organization_id')))
+        else:
+            # --- if no id filter, return
+            return json({ 'status': 'error' })
         # --- filter for templates
         if (request.args.get('is_template')):
             is_template_true = request.args.get('is_template') == 'true'

@@ -8,7 +8,7 @@ from ai.agents.ai_action_agent import create_ai_action_agent, AI_ACTIONS
 from dbs.sa_models import Document, DocumentContent, Embedding, File
 from indexers.utils.extract_document_type import extract_document_type
 from indexers.utils.extract_document_events import extract_document_events_v1
-from indexers.utils.extract_document_summary import extract_document_summary
+from indexers.utils.extract_text_summary import extract_text_summary
 from indexers.utils.extract_document_summary_one_liner import extract_document_summary_one_liner
 from indexers.utils.tokenize_string import tokenize_string, TOKENIZING_STRATEGY
 

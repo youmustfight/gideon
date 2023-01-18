@@ -98,6 +98,7 @@ type TAIRequestStore = {
     inProgress: boolean;
     writing?: TWriting | Partial<TWriting>;
   };
+  setAnswerWriting: (writing: TWriting) => void;
 };
 
 export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
@@ -293,6 +294,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
   },
   // --- answers
   answerWriting: undefined,
+  setAnswerWriting: (writing) => set({ isAIRequestSubmitted: true, answerWriting: { inProgress: false, writing } }),
 }));
 
 export const useAIRequestStore = create(aiRequestStore);

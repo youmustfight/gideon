@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
+import { P } from "../../components/styled/common/Typography";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
 import { reqDocumentDelete, reqDocumentSummarize, useDocument } from "../../data/useDocument";
@@ -28,6 +29,48 @@ const DocumentViewSummary = ({ document }: { document: TDocument }) => {
         {isFullyVisible ? document.generated_summary : document.generated_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
       </p>
+    </div>
+  );
+};
+
+export const DocumentViewMultimedia = ({ document }: { document: TDocument }) => {
+  const isMultimedia = ["audio", "image", "video"].includes(document.type);
+
+  return !isMultimedia ? null : (
+    <div>
+      {/* AUDIO */}
+      {document.type === "audio" ? (
+        <>
+          {/* <div className="section-lead">
+            <h4>Audio Player</h4>
+          </div> */}
+          <section>
+            <audio src={document?.files?.[0]?.upload_url ?? ""} controls style={{ width: "100%" }}></audio>
+          </section>
+        </>
+      ) : null}
+      {/* VIDEO */}
+      {document.type === "video" ? (
+        <>
+          {/* <div className="section-lead">
+            <h4>Video Player</h4>
+          </div> */}
+          <section>
+            <ReactPlayer
+              width="100%"
+              height="100%"
+              controls
+              url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
+            />
+          </section>
+        </>
+      ) : null}
+      {/* IMAGE TEXT BY PAGE/MINUTE */}
+      {document.type === "image" && document.files?.[0] && (
+        <section>
+          <DocumentViewImage imageSrc={document.files[0].upload_url} />
+        </section>
+      )}
     </div>
   );
 };
@@ -93,7 +136,7 @@ export const DocumentViewTranscript = ({ document: doc }: { document: TDocument 
             <hr />
           </div>
           {/* <p>{doc.document_text_by_minute}</p> */}
-          <p>
+          <P>
             {documentTextByGrouping[groupingNumber].map((documentContent) => (
               <span
                 key={`S${documentContent.id}`}
@@ -104,7 +147,7 @@ export const DocumentViewTranscript = ({ document: doc }: { document: TDocument 
                 {documentContent.text}
               </span>
             ))}
-          </p>
+          </P>
         </div>
       ))}
     </StyledBodyTextBox>
@@ -217,34 +260,8 @@ export const ViewCaseDocument = () => {
         </>
       ) : null} */}
 
-        {/* AUDIO */}
-        {document.type === "audio" ? (
-          <>
-            <div className="section-lead">
-              <h4>Audio Player</h4>
-            </div>
-            <section>
-              <audio src={document?.files?.[0]?.upload_url ?? ""} controls style={{ width: "100%" }}></audio>
-            </section>
-          </>
-        ) : null}
-
-        {/* VIDEO */}
-        {document.type === "video" ? (
-          <>
-            <div className="section-lead">
-              <h4>Video Player</h4>
-            </div>
-            <section>
-              <ReactPlayer
-                width="100%"
-                height="100%"
-                controls
-                url={document?.files?.find((f) => f.mime_type?.includes("video"))?.upload_url}
-              />
-            </section>
-          </>
-        ) : null}
+        {/* VIDEO/AUDIO/IMAGE */}
+        <DocumentViewMultimedia document={document} />
 
         {/* OCR/TRANSCRIPTION TEXT BY PAGE/MINUTE */}
         {document.type !== "image" && (
@@ -256,13 +273,6 @@ export const ViewCaseDocument = () => {
               <DocumentViewTranscript document={document} />
             </section>
           </>
-        )}
-
-        {/* IMAGE TEXT BY PAGE/MINUTE */}
-        {document.type === "image" && document.files?.[0] && (
-          <section>
-            <DocumentViewImage imageSrc={document.files[0].upload_url} />
-          </section>
         )}
 
         {/* DELETES */}

@@ -66,6 +66,7 @@ class AIActionAgent():
     def index_query(self, query_text=None, query_image=None, query_vectors=None, query_filters={}, top_k=12, score_max=1, score_min=0, score_min_diff_percent=None, score_max_diff_percent=None):
         # --- vector
         vectors = query_vectors or self.encode_text([query_text])
+
         if (len(vectors) == 0): return []
         vector = vectors[0]
         if (hasattr(vector, 'tolist')):
