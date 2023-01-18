@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Button } from "./styled/common/Button";
 
 type TConfirmButtonProps = {
   disabled?: boolean;
@@ -19,7 +20,7 @@ export const ConfirmButton: React.FC<TConfirmButtonProps> = ({ disabled, prompts
 
   // RENDER
   return (
-    <button
+    <Button
       disabled={disabled}
       onClick={() => {
         if (promptPosition === prompts.length - 1) {
@@ -31,6 +32,6 @@ export const ConfirmButton: React.FC<TConfirmButtonProps> = ({ disabled, prompts
       style={style}
     >
       {prompts[promptPosition]}
-    </button>
+    </Button>
   );
 };

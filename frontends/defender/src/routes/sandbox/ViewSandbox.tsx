@@ -2,6 +2,8 @@ import { orderBy } from "lodash";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import styled from "styled-components";
+import { ActivityLogIcon, LockClosedIcon, Pencil2Icon, QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+
 import { StyledAIRequestBox } from "../../components/AIRequest/AIRequestBox";
 import { useAIRequestStore } from "../../components/AIRequest/AIRequestStore";
 import { StyledAIRequestBoxTabs } from "../../components/AIRequest/styled/StyledAIRequestBoxTabs";
@@ -14,9 +16,13 @@ import { reqDocumentDelete } from "../../data/useDocument";
 import { useDocuments } from "../../data/useDocuments";
 import { useUser } from "../../data/useUser";
 import { useWritings } from "../../data/useWritings";
-import { DocumentViewTranscript } from "../case/ViewCaseDocument";
+import { DocumentViewMultimedia, DocumentViewTranscript } from "../case/ViewCaseDocument";
+import { Select } from "../../components/styled/common/Select";
+import { Button } from "../../components/styled/common/Button";
+import { Input, TextArea } from "../../components/styled/common/Input";
+import { P } from "../../components/styled/common/Typography";
 
-const PlaygroundAIRequest = () => {
+const SandboxAIRequest = () => {
   const { data: user } = useUser();
   const {
     aiRequestType,
@@ -99,109 +105,64 @@ const PlaygroundAIRequest = () => {
   // ON MOUNT
   useEffect(() => {
     // --- clear any prior inquiry if we came from an org/case page
-    clearAIRequest();
-    // --- initial focus for playground should be summarize since it's simpler
+    // clearAIRequest();
+    // --- initial focus for sandbox should be summarize since it's simpler
     setAIRequestType("inquiry");
     setInquiryScope("document");
   }, []);
 
   // RENDER
   return (
-    <StyledPlaygroundAIRequest>
-      <div className="playground-ai-request__options">
+    <StyledSandboxAIRequest>
+      <div className="sandbox-ai-request__value-prop">
+        <h1>A.I. Sandbox</h1>
+        <p>Explore what's possible with Gideon</p>
+      </div>
+      <div className="sandbox-ai-request__options">
         <button className={aiRequestType === "inquiry" ? "active" : ""} onClick={selectAsk}>
-          Document Q&A
+          <div>
+            <QuestionMarkCircledIcon />
+          </div>
+          <p>Document Q&A</p>
         </button>
         <button className={aiRequestType === "summarize" ? "active" : ""} onClick={selectSummary}>
-          Document Summary
+          <div>
+            <ActivityLogIcon />
+          </div>
+          <p>Summarize Document</p>
         </button>
         <button className={aiRequestType === "write" ? "active" : ""} onClick={selectWriteMemo}>
-          Document Memo
+          <div>
+            <Pencil2Icon />
+          </div>
+          <p>Write Document Memo</p>
+        </button>
+        {/* <button className="locked">
+          <div>
+            <LockClosedIcon />
+          </div>
+          <p>Find Similar Cases</p>
+        </button>
+        <button className="locked">
+          <div>
+            <LockClosedIcon />
+          </div>
+          <p>Write a Motion Draft</p>
+        </button> */}
+        <button className="locked">
+          <div>
+            <LockClosedIcon />
+          </div>
+          <p>Write Case Law Memo</p>
         </button>
       </div>
-      <div className="playground-ai-request__input">
-        {/* INPUT */}
-        {aiRequestType === "inquiry" ? (
-          <form
-            className="playground-ai-request__input__actions"
-            onSubmit={(e) => {
-              e.preventDefault();
-              inquiry({ documentId: Number(selectedDocumentId), userId: user!.id });
-            }}
-          >
-            <p>Ask Gideon AI a question about a document:</p>
-            <div className="input-row">
-              <input
-                placeholder="Ex) What address was the search warrant for?"
-                value={inquiryQuery}
-                disabled={isAIRequestSubmitted}
-                onChange={(e) => setInquiryQuery(e.target.value)}
-              />
-              <button disabled={isAIRequestSubmitted || !selectedDocumentId} type="submit">
-                🔎
-              </button>
-            </div>
-          </form>
-        ) : null}
-        {aiRequestType === "summarize" ? (
-          <form
-            className="playground-ai-request__input__actions"
-            onSubmit={(e) => {
-              e.preventDefault();
-              summarize({ documentId: Number(selectedDocumentId), userId: user!.id });
-            }}
-          >
-            <p>Get Gideon AI document summary:</p>
-            {/* <div className="input-row">
-              <input
-                placeholder="Ex) Family reunification policy"
-                value={summaryInput.text}
-                disabled={isAIRequestSubmitted}
-                onChange={(e) => setSummaryInput({ text: e.target.value })}
-              />
-              <button disabled={isAIRequestSubmitted} type="submit">
-                🔎
-              </button>
-            </div> */}
-          </form>
-        ) : null}
-        {aiRequestType === "write" ? (
-          <form
-            className="playground-ai-request__input__actions"
-            onSubmit={(e) => {
-              e.preventDefault();
-              write({ documentId: Number(selectedDocumentId), userId: user!.id });
-            }}
-          >
-            <p>Ask Gideon AI questions about a document, and get a written memo:</p>
-            <div className="input-row">
-              {/* "What are examples of oppressive lease clauses? What are examples of favorable clauses on leases for tenants?" */}
-              <textarea
-                placeholder="Ex) Question 1... Question 2... Question 3..."
-                value={writingInput.promptText}
-                disabled={isAIRequestSubmitted}
-                rows={4}
-                onChange={(e) => setWritingInput({ promptText: e.target.value })}
-                style={{ flexGrow: 1 }}
-              ></textarea>
-            </div>
-            <div className="input-row">
-              <button
-                disabled={isAIRequestSubmitted || !selectedDocumentId || writingInput.promptText?.length < 40}
-                type="submit"
-                style={{ flexGrow: 1, maxWidth: "100%", width: "100%" }}
-              >
-                ✏️
-              </button>
-            </div>
-          </form>
-        ) : null}
+      <div className="sandbox-ai-request__input">
         {/* DOCUMENT */}
         {["inquiry", "summarize", "write"].includes(aiRequestType) ? (
           <>
             {!isUploadingDoc ? (
-              <div className="playground-ai-request__input__file-uploader">
-                <select
+              <div className="sandbox-ai-request__input__file-uploader">
+                <Select
                   value={selectedDocumentId}
                   disabled={isAIRequestSubmitted}
                   onChange={(e) => setSelectedDocumentId(e.target.value)}
@@ -224,8 +185,8 @@ const PlaygroundAIRequest = () => {
                       </option>
                     ))}
                   </optgroup>
-                </select>
-                <button
+                </Select>
+                <Button
                   type="submit"
                   disabled={isAIRequestSubmitted}
                   onClick={() => {
@@ -233,28 +194,104 @@ const PlaygroundAIRequest = () => {
                     setSelectedDocumentId("");
                   }}
                 >
-                  + Upload Doc
-                </button>
+                  or Upload
+                </Button>
               </div>
             ) : (
-              <form className="playground-ai-request__input__file-uploader" onSubmit={onSubmitFile}>
-                <button type="button" onClick={() => setIsUploadingDoc(false)}>
+              <form className="sandbox-ai-request__input__file-uploader" onSubmit={onSubmitFile}>
+                <Button type="button" onClick={() => setIsUploadingDoc(false)}>
                   𝗫
-                </button>
-                <input type="file" name="file" accept=".pdf,.m4a,.mp3,.mp4,.mov,.docx" disabled={isFileSubmitted} />
-                <button type="submit" disabled={isFileSubmitted}>
-                  + Upload Doc
-                </button>
+                </Button>
+                <Input type="file" name="file" accept=".pdf,.m4a,.mp3,.mp4,.mov,.docx" disabled={isFileSubmitted} />
+                <Button type="submit" disabled={isFileSubmitted}>
+                  + Upload File
+                </Button>
               </form>
             )}
           </>
+        ) : null}
+        {/* INPUT */}
+        {aiRequestType === "inquiry" ? (
+          <form
+            className="sandbox-ai-request__input__actions"
+            onSubmit={(e) => {
+              e.preventDefault();
+              inquiry({ documentId: Number(selectedDocumentId), userId: user!.id });
+            }}
+          >
+            {/* <p>Ask Gideon AI a question about a document:</p> */}
+            <div className="input-row">
+              <Input
+                placeholder="Ex) What address was the search warrant for?"
+                value={inquiryQuery}
+                disabled={isAIRequestSubmitted || !selectedDocumentId}
+                onChange={(e) => setInquiryQuery(e.target.value)}
+              />
+              <Button disabled={isAIRequestSubmitted || !selectedDocumentId} type="submit">
+                Ask
+              </Button>
+            </div>
+          </form>
+        ) : null}
+        {aiRequestType === "summarize" ? (
+          <form
+            className="sandbox-ai-request__input__actions"
+            onSubmit={(e) => {
+              e.preventDefault();
+              summarize({ documentId: Number(selectedDocumentId), userId: user!.id });
+            }}
+          >
+            {/* <p>Get Gideon AI document summary:</p> */}
+            {/* <div className="input-row">
+              <input
+                placeholder="Ex) Family reunification policy"
+                value={summaryInput.text}
+                disabled={isAIRequestSubmitted}
+                onChange={(e) => setSummaryInput({ text: e.target.value })}
+              />
+              <button disabled={isAIRequestSubmitted} type="submit">
+                🔎
+              </button>
+            </div> */}
+          </form>
+        ) : null}
+        {aiRequestType === "write" ? (
+          <form
+            className="sandbox-ai-request__input__actions"
+            onSubmit={(e) => {
+              e.preventDefault();
+              write({ documentId: Number(selectedDocumentId), userId: user!.id });
+            }}
+          >
+            {/* <p>Ask Gideon AI questions about a document, and get a written memo:</p> */}
+            <div className="input-row">
+              {/* "What are examples of oppressive lease clauses? What are examples of favorable clauses on leases for tenants?" */}
+              <TextArea
+                placeholder="Ex) Question 1... Question 2... Question 3..."
+                value={writingInput.promptText}
+                disabled={isAIRequestSubmitted}
+                rows={4}
+                onChange={(e) => setWritingInput({ promptText: e.target.value })}
+                style={{ flexGrow: 1 }}
+              ></TextArea>
+            </div>
+            <div className="input-row">
+              <Button
+                disabled={isAIRequestSubmitted || !selectedDocumentId || writingInput.promptText?.length < 40}
+                type="submit"
+                style={{ flexGrow: 1, maxWidth: "100%", width: "100%" }}
+              >
+                Write Document Memo
+              </Button>
+            </div>
+          </form>
         ) : null}
       </div>
 
       {/* ANSWER */}
       {/* --- inquiry */}
       {isAIRequestSubmitted && (answerQuestion || answerDetailsLocations) ? (
-        <div className="playground-ai-request__answers">
+        <div className="sandbox-ai-request__answers">
           {answerQuestion && (
             <>
               {answerQuestion?.inProgress && (
@@ -262,16 +299,22 @@ const PlaygroundAIRequest = () => {
                   <label>Answer (Processing...)</label>
                 </StyledAIRequestBoxTabs>
               )}
-              <div>{!answerQuestion?.inProgress && <p>{answerQuestion?.answer}</p>}</div>
+              <div>
+                {!answerQuestion?.inProgress && (
+                  <P>
+                    <b>A:</b> {answerQuestion?.answer}
+                  </P>
+                )}
+              </div>
             </>
           )}
           {answerDetailsLocations && (
             <div>
               {!answerDetailsLocations?.inProgress && (
                 <>
-                  <small className="source-flavor-text">
+                  <P className="source-flavor-text">
                     {answerDetailsLocations?.locations?.length ?? ""}+ Sources Being Used for Answer:
-                  </small>
+                  </P>
                   <ul>
                     {orderBy(answerDetailsLocations?.locations, ["score"], ["desc"])?.map((l) => (
                       <li key={l.document_content.id}>
@@ -284,12 +327,12 @@ const PlaygroundAIRequest = () => {
             </div>
           )}
           {/* --- clear */}
-          {!answerWriting ? <button onClick={clearAIRequest}>Clear Answer</button> : null}
+          {!answerWriting ? <Button onClick={clearAIRequest}>Clear Answer</Button> : null}
         </div>
       ) : null}
       {/* --- writing */}
       {isAIRequestSubmitted && answerWriting ? (
-        <div className="playground-ai-request__writing">
+        <div className="sandbox-ai-request__writing">
           {answerWriting?.inProgress || answerWriting?.writing?.id == null ? (
             <StyledAIRequestBoxTabs>
               <label>Writing (Processing...)</label>
@@ -299,12 +342,12 @@ const PlaygroundAIRequest = () => {
               <WritingEditor writingId={answerWriting.writing.id} />
             </div>
           )}
-          {answerWriting ? <button onClick={clearAIRequest}>Clear Writing</button> : null}
+          {answerWriting ? <Button onClick={clearAIRequest}>Clear Writing</Button> : null}
         </div>
       ) : null}
       {/* --- summarize */}
       {aiRequestType === "summarize" && selectedDocument ? (
-        <div className="playground-ai-request__answers">
+        <div className="sandbox-ai-request__answers">
           {selectedDocument?.content?.length === 0 ? (
             <StyledAIRequestBoxTabs>
               <label>Summary (Processing...)</label>
@@ -319,7 +362,7 @@ const PlaygroundAIRequest = () => {
 
       {/* DOCUMENT -> WRITING */}
       {aiRequestType === "write" && documentWritings?.length > 0 && !answerWriting?.writing ? (
-        // <div className="playground-ai-request__previous-writings">
+        // <div className="sandbox-ai-request__previous-writings">
         //   <p>
         //     <small>Recent Memos Written</small>
         //   </p>
@@ -329,7 +372,7 @@ const PlaygroundAIRequest = () => {
         //     </button>
         //   ))}
         // </div>
-        <div className="playground-ai-request__previous-writings">
+        <div className="sandbox-ai-request__previous-writings">
           <p>
             <small>Recent AI Written Memos</small>
           </p>
@@ -353,14 +396,15 @@ const PlaygroundAIRequest = () => {
 
       {/* DOCUMENT VIEW */}
       {selectedDocument ? (
-        <div className="playground-ai-request__transcript">
+        <div className="sandbox-ai-request__transcript">
           <h2>{selectedDocument.name}</h2>
           {selectedDocument.content?.length === 0 ? (
-            <p className="processing-content">
+            <P className="processing-content">
               <small>Processing document content...</small>
-            </p>
+            </P>
           ) : (
             <>
+              <DocumentViewMultimedia document={selectedDocument} />
               <DocumentViewTranscript document={selectedDocument} />
               <hr />
             </>
@@ -379,30 +423,104 @@ const PlaygroundAIRequest = () => {
           </div>
         </div>
       ) : null}
-    </StyledPlaygroundAIRequest>
+    </StyledSandboxAIRequest>
   );
 };
 
-const StyledPlaygroundAIRequest = styled.div`
+const StyledSandboxAIRequest = styled.div`
   width: 100%;
-  .playground-ai-request__options {
-    display: flex;
-    margin: 0 auto;
-    width: 400px;
+  .sandbox-ai-request__value-prop {
+    padding: 12px;
+    margin-bottom: 12px;
+    text-align: center;
+    font-family: "GT Walsheim";
+    h1 {
+      font-size: 40px;
+      font-weight: 500;
+      color: var(--color-black-200);
+    }
+    p {
+      font-weight: 400;
+      font-size: 16px;
+      margin: 16px 0 12px;
+      color: var(--color-black-500);
+    }
+  }
+  .sandbox-ai-request__options {
+    width: 540px;
+    margin: 0 auto 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 24px;
+    justify-content: center;
     button {
-      flex-grow: 1;
+      height: 100px;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       cursor: pointer;
+      background: none;
+      border: none;
+      transition: 400ms;
       &:not(.active) {
-        opacity: 0.4;
+        transform: scale3d(0.9, 0.9, 0.9);
+      }
+      &:hover {
+        transform: scale3d(1, 1, 1);
+      }
+      & > div {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-blue-500);
+        border: 2px solid var(--color-blue-500);
+        width: 80px;
+        margin: 4px;
+        border-radius: 12px;
+        svg {
+          height: 32px;
+          width: 32px;
+          path {
+            color: white;
+          }
+        }
+      }
+      & > p {
+        display: flex;
+        margin-top: 4px;
+        font-weight: 800;
+        color: var(--color-blue-500);
+      }
+      &:not(.active) {
+        & > div {
+          background: #efefff;
+          border: 2px solid #efefff;
+          svg {
+            path {
+              color: var(--color-blue-500);
+            }
+          }
+        }
+        & > p {
+          color: var(--color-black-500);
+        }
+      }
+      &.locked > div {
+        opacity: 0.5;
       }
     }
   }
-  .playground-ai-request__input {
+  .sandbox-ai-request__input {
     margin-top: 24px;
-    padding: 12px;
+    padding: 24px 20px;
     background: white;
     display: flex;
     flex-direction: column;
+    border-radius: 12px;
+    box-shadow: var(--effects-box-shadow-500);
     & > form,
     & > div {
       width: 100%;
@@ -414,7 +532,7 @@ const StyledPlaygroundAIRequest = styled.div`
       }
     }
   }
-  .playground-ai-request__input__file-uploader {
+  .sandbox-ai-request__input__file-uploader {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -423,14 +541,11 @@ const StyledPlaygroundAIRequest = styled.div`
       flex-grow: 1;
     }
   }
-  .playground-ai-request__input__actions {
+  .sandbox-ai-request__input__actions {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #fafafa;
-    margin-bottom: 12px;
     p {
       font-size: 16px;
       font-weight: 700;
@@ -452,7 +567,7 @@ const StyledPlaygroundAIRequest = styled.div`
       }
     }
   }
-  .playground-ai-request__previous-writings {
+  .sandbox-ai-request__previous-writings {
     width: 540px;
     margin: 12px auto;
     padding: 12px;
@@ -468,7 +583,7 @@ const StyledPlaygroundAIRequest = styled.div`
   }
 `;
 
-export const ViewPlayground = () => {
+export const ViewSandbox = () => {
   const navigate = useNavigate();
   const { focusedOrgId } = useAppStore();
   // ON MOUNT
@@ -479,20 +594,20 @@ export const ViewPlayground = () => {
 
   // RENDER
   return (
-    <StyledViewPlayground>
-      <div className="playground__centerpiece">
-        <PlaygroundAIRequest />
+    <StyledViewSandbox>
+      <div className="sandbox__centerpiece">
+        <SandboxAIRequest />
       </div>
-    </StyledViewPlayground>
+    </StyledViewSandbox>
   );
 };
 
-const StyledViewPlayground = styled.div`
+const StyledViewSandbox = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120px 24px 24px;
-  .playground__centerpiece {
+  padding: 80px 24px 24px;
+  .sandbox__centerpiece {
     width: 100%;
     margin-bottom: 64px;
     & > p {
@@ -503,40 +618,43 @@ const StyledViewPlayground = styled.div`
       flex-grow: 1;
     }
   }
-  .playground-ai-request__answers,
-  .playground-ai-request__writing {
+  .sandbox-ai-request__answers,
+  .sandbox-ai-request__writing {
     padding: 12px 32px;
     background: #f8f8f8;
     & > div > p {
-      font-size: 14px;
       margin-top: 12px;
       margin-bottom: 24px;
     }
     .source-flavor-text {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 900;
-      padding: 8px;
     }
     & > button {
       width: 100%;
-      margin-top: 6px;
+      margin-top: 18px;
       margin-bottom: 6px;
-      border: none;
-      background: none;
       padding-top: 6px;
-      border-top: 2px solid #fafafa;
     }
   }
-  .playground-ai-request__writing {
+  .sandbox-ai-request__answers {
+    margin-top: -8px;
+    background: var(--color-blue-900);
+    border-top: 2px solid var(--color-blue-700);
+    box-shadow: var(--effects-box-shadow-500);
+  }
+  .sandbox-ai-request__writing {
     padding: 12px;
   }
-  .playground-ai-request__transcript {
+  .sandbox-ai-request__transcript {
     padding: 12px;
     margin-top: 48px;
     background: white;
-    h2 {
+    & > h2 {
+      font-family: "Zodiak";
       text-align: center;
       font-weight: 900;
+      font-size: 18px;
       margin: 12px 0;
     }
     .processing-content {

@@ -15,8 +15,7 @@ export const StyledBodyTextBox = styled.div`
       font-size: 12px;
     }
     p {
-      font-size: 13px;
-      line-height: 115%;
+      font-size: 14px;
     }
     .body-text__header {
       display: flex;

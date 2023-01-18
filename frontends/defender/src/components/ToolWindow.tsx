@@ -12,7 +12,7 @@ export const ToolWindow: React.FC<{ children: React.ReactNode; maxWidth?: string
 const StyledToolWindow = styled.div<{ maxWidth?: string }>`
   z-index: -10;
   min-height: 100vh;
-  background: #f0f3f7;
+  background: var(--color-blue-900);
   display: flex;
   & > main {
     z-index: 0;

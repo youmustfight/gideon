@@ -15,7 +15,7 @@ import { ViewWriting } from "./routes/writing/ViewWriting";
 import { ViewProfile } from "./routes/profile/ViewProfile";
 import { ViewCaseLaw } from "./routes/caselaw/ViewCaseLaw";
 import { AppHeader } from "./components/AppHeader";
-import { ViewPlayground } from "./routes/playground/ViewPlayground";
+import { ViewSandbox } from "./routes/sandbox/ViewSandbox";
 
 export const Gideon: React.FC = () => {
   const { data: user, isSuccess: isSuccessUserFetch } = useUser();
@@ -62,7 +62,7 @@ export const Gideon: React.FC = () => {
           <ProtectedRoute user={user}>
             <AppHeader />
             <ToolWindow maxWidth="720px">
-              <ViewPlayground />
+              <ViewSandbox />
             </ToolWindow>
           </ProtectedRoute>
         }

@@ -4,7 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "react-query";
 import { queryClient } from "./data/queryClient";
 import { Gideon } from "./Gideon";
-import { ResetCSS } from "./components/ResetCSS";
+import { GlobalCSS } from "./components/styled/GlobalCSS";
+import { ResetCSS } from "./components/styled/ResetCSS";
 import "./data/axiosConfig";
 
 const App: React.FC = () => {
@@ -13,6 +14,7 @@ const App: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ResetCSS />
+          <GlobalCSS />
           <Gideon />
         </BrowserRouter>
       </QueryClientProvider>

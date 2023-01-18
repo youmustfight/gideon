@@ -18,7 +18,7 @@ export const AppHeader = () => {
           navigate("/");
         }}
       >
-        <b>Gideon</b>
+        <b>GIDEON</b>
       </span>
       <select
         value={focusedOrgId ?? ""}
@@ -31,9 +31,8 @@ export const AppHeader = () => {
             navigate("/cases");
           }
         }}
-        style={{ border: "none" }}
       >
-        <option value="">Playground</option>
+        <option value="">Sandbox</option>
         <optgroup label="Organizations">
           {organizations?.map((o) => (
             <option key={o.id} value={o.id}>
@@ -48,12 +47,26 @@ export const AppHeader = () => {
 };
 
 const StyledAppHeader = styled.header`
-  padding: 12px;
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
-  span {
-    font-weight: 900;
+  background: var(--color-blue-900);
+  padding: 16px 20px 10px;
+  border-bottom: 2px solid var(--color-blue-850);
+  font-size: 16px;
+  font-family: "GT Walsheim";
+
+  span,
+  select {
+    font-weight: 700;
     cursor: pointer;
+    color: var(--color-blue-500);
+  }
+
+  select {
+    border: none;
+    outline: none;
+    background: none;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--color-blue-800);
   }
 `;
