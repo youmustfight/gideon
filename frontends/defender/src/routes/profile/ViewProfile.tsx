@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { reqSystemAILocksReset } from "../../components/AIRequest/aiRequestReqs";
 import { AppHeader } from "../../components/AppHeader";
+import { Button } from "../../components/styled/common/Button";
+import { H3 } from "../../components/styled/common/Typography";
 import { StyledViewCase } from "../../components/styled/StyledViewCase";
 import { reqUserAILocksReset, useUser, useUserLogout } from "../../data/useUser";
 
@@ -15,22 +17,24 @@ export const ViewProfile = () => {
     <>
       <StyledViewProfile>
         <div className="section-lead">
-          <h3>Logged in as {user?.email}</h3>
+          <H3>Logged in as {user?.email}</H3>
         </div>
+        {user?.email?.includes("gideon.foundation") && (
+          <section>
+            <Button style={{ width: "100%" }} onClick={() => reqSystemAILocksReset()}>
+              Set System AI Action Locks
+            </Button>
+          </section>
+        )}
         <section>
-          <button style={{ width: "100%" }} onClick={() => reqSystemAILocksReset()}>
-            Set System AI Action Locks
-          </button>
-          <br />
-          <br />
-          <button style={{ width: "100%" }} onClick={() => reqUserAILocksReset(user!.id)}>
+          <Button style={{ width: "100%" }} onClick={() => reqUserAILocksReset(user!.id)}>
             Reset AI Action Locks
-          </button>
-        </section>
-        <section>
-          <button style={{ width: "100%" }} onClick={() => logout()}>
+          </Button>
+          <br />
+          <br />
+          <Button style={{ width: "100%" }} onClick={() => logout()}>
             Logout
-          </button>
+          </Button>
         </section>
       </StyledViewProfile>
     </>

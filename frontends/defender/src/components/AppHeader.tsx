@@ -3,10 +3,12 @@ import { useNavigate } from "react-router";
 import styled from "styled-components";
 import { useAppStore } from "../data/AppStore";
 import { useOrganizations } from "../data/useOrganizations";
+import { useUser } from "../data/useUser";
 
 export const AppHeader = () => {
   const navigate = useNavigate();
   const { focusedOrgId, setFocusedOrgId } = useAppStore();
+  const { data: user } = useUser();
   const { data: organizations } = useOrganizations();
 
   // RENDER
@@ -20,28 +22,35 @@ export const AppHeader = () => {
       >
         <b>GIDEON</b>
       </span>
-      <select
-        value={focusedOrgId ?? ""}
-        onChange={(e) => {
-          if (e.target.value === "") {
-            setFocusedOrgId(undefined);
-            navigate("/");
-          } else {
-            setFocusedOrgId(Number(e.target.value));
-            navigate("/cases");
-          }
-        }}
-      >
-        <option value="">Sandbox</option>
-        <optgroup label="Organizations">
-          {organizations?.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </optgroup>
-      </select>
-      <span onClick={() => navigate("/profile")}>Profile</span>
+      {user && (
+        <>
+          <span>
+            <label>View /</label>
+            <select
+              value={focusedOrgId ?? ""}
+              onChange={(e) => {
+                if (e.target.value === "") {
+                  setFocusedOrgId(undefined);
+                  navigate("/");
+                } else {
+                  setFocusedOrgId(Number(e.target.value));
+                  navigate("/cases");
+                }
+              }}
+            >
+              <option value="">Sandbox</option>
+              <optgroup label="Organizations">
+                {organizations?.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </span>
+          <span onClick={() => navigate("/profile")}>Profile</span>
+        </>
+      )}
     </StyledAppHeader>
   );
 };
@@ -68,5 +77,10 @@ const StyledAppHeader = styled.header`
     background: none;
     padding-bottom: 6px;
     border-bottom: 2px solid var(--color-blue-800);
+  }
+
+  label {
+    font-size: 13px;
+    color: var(--color-blue-800);
   }
 `;

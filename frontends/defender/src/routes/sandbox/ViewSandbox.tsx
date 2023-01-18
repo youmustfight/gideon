@@ -107,7 +107,7 @@ const SandboxAIRequest = () => {
     // --- clear any prior inquiry if we came from an org/case page
     // clearAIRequest();
     // --- initial focus for sandbox should be summarize since it's simpler
-    setAIRequestType("inquiry");
+    setAIRequestType("summarize");
     setInquiryScope("document");
   }, []);
 
@@ -122,17 +122,17 @@ const SandboxAIRequest = () => {
         </p>
       </div>
       <div className="sandbox-ai-request__options">
-        <button className={aiRequestType === "inquiry" ? "active" : ""} onClick={selectAsk}>
-          <div>
-            <QuestionMarkCircledIcon />
-          </div>
-          <p>Document Q&A</p>
-        </button>
         <button className={aiRequestType === "summarize" ? "active" : ""} onClick={selectSummary}>
           <div>
             <ActivityLogIcon />
           </div>
           <p>Summarize Document</p>
+        </button>
+        <button className={aiRequestType === "inquiry" ? "active" : ""} onClick={selectAsk}>
+          <div>
+            <QuestionMarkCircledIcon />
+          </div>
+          <p>Document Q&A</p>
         </button>
         <button className={aiRequestType === "write" ? "active" : ""} onClick={selectWriteMemo}>
           <div>
@@ -272,7 +272,7 @@ const SandboxAIRequest = () => {
               <TextArea
                 placeholder="Ex) Question 1... Question 2... Question 3..."
                 value={writingInput.promptText}
-                disabled={isAIRequestSubmitted}
+                disabled={isAIRequestSubmitted || !selectedDocumentId}
                 rows={4}
                 onChange={(e) => setWritingInput({ promptText: e.target.value })}
                 style={{ flexGrow: 1 }}
@@ -280,7 +280,7 @@ const SandboxAIRequest = () => {
             </div>
             <div className="input-row">
               <Button
-                disabled={isAIRequestSubmitted || !selectedDocumentId || writingInput.promptText?.length < 40}
+                disabled={isAIRequestSubmitted || !selectedDocumentId || !writingInput.promptText?.length}
                 type="submit"
                 style={{ flexGrow: 1, maxWidth: "100%", width: "100%" }}
               >
@@ -436,13 +436,14 @@ const StyledSandboxAIRequest = styled.div`
     padding: 12px;
     margin-bottom: 12px;
     text-align: center;
-    font-family: "GT Walsheim";
     h1 {
+      font-family: "GT Walsheim";
       font-size: 40px;
-      font-weight: 500;
+      font-weight: 700;
       color: var(--color-black-200);
     }
     p {
+      font-family: "GT Walsheim";
       font-weight: 400;
       font-size: 16px;
       margin: 16px 0 12px;
