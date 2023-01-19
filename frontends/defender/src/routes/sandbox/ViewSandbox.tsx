@@ -115,10 +115,9 @@ const SandboxAIRequest = () => {
   return (
     <StyledSandboxAIRequest>
       <div className="sandbox-ai-request__value-prop">
-        <h1>A.I. Sandbox</h1>
+        {/* <h1>A.I. Sandbox</h1> */}
         <p>
-          Start exploring Gideon AI for <u>documents</u>. <a href="mailto:mark@gideon.foundation">Ask us</a> about AI
-          for <u>legal research and writing</u>.
+          Start exploring Gideon AI for <u>document analysis</u>, <u>legal research</u>, and <u>case writing</u>.
         </p>
       </div>
       <div className="sandbox-ai-request__options">

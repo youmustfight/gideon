@@ -1,5 +1,6 @@
 import { cloneDeep } from "lodash";
 import React, { useState } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { useDebounce } from "react-use";
 import styled from "styled-components";
 import { TBrief, TBriefFact, TBriefIssue, useBrief, useBriefCreate, useBriefUpdate } from "../../data/useBrief";
@@ -12,6 +13,19 @@ import { BriefEditorIssue } from "./BriefEditorIssue";
 type TBriefEditorUpdaterProps = {
   brief: TBrief;
   caseId: number;
+};
+
+const BriefBox: React.FC<{ children: React.ReactNode; isExpanded?: boolean; label: string }> = (props) => {
+  const [isExpanded, setIsExpanded] = useState(props.isExpanded ?? false);
+  return (
+    <div>
+      <StyledBriefBoxLead onClick={() => setIsExpanded(!isExpanded)}>
+        <h3>{props.label}</h3>
+        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+      </StyledBriefBoxLead>
+      {isExpanded && <StyledBriefBox>{props.children}</StyledBriefBox>}
+    </div>
+  );
 };
 
 export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) => {
@@ -45,33 +59,8 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
   // RENDER
   return (
     <>
-      <hr />
-      {/* ISSUES */}
-      <StyledBriefBoxLead>
-        <h3>Issues</h3>
-        <button onClick={() => updateBriefAddIssue()}>+ Issue</button>
-      </StyledBriefBoxLead>
-      <StyledBriefBox>
-        <ul>
-          {brief?.issues?.map((issue, issueIndex, issueAr) => (
-            <li key={[issueAr.length, issueIndex].join("-")}>
-              <BriefEditorIssue
-                briefIssue={issue}
-                caseId={brief.case_id}
-                onChange={(newIssueValue) => updateBriefEditIssue(issueIndex, newIssueValue)}
-                onDelete={() => updateBriefDeleteIssue(issueIndex)}
-              />
-            </li>
-          ))}
-        </ul>
-      </StyledBriefBox>
-      <hr />
       {/* FACTS */}
-      <StyledBriefBoxLead>
-        <h3>Relevant Facts</h3>
-        <button onClick={() => updateBriefAddFact()}>+ Fact</button>
-      </StyledBriefBoxLead>
-      <StyledBriefBox>
+      <BriefBox label="Facts">
         <ul>
           {brief?.facts?.map((fact, factIndex, factArr) => (
             <li key={[factArr.length, factIndex].join("-")}>
@@ -84,7 +73,24 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
             </li>
           ))}
         </ul>
-      </StyledBriefBox>
+        <button onClick={() => updateBriefAddFact()}>+ Fact</button>
+      </BriefBox>
+      {/* ISSUES */}
+      <BriefBox label="Issues, Holding, Reason" isExpanded>
+        <ul>
+          {brief?.issues?.map((issue, issueIndex, issueAr) => (
+            <li key={[issueAr.length, issueIndex].join("-")}>
+              <BriefEditorIssue
+                briefIssue={issue}
+                caseId={brief.case_id}
+                onChange={(newIssueValue) => updateBriefEditIssue(issueIndex, newIssueValue)}
+                onDelete={() => updateBriefDeleteIssue(issueIndex)}
+              />
+            </li>
+          ))}
+        </ul>
+        <button onClick={() => updateBriefAddIssue()}>+ Issue</button>
+      </BriefBox>
       {/* DEPRECATED EVENTS -- doesn't fit brief structure */}
       {/* <StyledBriefBoxLead>
             <h3>Events/Timeline</h3>
@@ -106,9 +112,11 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
   // RENDER
   return (
     <>
-      <StyledBriefBoxLead>
-        <h2>"{cse?.name ?? "Untitled"}" Case Brief</h2>
-      </StyledBriefBoxLead>
+      <div>
+        <h2 style={{ fontSize: "20px", paddingBottom: "12px", paddingTop: "12px" }}>
+          "{cse?.name ?? "Untitled"}" Case Brief
+        </h2>
+      </div>
       {!brief ? (
         <div style={{ display: "flex", paddingTop: "8px", width: "100%" }}>
           <button
@@ -141,7 +149,9 @@ const StyledBriefBoxLead = styled.div`
   align-items: center;
   margin-top: 4px;
   margin-bottom: 4px;
-  padding: 4px;
+  padding: 8px;
+  background: #f0f0f0;
+  cursor: pointer;
   h2 {
     font-size: 20px;
     font-weight: 900;
@@ -153,6 +163,7 @@ const StyledBriefBoxLead = styled.div`
     text-decoration: underline;
   }
 `;
+
 const StyledBriefBox = styled.div`
   margin-top: 4px;
   .issue-row {
@@ -172,5 +183,9 @@ const StyledBriefBox = styled.div`
     & > li {
       margin-bottom: 5px !important;
     }
+  }
+  & > button {
+    margin: 4px auto;
+    width: 100%;
   }
 `;
