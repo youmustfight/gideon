@@ -117,7 +117,7 @@ ONE SENTENCE SUMMARY:
 
 # BRIEFS
 gpt_prompt_find_facts_for_issue = """
-List facts from the passage that relate to the issue.
+List facts from the passage that relate to the following issue.
 
 ISSUE: <<ISSUE_TEXT>>
 
