@@ -38,3 +38,11 @@ Want to deploy some changes for others to use?
 ---
 
 ![](./ops/ai-library-2.png)
+
+---
+
+### Demo
+
+The pretty multi-modal tool interface, letting you query against video, image, audio, documents for a case and across the organization. Also did auto-summarization of facts and important points for the case. I saved a recording I did of my hacky MVP in the [docs folder](./docs/2022-09-prototype-demo.mp4).
+
+![]('./docs/../../docs/screencap.jpeg)
