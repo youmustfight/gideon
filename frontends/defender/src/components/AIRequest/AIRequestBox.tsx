@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styled, { css } from "styled-components";
 import { useAppStore } from "../../data/AppStore";
+import { Select } from "../styled/common/Select";
 import { TAIRequestType, useAIRequestStore } from "./AIRequestStore";
 import { InquiryBox } from "./InquiryBox";
 import { SummarizeBox } from "./SummarizeBox";
@@ -10,7 +11,7 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
   const { focusedOrgId } = useAppStore();
   const { aiRequestType, setAIRequestType } = useAIRequestStore();
   return (
-    <select
+    <Select
       value={aiRequestType}
       disabled={disabled}
       onChange={(e) => setAIRequestType(e.target.value as TAIRequestType)}
@@ -21,7 +22,7 @@ export const AIRequestTypeSelect = ({ disabled }: { disabled: boolean }) => {
       <option value="write" disabled={focusedOrgId == null}>
         Write
       </option>
-    </select>
+    </Select>
   );
 };
 
@@ -88,6 +89,8 @@ export const StyledAIRequestBox = styled.div<{ highlight: boolean }>`
       display: flex;
       flex-grow: 1;
       align-items: center;
+      height: 40px;
+      font-weight: 700;
     }
     label > span {
       min-width: 120px;

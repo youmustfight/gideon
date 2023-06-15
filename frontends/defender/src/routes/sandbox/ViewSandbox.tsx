@@ -454,7 +454,6 @@ const StyledSandboxAIRequest = styled.div`
     margin: 0 auto 40px;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    column-gap: 12px;
     row-gap: 24px;
     justify-content: center;
     button {

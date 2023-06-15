@@ -192,10 +192,14 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       );
       // --- answer
       set({ answerQuestion: { inProgress: true } });
-      reqQueryDocument({
-        caseId,
-        query: get().inquiryQuery,
-      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
+      setTimeout(
+        () =>
+          reqQueryDocument({
+            caseId,
+            query: get().inquiryQuery,
+          }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } })),
+        1_000
+      );
       set({ focusAnswer: "location" });
       // DOCUMENT
     } else if (get().inquiryScope === "document") {
@@ -209,12 +213,16 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
       }).then(({ locations }) => set({ answerDetailsLocations: { locations, inProgress: false } }));
       //} --- answer
       set({ answerQuestion: { inProgress: true } });
-      reqQueryDocument({
-        caseId,
-        documentId,
-        query: get().inquiryQuery,
-        userId,
-      }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } }));
+      setTimeout(
+        () =>
+          reqQueryDocument({
+            caseId,
+            documentId,
+            query: get().inquiryQuery,
+            userId,
+          }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } })),
+        1_000
+      );
       // set default focus
       set({ focusAnswer: "location" });
       // CASELAW

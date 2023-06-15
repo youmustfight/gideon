@@ -3,6 +3,9 @@ import { cloneDeep } from "lodash";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import styled from "styled-components";
+import { Button } from "../styled/common/Button";
+import { Input, TextArea } from "../styled/common/Input";
+import { Select } from "../styled/common/Select";
 import { AIRequestTypeSelect } from "./AIRequestBox";
 import { TSummaryScope, useAIRequestStore } from "./AIRequestStore";
 
@@ -38,7 +41,7 @@ export const SummarizeBox = () => {
         {/* Doing this inline bc we don't want to take up width on responses */}
         <div className="ai-request-box__input__row">
           <AIRequestTypeSelect disabled={isAIRequestSubmitted} />
-          <select
+          <Select
             value={summaryScope}
             disabled={isAIRequestSubmitted}
             onChange={(e) => setSummaryScope(e.target.value as TSummaryScope)}
@@ -51,8 +54,8 @@ export const SummarizeBox = () => {
             <option value="document" disabled={params?.documentId == null}>
               Document
             </option>
-          </select>
-          <button
+          </Select>
+          <Button
             type="submit"
             disabled={
               isAIRequestSubmitted ||
@@ -65,11 +68,11 @@ export const SummarizeBox = () => {
             onClick={() => summarize({ caseId: params?.caseId, documentId: params?.documentId })}
           >
             Request
-          </button>
+          </Button>
         </div>
         <div className="ai-request-box__input__row">
           {summaryScope === "text" ? (
-            <textarea
+            <TextArea
               disabled={isAIRequestSubmitted}
               placeholder="Paste a very long text document..."
               value={summaryInput.text}
@@ -136,7 +139,7 @@ export const BriefAIGenerator: React.FC = () => {
       </div>
       <div className="brief-editor-gen__row">
         <h3>Issues</h3>
-        <button
+        <Button
           disabled={isAIRequestSubmitted}
           onClick={() =>
             setSummaryInput({
@@ -146,14 +149,14 @@ export const BriefAIGenerator: React.FC = () => {
           }
         >
           + Issue
-        </button>
+        </Button>
       </div>
       <div>
         {summaryInput?.issues?.map((issue, issueIndex, issuesArr) => (
           <div key={issueIndex} className="brief-editor-gen__row">
             <label>
               <span>Issue #{issueIndex + 1}:</span>
-              <input
+              <Input
                 value={issue.issue}
                 disabled={isAIRequestSubmitted}
                 placeholder="Whether..."
@@ -163,7 +166,7 @@ export const BriefAIGenerator: React.FC = () => {
                   setSummaryInput({ ...summaryInput, issues: updatedIssues });
                 }}
               />
-              <button
+              <Button
                 disabled={isAIRequestSubmitted}
                 onClick={() => {
                   setSummaryInput({
@@ -173,7 +176,7 @@ export const BriefAIGenerator: React.FC = () => {
                 }}
               >
                 Remove
-              </button>
+              </Button>
             </label>
           </div>
         ))}

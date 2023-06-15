@@ -4,6 +4,7 @@ import { TBriefFact } from "../../data/useBrief";
 import { TQueryLocation, reqQueryDocumentLocations } from "../AIRequest/aiRequestReqs";
 import { ConfirmButton } from "../ConfirmButton";
 import { DocumentContentLocationBox } from "../DocumentContentLocationBox";
+import { Button } from "../styled/common/Button";
 import { SlimBox } from "../styled/StyledBox";
 
 type TBriefEditorFactProps = {
@@ -40,7 +41,7 @@ export const BriefEditorFact: React.FC<TBriefEditorFactProps> = ({ briefFact, ca
       <StyledBriefFactSlimBox>
         <textarea value={fact.text} rows={7} onChange={(e) => updateHandler({ text: e.target.value })} />
         <div className="fact-edit__actions">
-          <button onClick={() => setIsEditing(false)}>Done</button>
+          <Button onClick={() => setIsEditing(false)}>Done</Button>
           <ConfirmButton prompts={["Delete", "Yes, Delete Fact"]} onClick={() => onDelete(briefFact)} />
         </div>
       </StyledBriefFactSlimBox>
@@ -48,9 +49,9 @@ export const BriefEditorFact: React.FC<TBriefEditorFactProps> = ({ briefFact, ca
       {briefFactLocations && (
         <>
           <hr />
-          <button onClick={() => setBriefFactLocations(undefined)} style={{ width: "100%" }}>
+          <Button onClick={() => setBriefFactLocations(undefined)} style={{ width: "100%" }}>
             Clear References Search
-          </button>
+          </Button>
           {briefFactLocations?.map((location) => (
             <DocumentContentLocationBox key={Object.values(location).join("-")} location={location} />
           ))}

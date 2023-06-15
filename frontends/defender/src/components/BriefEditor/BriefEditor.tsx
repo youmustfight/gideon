@@ -59,6 +59,22 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
   // RENDER
   return (
     <>
+      {/* ISSUES */}
+      <BriefBox label="Issues, Holding, Reason">
+        <ul>
+          {brief?.issues?.map((issue, issueIndex, issueAr) => (
+            <li key={[issueAr.length, issueIndex].join("-")}>
+              <BriefEditorIssue
+                briefIssue={issue}
+                caseId={brief.case_id}
+                onChange={(newIssueValue) => updateBriefEditIssue(issueIndex, newIssueValue)}
+                onDelete={() => updateBriefDeleteIssue(issueIndex)}
+              />
+            </li>
+          ))}
+        </ul>
+        <u onClick={() => updateBriefAddIssue()}>+ Issue</u>
+      </BriefBox>
       {/* FACTS */}
       <BriefBox label="Facts">
         <ul>
@@ -74,22 +90,6 @@ export const BriefEditorUpdater: React.FC<TBriefEditorUpdaterProps> = (props) =>
           ))}
         </ul>
         <button onClick={() => updateBriefAddFact()}>+ Fact</button>
-      </BriefBox>
-      {/* ISSUES */}
-      <BriefBox label="Issues, Holding, Reason" isExpanded>
-        <ul>
-          {brief?.issues?.map((issue, issueIndex, issueAr) => (
-            <li key={[issueAr.length, issueIndex].join("-")}>
-              <BriefEditorIssue
-                briefIssue={issue}
-                caseId={brief.case_id}
-                onChange={(newIssueValue) => updateBriefEditIssue(issueIndex, newIssueValue)}
-                onDelete={() => updateBriefDeleteIssue(issueIndex)}
-              />
-            </li>
-          ))}
-        </ul>
-        <button onClick={() => updateBriefAddIssue()}>+ Issue</button>
       </BriefBox>
       {/* DEPRECATED EVENTS -- doesn't fit brief structure */}
       {/* <StyledBriefBoxLead>
@@ -112,11 +112,11 @@ export const BriefEditor: React.FC<{ caseId: number }> = ({ caseId }) => {
   // RENDER
   return (
     <>
-      <div>
+      {/* <div>
         <h2 style={{ fontSize: "20px", paddingBottom: "12px", paddingTop: "12px" }}>
           "{cse?.name ?? "Untitled"}" Case Brief
         </h2>
-      </div>
+      </div> */}
       {!brief ? (
         <div style={{ display: "flex", paddingTop: "8px", width: "100%" }}>
           <button
@@ -148,19 +148,17 @@ const StyledBriefBoxLead = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
-  margin-bottom: 4px;
-  padding: 8px;
-  background: #f0f0f0;
+  margin-bottom: 8px;
+  padding: 6px;
+  background: #f0f0f5;
   cursor: pointer;
   h2 {
-    font-size: 20px;
-    font-weight: 900;
-    text-decoration: underline;
-  }
-  h3 {
     font-size: 16px;
     font-weight: 900;
-    text-decoration: underline;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 900;
   }
 `;
 
@@ -180,6 +178,7 @@ const StyledBriefBox = styled.div`
   }
   & > ul {
     margin-left: 12px;
+    list-style-type: none;
     & > li {
       margin-bottom: 5px !important;
     }
@@ -187,5 +186,14 @@ const StyledBriefBox = styled.div`
   & > button {
     margin: 4px auto;
     width: 100%;
+  }
+  & > u {
+    margin-left: 24px;
+    padding: 2px 0 6px;
+    display: block;
+    opacity: 0.5;
+    &:hover {
+      opacity: 1;
+    }
   }
 `;

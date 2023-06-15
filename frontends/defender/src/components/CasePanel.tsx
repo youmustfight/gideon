@@ -12,7 +12,7 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
   return (
     <StyledCasePanel key={cse.id}>
       <span>
-        {cse.name ?? "Untitled Case"}
+        <div className="case-panel__title">{cse.name || "---"}</div>
         <small className="case-panel__users">
           <span className="case-panel__users__assigned">👩‍💼:</span> {cse.users?.map((u) => u.name).join(", ")}
         </small>
@@ -37,6 +37,10 @@ export const CasePanel: React.FC<{ cse: TCase }> = ({ cse }) => {
 const StyledCasePanel = styled(BoxWithRightSideButton)`
   display: flex;
   justify-content: space-between;
+  .case-panel__title {
+    font-size: 13px;
+    font-weight: 900;
+  }
   .case-panel__users {
     display: block;
     margin-top: 4px;

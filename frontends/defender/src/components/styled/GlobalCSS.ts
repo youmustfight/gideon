@@ -21,6 +21,7 @@ export const GlobalCSS = createGlobalStyle`
 
   * {
     box-sizing: border-box;
+    font-family: sans-serif;
   }
 
   a {

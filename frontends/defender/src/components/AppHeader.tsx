@@ -39,6 +39,7 @@ export const AppHeader = () => {
               }}
             >
               <option value="">Sandbox</option>
+              {/* <option value="caselaw">Case Law</option> */}
               <optgroup label="Organizations">
                 {organizations?.map((o) => (
                   <option key={o.id} value={o.id}>

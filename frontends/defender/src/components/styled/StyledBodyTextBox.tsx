@@ -15,7 +15,8 @@ export const StyledBodyTextBox = styled.div`
       font-size: 12px;
     }
     p {
-      font-size: 14px;
+      font-size: 13px;
+      font-family: "GT Walsheim";
     }
     .body-text__header {
       display: flex;
