@@ -9,13 +9,13 @@ numpy==1.23.3
 opencv-python-headless==4.5.4.60
 patchify==0.2.3
 pdf2image==1.16.0
-pinecone-client==2.0.13
+pinecone-client==5.0.0
 pydash==5.1.1
 pyjwt==2.6.0
 python-dotenv==0.21.0
 python-json-logger==2.0.4
-requests==2.28.1
-sanic==22.9.1
+requests==2.32.3
+sanic==23.6.0
 Sanic_Cors==2.2.0
 sentence-transformers==2.2.2
 # "pip install spacy[transformers]"
@@ -27,6 +27,11 @@ spacy-transformers==1.1.8
 strawberry-graphql==0.151.0
 # SQLAlchemy==2.0.0b1 # https://github.com/sqlalchemy/sqlalchemy/issues/8631
 sqlalchemy==1.4.43
-transformers==4.19.4
-torch==1.12.1
-watchdog==2.2.0
+transformers==4.35.1
+torch==2.1.0
+urllib3==1.26.12
+watchdog==3.0.0
+ws4py
+
+
+
