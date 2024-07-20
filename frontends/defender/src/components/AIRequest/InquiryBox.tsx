@@ -104,14 +104,14 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
       {isAIRequestSubmitted && (
         <>
           <StyledAIRequestBoxTabs>
-            {answerDetailsLocations && (
-              <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
-                Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
-              </label>
-            )}
             {answerQuestion && (
               <label className={focusAnswer === "question" ? "active" : ""} onClick={() => setFocusAnswer("question")}>
                 Answer/Summary {answerQuestion?.inProgress ? "(Processing...)" : ""}
+              </label>
+            )}
+            {answerDetailsLocations && (
+              <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
+                Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerCaseFactsSimilarity && (

@@ -183,6 +183,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
         set({ answerWritingSimilarity: { inProgress: false, locations: [] } });
       }
       set({ focusAnswer: "caseFacts" });
+
       // CASE
     } else if (get().inquiryScope === "case") {
       // --- detail
@@ -198,9 +199,10 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
             caseId,
             query: get().inquiryQuery,
           }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } })),
-        1_000
+        500
       );
-      set({ focusAnswer: "location" });
+      set({ focusAnswer: "question" });
+
       // DOCUMENT
     } else if (get().inquiryScope === "document") {
       // --- detail
@@ -221,7 +223,7 @@ export const aiRequestStore = createVanilla<TAIRequestStore>((set, get) => ({
             query: get().inquiryQuery,
             userId,
           }).then(({ answer, locations }) => set({ answerQuestion: { answer, locations, inProgress: false } })),
-        1_000
+        500
       );
       // set default focus
       set({ focusAnswer: "location" });
