@@ -13,12 +13,13 @@ from models.gpt_prompts import gpt_prompt_summary_detailed
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
 # https://openai.com/blog/introducing-text-and-code-embeddings/
 # https://beta.openai.com/docs/guides/embeddings/what-are-embeddings
-GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003 = 'text-davinci-003'
+GTP_COMPLETION_MODEL = 'gpt-3.5-turbo' # 'gpt-4-turbo'
+# GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003 = 'text-davinci-003'
 GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002 = 'text-davinci-002' # this seems to handle classification better
-GTP3_EDIT_MODEL_ENGINE = 'text-davinci-edit-001' # free atm because its in beta
+# GTP3_EDIT_MODEL_ENGINE = 'text-davinci-edit-001' # free atm because its in beta
 GTP3_TEMPERATURE_DEFAULT = 0
 OPENAI_REQUEST_TIMEOUT = 60
-OPENAI_THROTTLE = 1.2
+OPENAI_THROTTLE = 0.2 # 60/req a min. So trying to have a little buffer to miss that limiter
 
 # EMBEDDING
 def gpt_embedding(content, engine):
@@ -31,7 +32,9 @@ def gpt_embedding(content, engine):
             json={ 'model': engine, 'input': content }
         )
         response = response.json()
-        # print(f"INFO (GPT3): gpt_embedding [{engine}] response:", response)
+        if response.get('error') != None:
+            print(response)
+            raise response['error']
         # v1 --- setup using faiss (was single embedding)
         # v2 --- setup with easy to use np arrays in a list, handling batch embeddings
         return list(map(lambda d: numpy.asarray(d['embedding'], dtype='float32'), response['data']))
@@ -40,19 +43,21 @@ def gpt_embedding(content, engine):
         raise err
 
 # COMPLETION
-def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
+def gpt_completion(prompt, engine=GTP_COMPLETION_MODEL, temperature=0.7, top_p=1.0, max_tokens=2000, freq_pen=0.25, pres_pen=0.0, stop=['<<END>>']):
     max_retry = 3
     retry = 0
     while True:
         try:
             print(f'INFO (GPT3): gpt_completion - {engine}: COMPLETE THE "{prompt[0:120]}"...'.replace('\n', ' '))
-            # V2 -- Requests (using this instead of openai package bc it freezes in docker containers for some reason)
             response = requests.post(
-                'https://api.openai.com/v1/completions',
+                'https://api.openai.com/v1/chat/completions',
                 headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
                 json={
                     'model': engine,
-                    'prompt': prompt,
+                    'messages': [
+                        {'role': 'system', 'content': 'You are a helpful assistant.'},
+                        {'role': 'user', 'content': prompt}
+                    ],
                     'temperature': temperature,
                     'max_tokens': max_tokens,
                     'top_p': top_p,
@@ -62,23 +67,26 @@ def gpt_completion(prompt, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, temp
                 },
             )
             response = response.json()
+            if response.get('error') is not None:
+                print(response)
+                raise Exception(response['error']['message'])
             print('INFO (GPT3): gpt_completion usage: ', response['usage'])
-            text = response['choices'][0]['text'].strip()
+            text = response['choices'][0]['message']['content'].strip()
             print(f'INFO (GPT3): gpt_completion - {engine}: RESPONSE for "{prompt[0:320]}"...'.replace('\n', ' '), text)
+            sleep(OPENAI_THROTTLE)
             return text
         except Exception as err:
             retry += 1
             if retry >= max_retry:
-                return "Error (GTP3 Completion): %s" % err
+                return f"Error (GTP3 Completion): {err}"
             print('Error (GPT3):', err, '\n', f'{prompt[0:320]}...')
 
-def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMPERATURE_DEFAULT, top_p=1.0):
+def gpt_edit(prompt, input, engine=GTP_COMPLETION_MODEL, temperature=0.7, top_p=1.0):
     max_retry = 3
     retry = 0
     while True:
         try:
             print(f'INFO (GPT3): gpt_edit: {input[0:80]}...')
-            # --- OpenAI
             response = requests.post(
                 'https://api.openai.com/v1/edits',
                 headers={ 'Authorization': f'Bearer {env.env_get_open_ai_api_key()}', "content-type": "application/json" },
@@ -91,16 +99,15 @@ def gpt_edit(prompt, input, engine=GTP3_EDIT_MODEL_ENGINE, temperature=GTP3_TEMP
                 },
             )
             response = response.json()
-            # print(response)
             text = response['choices'][0]['text'].strip()
             return text
         except Exception as err:
             retry += 1
             if retry >= max_retry:
-                return "Error (GTP3 Edit): %s" % err
+                return f"Error (GTP3 Edit): {err}"
             print('Error (GPT3):', err, prompt, input)
 
-def gpt_summarize(text_to_recursively_summarize, engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, max_length=4000, use_prompt=None):
+def gpt_summarize(text_to_recursively_summarize, engine=GTP_COMPLETION_MODEL, max_length=4000, use_prompt=None):
     print('INFO (GPT3): gpt_summarize - {engine}'.format(engine=engine))
     prompt = use_prompt or gpt_prompt_summary_detailed
     chunks = textwrap.wrap(text_to_recursively_summarize, 11000)

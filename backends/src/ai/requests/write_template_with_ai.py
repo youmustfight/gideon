@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from dbs.sa_models import Brief, Writing
-from models.gpt import GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003, gpt_completion
+from models.gpt import GTP_COMPLETION_MODEL, gpt_completion
 
 
 async def write_template_with_ai(session, writing_model, prompt_text=None):
@@ -32,7 +32,7 @@ async def write_template_with_ai(session, writing_model, prompt_text=None):
     STATEMENT WITH FACTS EDITED IN:
     """.replace("<<FACTS>>", FACTS).replace("<<STATEMENT>>", template.body_text)
     generated_body_text = gpt_completion(
-      engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003,
+      engine=GTP_COMPLETION_MODEL,
       max_tokens=500,
       prompt=gpt_prompt_template_text_fill)
     print(gpt_prompt_template_text_fill)
@@ -50,7 +50,7 @@ async def write_template_with_ai(session, writing_model, prompt_text=None):
     HTML WITH FACTS EDITED IN:
     """.replace("<<FACTS>>", FACTS).replace("<<HTML>>", template.body_html)
     generated_body_html = gpt_completion(
-      engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003,
+      engine=GTP_COMPLETION_MODEL,
       max_tokens=500,
       prompt=gpt_prompt_template_html_fill)
 

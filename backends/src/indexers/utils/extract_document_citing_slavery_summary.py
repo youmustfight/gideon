@@ -1,6 +1,6 @@
 import textwrap
 from indexers.utils.text_contains_mentions_of_slavery import text_contains_mentions_of_slavery
-from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003
+from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002, GTP_COMPLETION_MODEL
 from models.gpt_prompts import gpt_prompt_summary_concise, gpt_prompt_citing_slavery_summary, GPT_NULL_PHRASE
 
 def extract_document_citing_slavery_summary(document_text):
@@ -40,7 +40,7 @@ def extract_document_citing_slavery_summary(document_text):
         summary_joined = " ".join(summary_chunks)
         print("INFO (extract_document_citing_slavery_summary): returning final completion")
         return gpt_completion(
-            engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003,
+            engine=GTP_COMPLETION_MODEL,
             max_tokens=500,
             prompt=gpt_prompt_citing_slavery_summary.replace('<<SOURCE_TEXT>>', summary_joined))
     else:
