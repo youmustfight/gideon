@@ -4,6 +4,8 @@ import styled from "styled-components";
 import { TWritingCreateParams, useWritingCreate } from "../data/useWriting";
 import { TWriting, useWritings } from "../data/useWritings";
 import { useAIRequestStore } from "./AIRequest/AIRequestStore";
+import { Button } from "./styled/common/Button";
+import { Select } from "./styled/common/Select";
 import { SlimBox } from "./styled/StyledBox";
 
 export const WritingPanel: React.FC<{ writing: TWriting }> = ({ writing }) => {
@@ -62,24 +64,24 @@ export const WritingsBox: React.FC<TWritingsBoxProps> = ({ caseId, isTemplate, o
       <StyledWritingsBoxLead>
         <h2>{isTemplate ? "Templates" : "Writings"}</h2>
         <div>
-          <select value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}>
+          <Select value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}>
             <option value="">--- No Template ---</option>
             {writingsTemplates?.map((wt) => (
               <option key={wt.id} value={wt.id}>
                 Template: {wt.name}
               </option>
             ))}
-          </select>
-          <button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ New"}</button>
-          {!isTemplate && (
-            <button
+          </Select>
+          <Button onClick={() => onWritingCreate(false)}>{isTemplate ? "+ Template" : "+ New"}</Button>
+          {selectedTemplateId && (
+            <Button
               onClick={() => {
                 setAIRequestType("write");
                 scrollToAIRequestBox();
               }}
             >
               + Draft with AI
-            </button>
+            </Button>
           )}
         </div>
       </StyledWritingsBoxLead>

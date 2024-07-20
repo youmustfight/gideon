@@ -1,3 +1,4 @@
+from datetime import datetime
 import pydash as _
 import sqlalchemy as sa
 from ai.agents.ai_action_agent import AI_ACTIONS, create_ai_action_agent, get_global_ai_action_locks
@@ -54,9 +55,9 @@ async def _index_cap_case_process_embeddings(session, cap_id: int) -> None:
             sa.and_(CAPCaseLawContent.cap_case_id == cap_case.id, CAPCaseLawContent.type == "head_matter")
         ))
         cap_case_content_head_matter = cap_case_head_matter_content_query.scalars().first()
-        head_matter_text = cap_case_content_head_matter.text
+        head_matter_text = cap_case_content_head_matter.text if cap_case_content_head_matter != None else None
         # --- head_matter: process
-        if head_matter_text != None and len(head_matter_text) > 0:
+        if head_matter_text != None and len(head_matter_text) > 0 and len(head_matter_text) < 11000: # TODO: count by tokens, not text length, but w/e getting through this
             head_matter_text_embeddings = aiagent_cap_case_head_matter_embeder.encode_text([head_matter_text])
             head_matter_text_embeddings_as_models = []
             for embedding in head_matter_text_embeddings:
@@ -80,10 +81,10 @@ async def _index_cap_case_process_embeddings(session, cap_id: int) -> None:
         ))
         cap_case_paragraphs = cap_case_majority_paragraphs_content_query.scalars().all()
         cap_case_paragraphs_text_list = list(map(lambda e: e.text, cap_case_paragraphs))
-        print('cap_case_paragraphs_text_list', cap_case_paragraphs_text_list)
-        cap_case_paragraphs_embeddings = aiagent_cap_case_opinion_paragraph_embeder.encode_text(cap_case_paragraphs_text_list)
         # --- paragraphs/sections: process
-        if len(cap_case_paragraphs) > 0:
+        if len(cap_case_paragraphs_text_list) > 0:
+            print('cap_case_paragraphs_text_list', cap_case_paragraphs_text_list)
+            cap_case_paragraphs_embeddings = aiagent_cap_case_opinion_paragraph_embeder.encode_text(cap_case_paragraphs_text_list)
             opinion_paragraphs_text_embedding_as_models = []
             for idx, cap_case_paragraph in enumerate(cap_case_paragraphs):
                 opinion_paragraphs_text_embedding_as_models.append(Embedding(
@@ -112,16 +113,24 @@ async def _index_cap_case_process_extractions(session, cap_id: int) -> None:
         sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
     cap_caselaw: CAPCaseLaw = query_cap_caselaw.scalars().first()
     # EXTRACT
-    if cap_caselaw.status_processing_extractions != 'completed':
-        caselaw_content_text = ' '.join(map(lambda content: content['text'], list(cap_caselaw.casebody['opinions'])))
+    # TODO: put back (if cap_caselaw.status_processing_extractions != 'completed':)
+    if True == True:
+        caselaw_content_title_text = cap_caselaw.name
+        caselaw_content_parties_text = '\n'.join(cap_caselaw.casebody['parties'])
+        caselaw_content_opinions_text = ' '.join(map(lambda content: content['text'], list(cap_caselaw.casebody['opinions'])))
+        caselaw_content_text = f'Case Name: {caselaw_content_title_text}\n\nParties:\n{caselaw_content_parties_text}\n\nOpinions:\n{caselaw_content_opinions_text}'
         # --- summaries & extractions TODO: not doing this to save $. utilize cap case "head_matter"
         # if cap_caselaw.generated_summary == None:
         #     cap_caselaw.generated_summary = extract_text_summary(caselaw_content_text, use_prompt=gpt_prompt_summary_caselaw_detailed)
         #     cap_caselaw.generated_summary_one_liner = extract_document_summary_one_liner(cap_caselaw.generated_summary)
+        
         # --- summaries & extractions (citing slavery)
-        if text_contains_mentions_of_slavery(caselaw_content_text) == True:
+        # TODO: put back (if text_contains_mentions_of_slavery(caselaw_content_text) == True:)
+        if True == True:
+            # LEARNING: sometimes there is no mention of slavery in the majority opinion, but the party on the case is a slave. so we should include case title & parties
             cap_caselaw.generated_citing_slavery_summary = extract_document_citing_slavery_summary(caselaw_content_text)
             cap_caselaw.generated_citing_slavery_summary_one_liner = extract_document_citing_slavery_summary_one_liner(cap_caselaw.generated_citing_slavery_summary)
+            cap_caselaw.updated_at = datetime.now()
         else:
             cap_caselaw.generated_citing_slavery_summary = None
             cap_caselaw.generated_citing_slavery_summary_one_liner = None

@@ -1548,10 +1548,10 @@ hoist-non-react-statics@^3.0.0, hoist-non-react-statics@^3.3.0:
   dependencies:
     react-is "^16.7.0"
 
-html-to-pdfmake@^2.4.9:
-  version "2.4.9"
-  resolved "https://registry.npmjs.org/html-to-pdfmake/-/html-to-pdfmake-2.4.9.tgz#09471b62b41298806e33c4ed4ccd29ca201b1cb1"
-  integrity sha512-5qwsKw8cFO2A5Xf+Z5Ql8deIr5+nA9Ge3oMp/aPP4Xwf6lBpsQ1ek45OCXCLIjTEXFefJY8VgtW47jg2C4gX9A==
+html-to-pdfmake@^2.5.12:
+  version "2.5.12"
+  resolved "https://registry.npmjs.org/html-to-pdfmake/-/html-to-pdfmake-2.5.12.tgz#80034c8cc7bb3a976d97bfb9e22548025b3d13a4"
+  integrity sha512-uljxRXCUp+ty7kqVEMi/CMWZ7pXKn/q0Ptg+74YAR0IRVRIUHaJ3O0Jo3f2apVR/LlJxd+rCa0+6BaLVDTIx0g==
 
 hyphenate-style-name@^1.0.3:
   version "1.0.4"

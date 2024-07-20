@@ -22,7 +22,7 @@ async def question_answer(session, query_text, case_id=None, document_id=None, u
         query_text,
         query_filters=query_filters,
         # query_filters={ "content_text_length": { "$gt": 480 } }, # DEPRECATED: idk if we need this anymore, tokenizing is better now and ensures min lengths
-        top_k=3, # was 8, I feel like only focusing on high matches will get less noisy answers + be faster
+        top_k=5, # was 8, I feel like only focusing on high matches will get less noisy answers + be faster
         score_min=0.5,
         score_max=1.2,
         score_min_diff_percent=0.15)

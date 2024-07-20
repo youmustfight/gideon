@@ -5,6 +5,8 @@ import styled from "styled-components";
 import { AIRequestBox } from "../../components/AIRequest/AIRequestBox";
 import { ConfirmButton } from "../../components/ConfirmButton";
 import { getHashHighlightingSentenceStart, isHashHighlightingSentence } from "../../components/hashUtils";
+import { Button } from "../../components/styled/common/Button";
+import { Input } from "../../components/styled/common/Input";
 import { P } from "../../components/styled/common/Typography";
 import { StyledBodyTextBox } from "../../components/styled/StyledBodyTextBox";
 import { TimelineSummary } from "../../components/TimelineSummary";
@@ -21,15 +23,22 @@ const DocumentViewImage = styled.div<{ imageSrc: string }>`
   margin-left: 6px;
 `;
 
+const StyleDocumentViewSummary = styled.div`
+  p {
+    font-size: 13px;
+    font-family: "GT Walsheim";
+  }
+`;
+
 const DocumentViewSummary = ({ document }: { document: TDocument }) => {
   const [isFullyVisible, setIsFullyVisible] = useState(false);
   return (
-    <div>
-      <p>
+    <StyleDocumentViewSummary>
+      <P>
         {isFullyVisible ? document.generated_summary : document.generated_summary?.slice(0, 400)}{" "}
         <u onClick={() => setIsFullyVisible(!isFullyVisible)}>{isFullyVisible ? "...Hide more" : "...Show more"}</u>{" "}
-      </p>
-    </div>
+      </P>
+    </StyleDocumentViewSummary>
   );
 };
 
@@ -187,31 +196,34 @@ export const ViewCaseDocument = () => {
       <div>
         {/* HEAD */}
         <div className="document-header">
-          <Link to={`/case/${caseId}`}>
-            <button>←</button>
-          </Link>
-          <input
-            placeholder="Untitled Name"
-            value={document?.name}
-            disabled
-            // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
-          />
+          <div className="document-header__title">
+            <Link to={`/case/${caseId}`}>
+              <Button>←</Button>
+            </Link>
+            <Input
+              placeholder="Untitled Name"
+              value={document?.generated_description ?? document?.name}
+              disabled
+              // onChange={(e) => writingUpdate({ id: writing.id, name: e.target.value })}
+            />
+          </div>
+          <DocumentViewSummary document={document} />
         </div>
 
-        <div className="section-lead title">
+        {/* <div className="section-lead title">
           <h3>
             <b>{document.generated_description}</b>
           </h3>
-        </div>
+        </div> */}
 
         {/* SUMMARY */}
-        <div className="section-lead">
+        {/* <div className="section-lead">
           <h4>Document Summary</h4>
-        </div>
-        <section>
-          <DocumentViewSummary document={document} />
-          {/* TODO */}
-          {/* {document.mentions_people?.length > 0 ? (
+        </div> */}
+        {/* <section> */}
+        {/* <DocumentViewSummary document={document} /> */}
+        {/* TODO */}
+        {/* {document.mentions_people?.length > 0 ? (
           <>
             <small style={{ fontSize: "12px", fontWeight: "900" }}>Mentioned People</small>
             <ul>
@@ -233,7 +245,7 @@ export const ViewCaseDocument = () => {
             </ul>
           </>
         ) : null} */}
-        </section>
+        {/* </section> */}
 
         {/* EVENTS */}
         {document.generated_events && document.generated_events?.length > 0 ? (

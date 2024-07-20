@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Navigate, redirect } from "react-router-dom";
 import styled from "styled-components";
+import { Button } from "../../components/styled/common/Button";
+import { Input } from "../../components/styled/common/Input";
+import { H3, Label } from "../../components/styled/common/Typography";
 import { useUser, useUserLogin } from "../../data/useUser";
 
 export const ViewLogin = () => {
@@ -22,28 +25,20 @@ export const ViewLogin = () => {
       {user && <Navigate to="/" replace={true} />}
       <StyledViewLogin>
         <div className="login-wrapper">
-          <h1>Gideon Login</h1>
+          <H3>Login</H3>
           <form onSubmit={handleLogin}>
-            <label htmlFor="login-email">Email</label>
-            <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-            <label htmlFor="login-password">Password</label>
-            <input
+            <Label htmlFor="login-email">Email</Label>
+            <Input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+            <Label htmlFor="login-password">Password</Label>
+            <Input
               id="login-password"
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
             />
-            <button type="submit">Login</button>
+            <Button type="submit">Login</Button>
             {loginError && <div className="login-error">{loginError}</div>}
           </form>
-          <br />
-          <p>
-            Welcome Justin, Elliot, Eugeue, and others! Login above or{" "}
-            <a href="https://youtu.be/M2tMmsGhp6c" target="_blank" rel="noreferer noopener">
-              click here to see an old demo
-            </a>
-            .
-          </p>
         </div>
       </StyledViewLogin>
     </>
@@ -51,14 +46,17 @@ export const ViewLogin = () => {
 };
 
 const StyledViewLogin = styled.div`
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   .login-wrapper {
     width: 100%;
-    max-width: 240px;
-    height: 400px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    max-width: 400px;
     margin: 0 auto;
+    padding: 24px;
+    background: white;
+    box-shadow: var(--effects-box-shadow-500);
     input {
       margin-bottom: 12px;
       width: 100%;
@@ -66,14 +64,18 @@ const StyledViewLogin = styled.div`
     button {
       width: 100%;
     }
-    h1 {
+    h3 {
       font-weight: 900;
       margin-bottom: 12px;
       padding-bottom: 6px;
-      border-bottom: 2px solid #ddd;
+      color: var(--color-blue-500);
+      border-bottom: 2px solid var(--color-blue-500);
     }
     label {
       font-size: 13px;
+    }
+    input {
+      margin-top: 4px;
     }
     p {
       font-size: 13px;

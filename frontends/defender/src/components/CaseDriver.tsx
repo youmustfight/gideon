@@ -5,6 +5,9 @@ import { useCase, useCaseUpdate, useCaseUserUpdate } from "../data/useCase";
 import { useOrganizations } from "../data/useOrganizations";
 import { CaseAdminToolbox } from "./CaseAdminToolbox";
 import { ConfirmButton } from "./ConfirmButton";
+import { Button } from "./styled/common/Button";
+import { Input } from "./styled/common/Input";
+import { Select } from "./styled/common/Select";
 
 export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
   const navigate = useNavigate();
@@ -18,68 +21,71 @@ export const CaseDriver: React.FC<{ caseId: number }> = ({ caseId }) => {
 
   // RENDER
   return !cse ? null : (
-    <StyledCaseDriver onMouseLeave={() => setShowDetails(false)}>
-      <div className="case-driver__lead">
-        <div className="case-driver__lead__text">
-          <button onClick={() => navigate("/cases")}>⬅</button>
-          <input value={cse.name} onChange={(e) => caseUpdate({ id: cse.id, name: e.target.value })} />
+    <>
+      <StyledCaseDriver onMouseLeave={() => setShowDetails(false)}>
+        <div className="case-driver__lead">
+          <div className="case-driver__lead__text">
+            <Button onClick={() => navigate("/cases")}>⬅</Button>
+            <Input value={cse.name} onChange={(e) => caseUpdate({ id: cse.id, name: e.target.value })} />
+          </div>
         </div>
-      </div>
-      <div className="case-driver__toggle-details">
-        <small>Attorneys 👩‍💼: {cse.users.map((u) => u.name).join(", ")}</small>
-        <small className="" onClick={() => setShowDetails(!showDetails)}>
-          {showDetails ? "Hide" : "Show"} Details
-        </small>
-      </div>
-      {showDetails ? (
-        <div className="case-driver__staff">
-          <table>
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <select defaultValue="" onChange={(e) => setUserIdToAdd(e.target.value)}>
-                    <option value="">--- Select User to Add --</option>
-                    {focusedOrg?.users
-                      ?.filter((u) => !cse.users.some((user) => user.id === u.id))
-                      ?.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
-                        </option>
-                      ))}
-                  </select>
-                </td>
-                <td>
-                  <button
-                    onClick={() => caseUserUpdate({ action: "add", case_id: cse.id, user_id: Number(userIdToAdd) })}
-                  >
-                    + Add
-                  </button>
-                </td>
-              </tr>
-              {cse.users.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.name}</td>
+        <div className="case-driver__toggle-details">
+          <small>Attorneys 👩‍💼: {cse.users.map((u) => u.name).join(", ")}</small>
+          <small className="" onClick={() => setShowDetails(!showDetails)}>
+            {showDetails ? "Hide" : "Show"} Details
+          </small>
+        </div>
+        {showDetails ? (
+          <div className="case-driver__staff">
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
                   <td>
-                    <ConfirmButton
-                      prompts={["Remove", "Yes, Remove"]}
-                      onClick={() => caseUserUpdate({ action: "remove", case_id: cse.id, user_id: Number(u.id) })}
-                    />
+                    <Select defaultValue="" onChange={(e) => setUserIdToAdd(e.target.value)}>
+                      <option value="">--- Select User to Add --</option>
+                      {focusedOrg?.users
+                        ?.filter((u) => !cse.users.some((user) => user.id === u.id))
+                        ?.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                    </Select>
+                  </td>
+                  <td>
+                    <Button
+                      onClick={() => caseUserUpdate({ action: "add", case_id: cse.id, user_id: Number(userIdToAdd) })}
+                    >
+                      + Add
+                    </Button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <hr />
-          <CaseAdminToolbox caseId={cse.id} />
-        </div>
-      ) : null}
-    </StyledCaseDriver>
+                {cse.users.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.name}</td>
+                    <td>
+                      <ConfirmButton
+                        prompts={["Remove", "Yes, Remove"]}
+                        onClick={() => caseUserUpdate({ action: "remove", case_id: cse.id, user_id: Number(u.id) })}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <hr />
+            <CaseAdminToolbox caseId={cse.id} />
+          </div>
+        ) : null}
+      </StyledCaseDriver>
+      {/* <div style={{ height: "100px" }} /> */}
+    </>
   );
 };
 
@@ -87,6 +93,9 @@ const StyledCaseDriver = styled.div`
   background: white;
   border-radius: 4px;
   margin: 12px;
+  // position: absolute;
+  // left: 0;
+  // right: 0;
   padding: 0;
   & > div {
     padding: 12px 0;
@@ -100,14 +109,14 @@ const StyledCaseDriver = styled.div`
     .case-driver__lead__text {
       width: 100%;
       display: flex;
-      button {
-        position: relative;
-        left: -54px;
-      }
+      // button {
+      //   position: relative;
+      //   left: -54px;
+      // }
       input {
         width: auto;
         flex-grow: 1;
-        margin-left: -40px;
+        // margin-left: -40px;
         margin-right: 12px;
         font-size: 16px;
         padding: 4px;

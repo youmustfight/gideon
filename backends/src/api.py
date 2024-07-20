@@ -412,16 +412,16 @@ async def app_route_brief_put(request, brief_id):
 @auth_route
 async def app_route_cap_case_index(request):
     session = request.ctx.session
+    arq_pool = await create_queue_pool()
     cap_ids = request.json.get('cap_ids') or []
     project_tag = request.json.get('project_tag')
     # --- fetch/insert via CAP api
-    async with session.begin():
-        for cap_id in cap_ids:
-            await upsert_cap_case(session, cap_id, project_tag)
-    # --- queue jobs after initial fetch/insert
-    arq_pool = await create_queue_pool()
     for cap_id in cap_ids:
-        await arq_pool.enqueue_job('job_index_cap_case', cap_id)
+        async with session.begin():
+            cap_case = await upsert_cap_case(session, cap_id, project_tag)
+        # --- queue jobs after successful fetch & insert, but check we had a case found
+        if cap_case != None:
+            await arq_pool.enqueue_job('job_index_cap_case', cap_id)
     return json({ 'status': 'success' })
 
 @api_app.route('/v1/cap/case/<cap_id>', methods = ['GET'])

@@ -13,6 +13,9 @@ import { useAIRequestStore } from "./AIRequestStore";
 import { CapCasePanel } from "../CapCasePanel";
 import { AIRequestTypeSelect } from "./AIRequestBox";
 import { StyledAIRequestBoxTabs } from "./styled/StyledAIRequestBoxTabs";
+import { Select } from "../styled/common/Select";
+import { Button } from "../styled/common/Button";
+import { Input } from "../styled/common/Input";
 
 type TInquiryBoxProps = {
   isCaseLawSearch?: boolean;
@@ -68,7 +71,7 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
         {/* Doing this inline bc we don't want to take up width on responses */}
         <AIRequestTypeSelect disabled={isAIRequestSubmitted} />
         {/* @ts-ignore */}
-        <select disabled={isAIRequestSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
+        <Select disabled={isAIRequestSubmitted} value={inquiryScope} onChange={(e) => setInquiryScope(e.target.value)}>
           <option value="caselaw">Case Law</option>
           <option value="organization" disabled={!focusedOrgId}>
             Organization
@@ -79,10 +82,10 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
           <option value="document" disabled={params.documentId == null}>
             Document
           </option>
-        </select>
+        </Select>
         <label>
           {/* <span>Ask Question</span> */}
-          <input
+          <Input
             disabled={isAIRequestSubmitted}
             placeholder={(() => {
               if (inquiryScope === "caselaw") return "Ex) Gideon v. Wainwright";
@@ -93,22 +96,22 @@ export const InquiryBox: React.FC<TInquiryBoxProps> = ({ isCaseLawSearch }) => {
             onChange={(e) => setInquiryQuery(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={isAIRequestSubmitted || inquiryQuery.length < 4}>
+        <Button type="submit" disabled={isAIRequestSubmitted || inquiryQuery.length < 4}>
           Request
-        </button>
+        </Button>
       </form>
 
       {isAIRequestSubmitted && (
         <>
           <StyledAIRequestBoxTabs>
-            {answerDetailsLocations && (
-              <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
-                Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
-              </label>
-            )}
             {answerQuestion && (
               <label className={focusAnswer === "question" ? "active" : ""} onClick={() => setFocusAnswer("question")}>
                 Answer/Summary {answerQuestion?.inProgress ? "(Processing...)" : ""}
+              </label>
+            )}
+            {answerDetailsLocations && (
+              <label className={focusAnswer === "location" ? "active" : ""} onClick={() => setFocusAnswer("location")}>
+                Detail Locations {answerDetailsLocations?.inProgress ? "(Processing...)" : ""}
               </label>
             )}
             {answerCaseFactsSimilarity && (

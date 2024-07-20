@@ -6,6 +6,7 @@ import { useCaseCreate } from "../data/useCase";
 import { useCases } from "../data/useCases";
 import { useUser } from "../data/useUser";
 import { CasePanel } from "./CasePanel";
+import { Button } from "./styled/common/Button";
 
 export const OrgCasesList: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const OrgCasesList: React.FC = () => {
     <StyledOrgCasesList>
       <div className="cases-driver__section-lead">
         <h2>Cases</h2>
-        {user ? <button onClick={() => caseCreationHelper()}>+ Add Case</button> : null}
+        {user ? <Button onClick={() => caseCreationHelper()}>+ Add Case</Button> : null}
       </div>
       {cases && (
         <>

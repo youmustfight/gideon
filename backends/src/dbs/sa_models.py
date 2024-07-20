@@ -246,8 +246,8 @@ class Brief(BaseModel):
     created_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True))
     # case law + case brief (both use facts and issues, but case law briefs won't have holding/reasoning yet since that's from the judge)
-    facts = Column(JSONB()) # { text }[]
-    issues = Column(JSONB()) # { issue, holding, reasoning }[]
+    facts = Column(JSONB()) # { text, type = "matter" | "judgment" | "fact" | "procedure" ? }[] # (name of the case and its parties, what happened factually and procedurally, and the judgment)
+    issues = Column(JSONB()) # { issue, holding, reasoning }[] # (what is in dispute, the applied rule of law, reasons for the holding)
     # --- issue ('Whether ...') may be more than 1
     # --- TODO: related_facts ??? (how do we associate issues w/ facts? should we? or do we keep it loose)
     # --- holding (court/judge decision. Yes/No in response to issue)

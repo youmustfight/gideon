@@ -10,6 +10,8 @@ import { ConfirmButton } from "../../components/ConfirmButton";
 import { AppHeader } from "../../components/AppHeader";
 import { snakeCase } from "lodash";
 import { WritingEditor } from "../../components/WritingEditor/WritingEditor";
+import { Input } from "../../components/styled/common/Input";
+import { Button } from "../../components/styled/common/Button";
 
 type TViewWritingProps = {
   caseId?: number;
@@ -44,9 +46,9 @@ export const ViewWriting: React.FC<TViewWritingProps> = ({ caseId }) => {
         {/* HEAD */}
         <div className="writing-header">
           <Link to={caseId ? `/case/${caseId}` : "/cases"}>
-            <button>←</button>
+            <Button>←</Button>
           </Link>
-          <input
+          <Input
             placeholder="Untitled Name"
             defaultValue={writing?.name}
             value={writingName}

@@ -1,6 +1,6 @@
 import textwrap
 from indexers.utils.text_contains_mentions_of_slavery import text_contains_mentions_of_slavery
-from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003
+from models.gpt import gpt_completion, GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_002, GTP_COMPLETION_MODEL
 from models.gpt_prompts import gpt_prompt_summary_concise, gpt_prompt_citing_slavery_summary, GPT_NULL_PHRASE
 
 def extract_document_citing_slavery_summary(document_text):
@@ -34,15 +34,26 @@ def extract_document_citing_slavery_summary(document_text):
             summary_chunks.append(general_summary_chunk)
 
     # FINAL SUMMARY
-    if len(summary_chunks) == 1 and summary_chunks_mentions_slavery == True:
-        return summary_chunks[0]
-    elif len(summary_chunks) > 1 and summary_chunks_mentions_slavery == True:
+    # v1 --- requires mentioning of slavery
+    # if len(summary_chunks) == 1 and summary_chunks_mentions_slavery == True:
+    #     return summary_chunks[0]
+    # elif len(summary_chunks) > 1 and summary_chunks_mentions_slavery == True:
+    #     summary_joined = " ".join(summary_chunks)
+    #     print("INFO (extract_document_citing_slavery_summary): returning final completion")
+    #     return gpt_completion(
+    #         engine=GTP_COMPLETION_MODEL,
+    #         max_tokens=500,
+    #         prompt=gpt_prompt_citing_slavery_summary.replace('<<SOURCE_TEXT>>', summary_joined))
+    # else:
+    #     print("INFO (extract_document_citing_slavery_summary): returning None")
+    #     return None
+    # v2 --- always return something
+    if len(summary_chunks) > 1:
         summary_joined = " ".join(summary_chunks)
         print("INFO (extract_document_citing_slavery_summary): returning final completion")
         return gpt_completion(
-            engine=GTP3_COMPLETION_MODEL_ENGINE_DAVINCI_003,
+            engine=GTP_COMPLETION_MODEL,
             max_tokens=500,
             prompt=gpt_prompt_citing_slavery_summary.replace('<<SOURCE_TEXT>>', summary_joined))
     else:
-        print("INFO (extract_document_citing_slavery_summary): returning None")
-        return None
+        return summary_chunks[0]

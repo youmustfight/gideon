@@ -4,7 +4,6 @@ from time import sleep
 import requests
 from dbs.sa_models import CAPCaseLaw
 import env
-from caselaw.utils.upsert_cap_case import upsert_cap_case
 from arq_queue.create_queue_pool import create_queue_pool
 
 

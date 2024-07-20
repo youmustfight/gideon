@@ -64,6 +64,7 @@ export const StyledViewCase = styled.div`
       font-weight: 900;
       margin: 6px 0;
       display: flex;
+      color: var(--color-black-500);
     }
     h2,
     h3,
@@ -83,20 +84,46 @@ export const StyledViewCase = styled.div`
   .document-header {
     margin: 12px 12px 0;
     padding: 20px 24px;
-    display: flex;
     background: #fff;
     border-radius: 4px;
     border-bottom: 2px solid #eee;
-    & > a {
-      max-width: 40px;
-    }
-    & > input {
-      flex-grow: 1;
-    }
-    & > button {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+    .document-header__title {
+      display: flex;
+      margin-bottom: 12px;
+      & > input {
+        flex-grow: 1;
+        height: 40px;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+        &:disabled {
+          color: initial;
+        }
+      }
+      & > button {
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
+      }
+      & > a {
+        display: none;
+      }
+      &:hover {
+        & > a {
+          display: flex;
+          max-width: 40px;
+          height: 100%;
+          button {
+            height: 40px;
+            background: transparent;
+            border: transparent;
+            color: gray;
+          }
+        }
+      }
     }
   }
 `;

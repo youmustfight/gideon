@@ -20,15 +20,11 @@ export const ViewCaseOverview = () => {
           <BriefEditor caseId={focusedCaseId} />
         </section>
 
-        <br />
-        <hr />
-        <br />
-
         <section>
-          {/* --- writings */}
-          <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
           {/* --- discovery */}
           <DiscoveryBox caseId={focusedCaseId} />
+          {/* --- writings */}
+          <WritingsBox caseId={focusedCaseId} isTemplate={false} organizationId={focusedOrgId} />
         </section>
       </StyledViewCaseOverview>
     </>

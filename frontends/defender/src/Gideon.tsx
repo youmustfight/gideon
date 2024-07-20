@@ -38,9 +38,12 @@ export const Gideon: React.FC = () => {
       <Route
         path="/login"
         element={
-          <ToolWindow>
-            <ViewLogin />
-          </ToolWindow>
+          <>
+            <AppHeader />
+            <ToolWindow>
+              <ViewLogin />
+            </ToolWindow>
+          </>
         }
       />
       {/* ORGANIZATIONS */}

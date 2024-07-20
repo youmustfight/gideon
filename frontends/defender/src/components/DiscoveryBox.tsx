@@ -9,6 +9,8 @@ import { reqIndexDocument } from "../data/reqIndexDocument";
 import { TDocument, useDocuments } from "../data/useDocuments";
 import { getGideonApiUrl } from "../env";
 import { formatSecondToTime } from "./formatSecondToTime";
+import { Button } from "./styled/common/Button";
+import { Input } from "./styled/common/Input";
 
 const DocumentPreviewMedia = styled.div`
   min-width: 120px;
@@ -45,12 +47,14 @@ const DocumentBox: React.FC<{ document: TDocument }> = ({ document }) => {
       <div style={{ flexGrow: 1 }}>
         <small>
           <Link to={`/case/${focusedCaseId}/document/${document.id}`}>{document.name ?? "n/a"}</Link>
-          {["audio", "video"].includes(document?.type) ? <> ({timeText} min.)</> : null}
-          {document?.type === "pdf" ? <> ({pageCount} pages)</> : null}
+          {["audio", "video"].includes(document?.type) ? (
+            <span className="length-measurement"> ({timeText} min.)</span>
+          ) : null}
+          {document?.type === "pdf" ? <span className="length-measurement"> ({pageCount} pages)</span> : null}
         </small>
         {["audio", "docx", "pdf", "video"].includes(document.type) ? (
           <>
-            <p>{document.generated_description}</p>
+            <p style={{ fontSize: "12px" }}>{document.generated_description}</p>
             <div className="discovery-box__document__actions">
               <div>
                 <small>{document.generated_summary_one_liner}</small>
@@ -106,8 +110,13 @@ export const DiscoveryBox: React.FC<{ caseId: number }> = ({ caseId }) => {
       <StyledDiscoveryBoxLead>
         <h2>Discovery</h2>
         <form className="discovery-box__file-uploader" onSubmit={(e) => onSubmitFile(e)}>
-          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.docx" />
-          <button type="submit">+ Upload</button>
+          <Input
+            type="file"
+            name="file"
+            accept=".pdf,.jpg,.jpeg,.png,.m4a,.mp3,.mp4,.mov,.docx"
+            style={{ border: "none" }}
+          />
+          <Button type="submit">+ Upload</Button>
         </form>
       </StyledDiscoveryBoxLead>
       <StyledDiscoveryBox>
@@ -157,7 +166,11 @@ const StyledDiscoveryBoxLead = styled.div`
   }
   .discovery-box__file-uploader {
     input {
+      opacity: 0.2;
       max-width: 180px;
+      &:hover {
+        opacity: 1;
+      }
     }
   }
 `;
@@ -203,6 +216,9 @@ const StyledDiscoveryBox = styled.div`
   .discovery-box__document__expanded {
     border-top: 1px solid #eee;
     margin-top: 2px;
+  }
+  .length-measurement {
+    opacity: 0.5;
   }
   .discovery-box__document__actions {
     border-top: 1px solid #eee;

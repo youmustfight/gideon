@@ -1,11 +1,17 @@
 from enum import Enum
-from typing import List
+from typing import List, Dict, Any
 
-import requests
 import env
+from pinecone import Pinecone, ServerlessSpec
 import sqlalchemy as sa
 from sqlalchemy.orm import joinedload
 from dbs.sa_models import DocumentContent, Embedding
+
+
+# INIT
+pc = Pinecone(
+    api_key=env.env_get_database_pinecone_api_key(),
+    environment="us-east-1")
 
 # INDEXES
 class VECTOR_INDEX_ID(Enum):
@@ -18,93 +24,45 @@ class VECTOR_INDEX_ID(Enum):
 
 
 # CRUD QUERIES
-# DEPRECATED: can't use the python library because it's causing SSL issues ffs
-    # def _get_vector_index(self):
-    #     return pinecone.Index(self.index_id)
-# def _get_vector_index(self):
-    #     return pinecone.Index(self.index_id)
-def _get_pinecone_index_url(vector_index_id: str):
-    if vector_index_id == VECTOR_INDEX_ID.index_768_cosine.value:
-        return env.env_get_database_pinecone_index_768_cosine_url()
-    if vector_index_id == VECTOR_INDEX_ID.index_1536_cosine.value:
-        return env.env_get_database_pinecone_index_1536_cosine_url()
-    raise 'Unable to get index URL'
-# DEPRECATED: can't use the python library because it's causing SSL issues ffs
-# query_results = self._get_vector_index().query(
-#     namespace=self.index_partition_id,
-#     vector=vector,
-#     top_k=top_k,
-#     include_values=False,
-#     includeMetadata=True,
-#     filter=filters)
-def pinecone_index_query(index: str, namespace: str, vector: List[float], top_k: int, filters=None):
+def pinecone_index_query(index: str, namespace: str, vector: List[float], top_k: int, filters: Dict[str, Any] = None):
     print(f'INFO (pinecone_index_query): {index}:{namespace}', filters)
-    query_results = requests.post(
-        f'{_get_pinecone_index_url(index)}/query',
-        json={
-            'namespace': namespace,
-            'topK': top_k,
-            'filter': filters,
-            'includeValues': False,
-            'includeMetadata': True,
-            'vector': vector
-        },
-        headers={
-            'Accept': 'application/json',
-            'Api-Key': env.env_get_database_pinecone_api_key(),
-            'Content-Type': 'application/json'
-        }
+    index = pc.Index(index)
+    query_results = index.query(
+        vector=vector,
+        top_k=top_k,
+        namespace=namespace,
+        filter=filters,
+        include_values=False,
+        include_metadata=True
     )
-    # get json payload
-    query_results = query_results.json()
-    # convert matches to dicts to be consistent w/ pinecone query lib
-    query_result_matches = list(map(lambda m: dict(m), query_results['matches']))
-    # return
-    return query_result_matches
+    # Not sure if we should change the shape of this, List[{ id, metadata:{...}, score, values }]
+    return query_results.matches
 
-# DEPRECATED: can't use the python library because it's causing SSL issues ffs
-# pinecone.Index(index_name=index_tuple[0]).upsert(
-#     vectors=upserts_tuple_dict[index_tuple],
-#     namespace=index_tuple[1])
-def pinecone_index_upsert(index: str, namespace: str, values):
-    # TODO: syntax follows pinecone lib but it's a little jank feeling
-    for value in values:
-        upsert_value = {
+def pinecone_index_upsert(index: str, namespace: str, values: List[Dict[str, Any]]):
+    index = pc.Index(index)
+    upsert_values = [
+        {
             'id': value[0],
             'values': value[1],
             'metadata': value[2],
         }
-        print(f'INFO (pinecone_index_upsert): {index}:{namespace}', value[0], value[2])
-        requests.post(
-            f'{_get_pinecone_index_url(index)}/vectors/upsert',
-            json={
-                'namespace': namespace,
-                'vectors': [upsert_value]
-            },
-            headers={
-                'Accept': 'application/json',
-                'Api-Key': env.env_get_database_pinecone_api_key(),
-                'Content-Type': 'application/json'
-            }
-        )
+        for value in values
+    ]
+    print(f'INFO (pinecone_index_upsert): {index}:{namespace}', [v['id'] for v in upsert_values])
+    index.upsert(
+        vectors=upsert_values,
+        namespace=namespace
+    )
     return None
 
-# DEPRECATED: can't use the python library because it's causing SSL issues ffs
-# pinecone.Index(index_name=delete_tuple[0]).delete(ids=embeddings_ids_strs, namespace=delete_tuple[1])
 def pinecone_index_delete(index: str, namespace: str, ids: List[str]):
     print(f'INFO (pinecone_index_delete): {index}:{namespace}, ids =', ids)
-    requests.post(
-        f'{_get_pinecone_index_url(index)}/vectors/delete',
-        json={
-            'namespace': namespace,
-            'ids': ids
-        },
-        headers={
-            'Accept': 'application/json',
-            'Api-Key': env.env_get_database_pinecone_api_key(),
-            'Content-Type': 'application/json'
-        }
+    index = pc.Index(index)
+    index.delete(
+        ids=ids,
+        namespace=namespace
     )
+    return None
 
 
 # HELPERS
