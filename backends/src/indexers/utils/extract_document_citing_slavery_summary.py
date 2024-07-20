@@ -34,9 +34,21 @@ def extract_document_citing_slavery_summary(document_text):
             summary_chunks.append(general_summary_chunk)
 
     # FINAL SUMMARY
-    if len(summary_chunks) == 1 and summary_chunks_mentions_slavery == True:
-        return summary_chunks[0]
-    elif len(summary_chunks) > 1 and summary_chunks_mentions_slavery == True:
+    # v1 --- requires mentioning of slavery
+    # if len(summary_chunks) == 1 and summary_chunks_mentions_slavery == True:
+    #     return summary_chunks[0]
+    # elif len(summary_chunks) > 1 and summary_chunks_mentions_slavery == True:
+    #     summary_joined = " ".join(summary_chunks)
+    #     print("INFO (extract_document_citing_slavery_summary): returning final completion")
+    #     return gpt_completion(
+    #         engine=GTP_COMPLETION_MODEL,
+    #         max_tokens=500,
+    #         prompt=gpt_prompt_citing_slavery_summary.replace('<<SOURCE_TEXT>>', summary_joined))
+    # else:
+    #     print("INFO (extract_document_citing_slavery_summary): returning None")
+    #     return None
+    # v2 --- always return something
+    if len(summary_chunks) > 1:
         summary_joined = " ".join(summary_chunks)
         print("INFO (extract_document_citing_slavery_summary): returning final completion")
         return gpt_completion(
@@ -44,5 +56,4 @@ def extract_document_citing_slavery_summary(document_text):
             max_tokens=500,
             prompt=gpt_prompt_citing_slavery_summary.replace('<<SOURCE_TEXT>>', summary_joined))
     else:
-        print("INFO (extract_document_citing_slavery_summary): returning None")
-        return None
+        return summary_chunks[0]

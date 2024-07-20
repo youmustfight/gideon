@@ -5,8 +5,6 @@ from dbs.sa_models import CAPCaseLaw
 import env
 
 async def _upsert_cap_case(session, cap_id, cap_dict, project_tag) -> CAPCaseLaw:
-    print(f'INFO (upsert_cap_case) upsert cap id #{cap_id}')
-
     # --- query for any record of this CAP case in our db already, so we can just update
     query_cap_case = await session.execute(
         sa.select(CAPCaseLaw).where(CAPCaseLaw.cap_id == int(cap_id)))
@@ -36,7 +34,7 @@ async def _upsert_cap_case(session, cap_id, cap_dict, project_tag) -> CAPCaseLaw
         cap_case.provenance = cap_dict['provenance']
         cap_case.casebody = cap_dict['casebody']['data']
         cap_case.project_tag = project_tag
-        cap_case.created_at = datetime.now()
+        cap_case.created_at = datetime.datetime.now()
     else:
         cap_case = CAPCaseLaw(
             cap_id=cap_dict['id'],
@@ -61,6 +59,7 @@ async def _upsert_cap_case(session, cap_id, cap_dict, project_tag) -> CAPCaseLaw
             provenance=cap_dict['provenance'],
             casebody=cap_dict['casebody']['data'],
             project_tag=project_tag,
+            created_at=datetime.datetime.now(),
         )
 
     # --- add to session (commit layer above)
@@ -70,13 +69,18 @@ async def _upsert_cap_case(session, cap_id, cap_dict, project_tag) -> CAPCaseLaw
     return cap_case
 
 
-async def upsert_cap_case(session, cap_id, project_tag):
+async def upsert_cap_case(session, cap_id, project_tag) -> CAPCaseLaw | None:
+    print(f'INFO (upsert_cap_case) upsert cap id #{cap_id}')
     cap_response = requests.get(
         f'https://api.case.law/v1/cases/{cap_id}/',
         params={ 'full_case': 'true' },
         headers={ 'authorization': f'Token {env.env_get_caselaw_access_project()}', 'content-type': 'application/json' },
     )
     cap_response = cap_response.json()
-    cap_case = await _upsert_cap_case(session, cap_id, cap_dict=cap_response, project_tag=project_tag)
-    # return
-    return cap_case
+    # check if CAP returned a not found err detail
+    if cap_response.get('detail') != 'Not found.':
+        cap_case = await _upsert_cap_case(session, cap_id, cap_dict=cap_response, project_tag=project_tag)
+        return cap_case
+    else:
+        print(f'WARN (upsert_cap_case) upsert cap_id not found: #{cap_id}')
+        return None

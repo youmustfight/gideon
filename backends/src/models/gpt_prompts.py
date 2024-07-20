@@ -100,9 +100,9 @@ DIFFERENCE DESCRIPTION:
 # V3 - added strictness, "no explicit mention of slaves or slavery occurs".
 # V4 - got rid of end sentence: 'If slaves or slavery is not explicitly mentioned, write '{GPT_NULL_PHRASE}
 gpt_prompt_citing_slavery_summary = f"""
-In the fewest words, summarize the context mentioning slaves in the following case law opinion.
+In the fewest words, summarize the context mentioning slaves in the following judicial opinion.
 
-CASE LAW OPINION: <<SOURCE_TEXT>>
+JUDICIAL OPINION: <<SOURCE_TEXT>>
 
 SUMMARY:
 """
