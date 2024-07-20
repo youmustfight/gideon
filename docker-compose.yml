@@ -60,6 +60,7 @@ services:
       - "3000:3000"
     depends_on:
       - database_app
+      - queue
     env_file:
       - ./.env
     environment:

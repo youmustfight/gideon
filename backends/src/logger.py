@@ -30,9 +30,9 @@ supported_keys = [
 ]
 log_format = lambda x: ['%({0:s})s'.format(i) for i in x]
 custom_format = ' '.join(log_format(supported_keys))
-formatter = jsonlogger.JsonFormatter(custom_format)
-logFileHandler.setFormatter(formatter)
-logger.addHandler(logFileHandler)
+# formatter = jsonlogger.JsonFormatter(custom_format)
+# logFileHandler.setFormatter(formatter)
+# logger.addHandler(logFileHandler)
 
 # --- stream (for local dev)
 if (env.env_is_local()):

@@ -1,5 +1,6 @@
 #!/bin/bash -x
 set -e
+
 # Args for secret picking
 TARGET=$1
 JQ_PATH=$2
